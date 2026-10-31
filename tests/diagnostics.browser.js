@@ -35,7 +35,7 @@
   const longText=Array.from({length:180},(_,i)=>'Line '+i+' text').join('\n');
   const edit=value=>{source.value=value;source.dispatchEvent(new Event('input'))};
   for(const template of [false,true]){
-   if(template){$('openTemplateManager').click();$('newTemplate').click()}
+   if(template){$('manageTemplates').click();$('newTemplate').click()}
    edit(longText);source.focus();source.setSelectionRange(source.value.length,source.value.length);
    source.dispatchEvent(new KeyboardEvent('keydown',{key:'b',ctrlKey:true,bubbles:true,cancelable:true}));
    const formatted=source.value;

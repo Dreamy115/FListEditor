@@ -1016,6 +1016,25 @@ $('previewFontSize').addEventListener('input',e=>{
 });
 $('previewFontSize').addEventListener('change',setPreviewFontSize);
 // Inline images use a picker; other insertion tools edit the source directly.
+const symbolPalette=$('symbolPalette');
+for(const [symbol,name] of [
+ ['—','Em dash'],['–','En dash'],['…','Ellipsis'],['•','Bullet'],['·','Middle dot'],
+ ['★','Black star'],['☆','White star'],['✦','Four pointed star'],['✧','White four pointed star'],
+ ['◆','Black diamond'],['◇','White diamond'],['♥','Heart'],['♡','White heart'],
+ ['♠','Spade'],['♣','Club'],['♦','Diamond suit'],['♪','Music note'],['♫','Music notes'],
+ ['→','Right arrow'],['←','Left arrow'],['↑','Up arrow'],['↓','Down arrow'],['↔','Left right arrow'],
+ ['✓','Check mark'],['✗','Cross mark'],['∞','Infinity'],['±','Plus minus'],['°','Degree'],
+ ['©','Copyright'],['®','Registered'],['™','Trademark'],['😀','Grinning face']
+]){
+ const button=document.createElement('button');button.type='button';button.className='palette-option';
+ button.textContent=symbol;button.title=name;button.setAttribute('aria-label','Insert '+name.toLowerCase());
+ button.addEventListener('click',()=>{insertUnicodeSymbol(symbol);symbolPalette.hidden=true;$('symbolBtn').setAttribute('aria-expanded','false')});
+ symbolPalette.append(button);
+}
+$('symbolBtn').addEventListener('click',()=>{symbolPalette.hidden=!symbolPalette.hidden;$('symbolBtn').setAttribute('aria-expanded',String(!symbolPalette.hidden))});
+symbolPalette.addEventListener('keydown',event=>{
+ if(event.key==='Escape'){symbolPalette.hidden=true;$('symbolBtn').setAttribute('aria-expanded','false');$('symbolBtn').focus()}
+});
 const insertionSpecs={
  link:{prefix:'[url=https://example.com]',suffix:'[/url]',fallback:'link text',select:'https://example.com'},
  image:{prefix:'[img]',suffix:'[/img]',fallback:'https://example.com/image.png'},
@@ -1036,6 +1055,12 @@ const markdownInsertionSpecs={
  eicon:{prefix:'{eicon:',suffix:'}',fallback:'eicon-name'},
  noparse:{prefix:'`',suffix:'`',fallback:'literal **text**'}
 };
+function insertUnicodeSymbol(symbol){
+ const text=data.mixed&&data.preferLiterals===false
+  ?Array.from(symbol,char=>'&#x'+char.codePointAt(0).toString(16).toUpperCase()+';').join('')
+  :symbol;
+ replaceRange(text);
+}
 function insertTag(type,imageId='12345',alias=''){
  let spec=(data.mixed?markdownInsertionSpecs:insertionSpecs)[type];if(!spec)return;
  if(type==='inlineimg')spec={...spec,prefix:spec.prefix.replace('12345',imageId),select:imageId,fallback:alias.replace(/[&\[\]{}|\r\n]/g,char=>'&#'+char.charCodeAt(0)+';')};
@@ -1334,7 +1359,7 @@ function saveCustomTemplate(){
  $('templateStatus').textContent=persist()?'Template saved.':'Saved for this session only; browser storage is unavailable.';
  return record;
 }
-for(const id of ['manageTemplates','openTemplateManager'])$(id).addEventListener('click',()=>openTemplateManager());
+$('manageTemplates').addEventListener('click',()=>openTemplateManager());
 $('backToProfile').addEventListener('click',exitTemplateEditor);
 $('templateChoice').addEventListener('change',e=>loadTemplateForm(e.target.value));
 $('newTemplate').addEventListener('click',()=>loadTemplateForm(''));

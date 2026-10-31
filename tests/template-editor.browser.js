@@ -13,7 +13,7 @@
   edit($('profileName'),'First character');edit(source,'## Original profile');click('bbMode');
   const original=source.value,firstId=saved().active;
   source.setSelectionRange(2,6);
-  click('openTemplateManager');
+  click('manageTemplates');
   verify(!$('templateEditorControls').hidden&&!document.querySelector('dialog'),'Template uses main editor');
   edit($('profileName'),'Reusable');edit(source,'Template text');source.setSelectionRange(0,8);
   document.querySelector('[data-wrap="b"]').click();
@@ -79,7 +79,7 @@
   verify(source.value===bbTemplate&&$('bbMode').classList.contains('active')&&saved().drafts.length===beforeCount+2,'New from template supports BBCode editor');
   template('Reusable');click('deleteTemplate');click('confirmYes');verify($('templateEditorControls').hidden&&source.value===bbTemplate,'Deleting template preserves new character');
   const beforeCopy=JSON.stringify(saved().drafts),templateCount=saved().customTemplates.length;
-  click('openTemplateManager');verify($('templateFromDraft').disabled,'No implicit source character');
+  click('manageTemplates');verify($('templateFromDraft').disabled,'No implicit source character');
   $('templateSource').value=firstId;$('templateSource').dispatchEvent(new Event('change'));click('templateFromDraft');
   verify(source.value==='## Original profile'&&$('profileName').value==='First character template','Copy explicitly selected BBCode character as Markdown');
   verify(JSON.stringify(saved().drafts)===beforeCopy&&saved().customTemplates.length===templateCount,'Copy does not replace character or save implicitly');

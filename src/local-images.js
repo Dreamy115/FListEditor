@@ -6,7 +6,11 @@
   const $ = id => document.getElementById(id);
   const status = message => { $('localImageStatus').textContent = message; };
   $('manageImageMappings').addEventListener('click', () => $('localImagePanel').showModal());
+  $('manageInlineImageMappings').addEventListener('click', () => $('localImagePanel').showModal());
   $('closeImageMappings').addEventListener('click', () => $('localImagePanel').close());
+  $('localImagePanel').addEventListener('close', () => {
+    if ($('inlineImagePicker').open) renderMappedChoices();
+  });
   let pickerResolve = null;
   function finishPick(id) {
     const resolve = pickerResolve; pickerResolve = null;
@@ -27,10 +31,14 @@
   });
   async function pick() {
     await ready;
-    const list = $('mappedImageChoices'); list.replaceChildren();
     $('customInlineImageId').value = '';
     $('customInlineImageId').removeAttribute('aria-invalid');
     $('inlineImagePickerStatus').textContent = '';
+    renderMappedChoices();
+    return new Promise(resolve => { pickerResolve = resolve; $('inlineImagePicker').showModal(); });
+  }
+  function renderMappedChoices() {
+    const list = $('mappedImageChoices'); list.replaceChildren();
     for (const record of records.values()) {
       const button = document.createElement('button'); button.type = 'button'; button.className = 'mapped-image-choice';
       const image = document.createElement('img'); image.src = record.url; image.alt = ''; image.loading = 'lazy';
@@ -44,7 +52,6 @@
     if (!records.size) {
       const empty = document.createElement('p'); empty.textContent = 'No mapped images yet. Enter a custom ID below, or add preview images using Image mappings.'; list.append(empty);
     }
-    return new Promise(resolve => { pickerResolve = resolve; $('inlineImagePicker').showModal(); });
   }
   function openMapping(id, macroAlias = '') {
     const record = records.get(id);

@@ -63,21 +63,22 @@
  <button type="button" class="tool" data-action="divider" title="Insert divider" aria-label="Insert divider">&mdash;</button>
  <button class="tool" data-wrap="quote" title="Block quote (>)">❝</button>
  <span class="sep"></span>
+ <button type="button" class="tool" id="symbolBtn" title="Insert Unicode symbol" aria-label="Insert Unicode symbol" aria-expanded="false" aria-controls="symbolPalette">&#937; &#9662;</button>
  <button type="button" class="tool" id="fontBtn" title="Unicode text fonts" aria-label="Choose a text font" aria-expanded="false" aria-controls="fontPalette">Font &#9662;</button>
  <button class="tool" id="colorBtn" title="F-List text color presets" aria-label="Choose an F-List color" aria-expanded="false" aria-controls="colorPalette"><span class="color-swatch" style="--swatch:purple"></span><span style="font-size:11px">▾</span></button>
  <button class="tool" data-insert="link" title="Insert link">↗</button>
  </div>
  <div class="toolbar-row secondrow">
- <button class="pill" id="openTemplateManager">My templates</button>
  <button class="pill" data-insert="collapse">▸ Collapsible section</button>
  <button class="pill" data-insert="user">@ Character link</button>
  <button class="pill" data-insert="eicon">✿ Eicon</button>
   <button class="pill" data-insert="icon">◈ Avatar icon</button>
-  <button class="pill" data-insert="inlineimg" aria-haspopup="dialog" aria-controls="inlineImagePicker">▣ F-List image ID</button>
+  <button class="pill" data-insert="inlineimg" aria-haspopup="dialog" aria-controls="inlineImagePicker">▣ Insert inline</button>
   <button class="pill" data-insert="noparse">{ } Literal text</button>
 
  <button class="pill" id="guideBtn" aria-expanded="false" aria-controls="guidePanel">? Examples &amp; macros</button>
  </div>
+ <div id="symbolPalette" class="color-palette" hidden role="group" aria-label="Unicode symbols"></div>
  <div id="fontPalette" class="color-palette" hidden aria-label="Unicode text fonts"></div>
  <div id="colorPalette" class="color-palette" hidden aria-label="F-List named text colors"></div>
  </div>
@@ -102,9 +103,9 @@
 </div>
 
  <dialog class="local-images" id="inlineImagePicker" aria-labelledby="inlineImagePickerTitle">
-  <div class="local-image-heading"><h2 id="inlineImagePickerTitle">Insert F-List image</h2><button type="button" class="btn" id="cancelInlineImage">Cancel</button></div>
+  <div class="local-image-heading"><h2 id="inlineImagePickerTitle">Insert inline</h2><button type="button" class="btn" id="cancelInlineImage">Cancel</button></div>
   <p>Choose a mapped image or enter a custom F-List image ID. The ID and optional alias are inserted into your source; mappings are local preview overrides and final F-List inlines may look different.</p>
-  <h3 class="mapped-image-heading">Mapped images</h3><div id="mappedImageChoices" class="mapped-image-choices" role="group" aria-label="Mapped images"></div>
+  <div class="local-image-heading"><h3 class="mapped-image-heading">Mapped images</h3><button type="button" class="btn primary" id="manageInlineImageMappings" aria-haspopup="dialog" aria-controls="localImagePanel">Image mappings</button></div><div id="mappedImageChoices" class="mapped-image-choices" role="group" aria-label="Mapped images"></div>
   <form id="customInlineImageForm"><div class="local-image-fields"><label for="customInlineImageId">Custom F-List image ID<input id="customInlineImageId" type="text" inputmode="numeric" maxlength="20" placeholder="12345" aria-describedby="customInlineImageHelp inlineImagePickerStatus"></label><button type="submit" class="btn">Insert ID</button></div></form>
   <p id="customInlineImageHelp">Find the ID using <strong>Insert inline</strong> in F-List's built-in profile editor. Copy the number from <code>[img=12345][/img]</code>. A custom ID does not require a preview mapping.</p>
   <p id="inlineImagePickerStatus" role="status"></p>

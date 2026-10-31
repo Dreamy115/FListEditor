@@ -5,7 +5,7 @@ const app = fs.readFileSync('src/app.js', 'utf8');
 const source = {value: '', selectionStart: 0, selectionEnd: 0};
 const data = {mixed: true};
 let selection;
-const context = vm.createContext({source, data, URL, replaceRange(text, start, end, from, to) {
+const context = vm.createContext({source, data, URL, replaceRange(text, start=source.selectionStart, end=source.selectionEnd, from=start+text.length, to=from) {
   source.value = source.value.slice(0, start) + text + source.value.slice(end);
   selection = [from, to];
 }});
@@ -37,8 +37,20 @@ reset('Line one\nLine two'); context.insertTag('noparse');
 assert.equal(context.markdownToBB(source.value), '[noparse]Line one\nLine two[/noparse]');
 reset('Beforeafter'); source.selectionStart = source.selectionEnd = 6; context.insertTag('collapse');
 assert.equal(context.markdownToBB(source.value), 'Before[collapse=More details]Write details here[/collapse]after');
+for(const mixed of [true,false]){
+ for(const preferLiterals of [true,false]){
+  data.mixed=mixed;data.preferLiterals=preferLiterals;
+  reset('before selected after');source.selectionStart=7;source.selectionEnd=15;
+  context.insertUnicodeSymbol('◆😀');
+  const expected=mixed&&!preferLiterals?'&#x25C6;&#x1F600;':'◆😀';
+  assert.equal(source.value,'before '+expected+' after');
+  assert.deepEqual(selection,[7+expected.length,7+expected.length]);
+  if(mixed)assert.equal(context.markdownToBB(source.value),'before ◆😀 after');
+ }
+}
 console.log('Mode-aware toolbar checks passed');
 
+data.mixed=true;
 reset('First\n\nSecond');context.wrapInline('quote');
 assert.equal(source.value,'> First\n> \n> Second');
 assert.equal(context.markdownToBB(source.value),'[quote]First\n\nSecond[/quote]');
