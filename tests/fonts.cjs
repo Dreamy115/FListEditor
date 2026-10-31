@@ -69,10 +69,10 @@ for(const name of ['smallcaps','bold','doublestruck','italic','bolditalic','sans
   assert.equal(context.bbcodeToMarkdown(input),'plain{font:'+name+'|a'+space+'b}tail');
   assert.equal(context.markdownToBB(context.bbcodeToMarkdown(input)),input);
  }
- assert.equal(context.bbcodeToMarkdown(a+' plain '+b),'{font:'+name+'|a }plain{font:'+name+'| b}');
+ assert.equal(context.bbcodeToMarkdown(a+' plain '+b),'{font:'+name+'|a} plain{font:'+name+'| b}');
  assert.equal(context.bbcodeToMarkdown(a+'\n'+b),':::font '+name+'\na\nb\n:::');
 }
-assert.equal(context.bbcodeToMarkdown(context.applyFont('a','bold')+' '+context.applyFont('b','italic')),'{font:bold|a }{font:italic|b}');
+assert.equal(context.bbcodeToMarkdown(context.applyFont('a','bold')+' '+context.applyFont('b','italic')),'{font:bold|a} {font:italic|b}');
 console.log('Same-font spacing and plain-text boundary checks passed');
 
 const smallText='\u028f\u1d0f\u1d1c\u0280 \u1d1b\u1d07x\u1d1b';
@@ -100,8 +100,15 @@ assert.equal(context.markdownToBB('Before\n:::font bold\n**first**\n\nsecond\n::
 console.log('Multiline font blocks, toolbar insertion and decompilation checks passed');
 
 const height='H\u1d07\u026a\u0262\u029c\u1d1b \u25ba';
-assert.equal(context.bbcodeToMarkdown('[b]'+height+'[/b]'),'**{font:smallcaps|Height \u25ba}**');
+assert.equal(context.bbcodeToMarkdown('[b]'+height+'[/b]'),'**{font:smallcaps|Height} \u25ba**');
 assert.equal(context.markdownToBB(context.bbcodeToMarkdown('[b]'+height+'[/b]')),'[b]'+height+'[/b]');
 assert.equal(context.bbcodeToMarkdown('H\n\u1d07'),'H\n{font:smallcaps|e}');
 assert.equal(context.bbcodeToMarkdown('\u1d07\nH'),'{font:smallcaps|e}\nH');
 console.log('Greedy same-line unchanged font characters preserve exact Unicode');
+
+const notes='[b]N\u1d0f\u1d1b\u1d07\ua731 \u25ba[/b]';
+assert.equal(context.bbcodeToMarkdown(notes),'**{font:smallcaps|Notes} \u25ba**');
+assert.equal(context.markdownToBB(context.bbcodeToMarkdown(notes)),notes);
+assert.equal(context.bbcodeToMarkdown('\u1d00 \u25ba '),'{font:smallcaps|a} \u25ba ');
+assert.equal(context.bbcodeToMarkdown('\u1d00 \u25ba \u0299'),'{font:smallcaps|a \u25ba b}');
+console.log('Trailing font symbols and spaces stay outside recovered macros');

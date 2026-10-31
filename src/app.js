@@ -293,7 +293,16 @@ function decompileFonts(text,escapePlain){
  const reverse=new Map();
  for(const [name,style] of Object.entries(fontStyles))style.chars.forEach((char,i)=>{if(char!==fontAlphabet[i])reverse.set(char,{name,char:fontAlphabet[i]})});
  let result='',buffer='',style=null;
- const flush=()=>{if(buffer)result+=style?'{font:'+style+'|'+plain(buffer)+'}':plain(buffer);buffer=''};
+ const flush=()=>{
+  if(buffer){
+   // Spacing and symbols can bridge styled text, but are not trailing font text.
+   const trailing=style?(buffer.match(/[\p{Z}\p{S}\t]+$/u)?.[0]||''):'';
+   const body=trailing?buffer.slice(0,-trailing.length):buffer;
+   result+=style&&body?'{font:'+style+'|'+plain(body)+'}':plain(body);
+   result+=plain(trailing);
+  }
+  buffer='';
+ };
  const chars=[...text];
  const unchanged=(char,name)=>{
   if(char==='\n'||char==='\r'||reverse.has(char))return false;

@@ -102,7 +102,9 @@ produces a warning.
 Decompilation recognizes mapped Unicode characters and reconstructs their font
 macros. It greedily includes adjacent spaces and unchanged characters on the same line,
 including uppercase letters and ordinary `x` beside small caps, only when the
-exported Unicode stays identical. Characters that the font would change, different
+exported Unicode stays identical. Trailing spaces and Unicode symbols remain
+outside inline font macros; they may still bridge styled characters inside a run.
+Characters that the font would change, different
 styles, literal code and line boundaries stop this expansion. Multiline runs of one recognizable font use `:::font` blocks. A font
 choice that leaves all characters unchanged cannot be inferred from BBCode.
 
