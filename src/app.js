@@ -1093,6 +1093,36 @@ $('guideBtn').addEventListener('click',()=>toggleGuide());$('closeGuide').addEve
 async function copyCode(){const code=getCompiled();try{await navigator.clipboard.writeText(code);toast('BBCode copied. Paste into F-List!')}catch(e){const box=document.createElement('textarea');box.value=code;box.style.cssText='position:fixed;opacity:0;top:0';document.body.append(box);box.select();try{document.execCommand('copy');toast('BBCode copied')}catch(error){toast('Use Export .bbcode to save your code')}box.remove()}}
 $('copyCode').addEventListener('click',copyCode);
 function download(text,file,type='text/plain;charset=utf-8'){const link=document.createElement('a');link.href=URL.createObjectURL(new Blob([text],{type}));link.download=file;document.body.append(link);link.click();setTimeout(()=>URL.revokeObjectURL(link.href),2000);link.remove()}
+$('exportScreenshot').addEventListener('click',async()=>{
+ const button=$('exportScreenshot'),label=button.textContent,filename=slug()+'.png';
+ button.disabled=true;button.textContent='Exporting screenshot…';button.setAttribute('aria-busy','true');
+ try{refresh();const png=await FolioScreenshot.capture($('previewPage'));download(png,filename,'image/png');toast('Screenshot exported')}
+ catch(error){console.error('Screenshot export failed',error);toast('Screenshot export failed. Please try again.')}
+ finally{button.disabled=false;button.textContent=label;button.removeAttribute('aria-busy')}
+});
+$('copyScreenshot').addEventListener('click',async()=>{
+ const button=$('copyScreenshot'),label=button.textContent;
+ if(!navigator.clipboard?.write||typeof ClipboardItem==='undefined'||(ClipboardItem.supports&&!ClipboardItem.supports('image/png'))){toast('Image clipboard is unavailable in this browser. Use Export screenshot (.png).');return}
+ button.disabled=true;button.textContent='Copying screenshot…';button.setAttribute('aria-busy','true');
+ try{
+  refresh();
+  const png=FolioScreenshot.capture($('previewPage'));
+  // Start the clipboard write during the click gesture while rendering finishes.
+  png.catch(()=>{});
+  await navigator.clipboard.write([new ClipboardItem({'image/png':png})]);
+  toast('Screenshot copied. Paste it into another app!');
+ }catch(error){console.error('Screenshot copy failed',error);toast('Could not copy screenshot. Allow clipboard access or use Export screenshot (.png).')}
+ finally{button.disabled=false;button.textContent=label;button.removeAttribute('aria-busy')}
+});
+for(const [id,format,type] of [['exportHtml','html','text/html;charset=utf-8']]){
+ $(id).addEventListener('click',async()=>{
+  const button=$(id),label=button.textContent,filename=slug()+'.'+format,title=$('profileName').value.trim()||'Untitled character';
+  button.disabled=true;button.textContent='Exporting…';button.setAttribute('aria-busy','true');
+  try{refresh();const result=await FolioScreenshot[format]($('previewPage'),title);download(result,filename,type);toast(format.toUpperCase()+' exported')}
+  catch(error){console.error(format+' export failed',error);toast(format.toUpperCase()+' export failed. Please try again.')}
+  finally{button.disabled=false;button.textContent=label;button.removeAttribute('aria-busy')}
+ });
+}
 const slug=()=> (active().name||'character').trim().replace(/[^a-z0-9_-]+/gi,'_').replace(/^_+|_+$/g,'').slice(0,60)||'character';
 $('downloadCode').addEventListener('click',()=>{download(getCompiled(),slug()+'.bbcode');toast('BBCode exported')});
 $('downloadMarkdown').addEventListener('click',()=>{download(data.mixed?source.value:convertEntityPreference(bbcodeToMarkdown(source.value,true),data.preferLiterals!==false),slug()+'.md','text/markdown;charset=utf-8');toast('Markdown source exported')});
