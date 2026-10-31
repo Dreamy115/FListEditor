@@ -126,6 +126,24 @@
   }
   for(const key of ['body','sidebar','toolbar','editor','syntax'])verify(new Set(appearances.map(theme=>theme[key])).size===4,'Four distinct '+key+' palettes');
   document.getElementById('editorTheme').value='folio';document.getElementById('editorTheme').dispatchEvent(new Event('change'));
+  // Preview spacing must come from BBCode newlines, never decorative margins.
+  const probe=document.createElement('div');probe.style.cssText='position:fixed;left:-10000px;top:0;width:400px';
+  const description=document.createElement('div');description.className='description';probe.append(description);document.body.append(probe);
+  for(const appearance of ['flist-blue','flist-dark','flist-light','classic','noir','']){
+   probe.className='previewpage '+appearance;
+   const gaps=[];
+   for(const separator of ['','\n','\n\n']){
+    description.replaceChildren(FolioHorizon.render('[collapse=One]Body[/collapse]'+separator+'[collapse=Two]Body[/collapse]'));
+    const blocks=description.querySelectorAll('.bbcode-collapse');
+    gaps.push(blocks[1].getBoundingClientRect().top-blocks[0].getBoundingClientRect().bottom);
+   }
+   verify(Math.abs(gaps[0])<.5&&gaps[1]>gaps[0]&&gaps[2]>gaps[1],'Collapse spacing reflects literal newlines: '+appearance);
+   description.replaceChildren(FolioHorizon.render('[collapse=One]Body[/collapse][collapse=Two]Body[/collapse]'));
+   description.querySelector('.bbcode-collapse-header').click();
+   const blocks=description.querySelectorAll('.bbcode-collapse');
+   verify(Math.abs(blocks[1].getBoundingClientRect().top-blocks[0].getBoundingClientRect().bottom)<.5,'Expanded adjacent collapse blocks still touch');
+  }
+  probe.remove();
   result.passed=true;
  } catch(error){result.error=error.stack}
  const output=document.createElement('pre');output.id='template-main-result';output.textContent=JSON.stringify(result);document.body.append(output);

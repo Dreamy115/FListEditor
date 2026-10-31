@@ -23,7 +23,7 @@
 .description .whiteText {color:#fff}
 .description .blackText {color:#000}
 .description .bbcode h2 {font-size:1.5em;font-weight:bold}
-.description .bbcode-collapse {border:1px solid #9d90bf58;border-radius:8px;margin:9px 0;overflow:hidden}
+.description .bbcode-collapse {border:1px solid #9d90bf58;border-radius:8px;margin:0;overflow:hidden}
 .description .bbcode-collapse-header {font-weight:bold;cursor:pointer;padding:.4em .75em;background:#8f7eb31c}
 .description .bbcode-collapse-header:before {content:'▾ ';}
 .description .collapsed > .bbcode-collapse-header:before {content:'▸ ';}

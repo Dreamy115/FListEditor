@@ -17,6 +17,10 @@ rules, quote panels, collapse headers, and Verdana/Helvetica typography also use
 site values. Blue is the default for new installations. Existing saved Folio
 appearance selections are retained, and all six options remain available.
 
+Collapsible wrappers have zero outer margin: adjacent BBCode collapse tags touch,
+as on F-List. Only actual source newlines add space between them, whether closed
+or expanded. No decorative preview spacing is inserted between sections.
+
 These are bundled palette snapshots, so previewing works offline. They do not
 load third-party stylesheets or change the surrounding editor. The Horizon DOM
 and Folio layout still differ from the website: full page chrome, legacy panel
