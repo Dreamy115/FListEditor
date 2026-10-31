@@ -65,4 +65,8 @@ On Windows with Microsoft Edge installed, run `python tests/check_template_edito
 
 Source extracted from the latest supplied `Folio-Profile-Studio-2026-10-31.html`. The editor has since gained whitespace-aware conversion, local preview tasks, and a Horizon-based renderer.
 
-Horizon-derived renderer files use MPL-2.0, with upstream notices retained in `vendor/horizon`. No license has been selected for the remaining Folio application code.
+## License and disclaimer
+
+Folio is licensed under the [Mozilla Public License 2.0](LICENSE.md). Horizon-derived renderer files also use MPL-2.0, with upstream notices retained in `vendor/horizon`.
+
+The software is provided "as is", without warranties of any kind, whether express, implied, or statutory, including warranties of merchantability, fitness for a particular purpose, and non-infringement. You assume the risks associated with its use, including loss of data. To the extent permitted by applicable law, contributors and distributors are not liable for damages or losses arising from use of the software. See Sections 6 and 7 of the license for the full disclaimer of warranty and limitation of liability, including applicable exceptions.
