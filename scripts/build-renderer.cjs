@@ -27,7 +27,8 @@ parser.addTag(new BBCodeTextTag('img', (p, parent, param, content) => {
     image.title = 'Edit preview mapping for F-List image #' + param + '. Local preview only; final inlines may look different.';
     image.setAttribute('role', 'button'); image.tabIndex = 0;
     image.setAttribute('aria-label', 'Edit image mapping for F-List image ' + param);
-    parent.appendChild(image); return image;
+    const block = document.createElement('div'); block.className = 'inline-image-block';
+    block.appendChild(image); parent.appendChild(block); return block;
   }
   if (parser.inlines?.[param]) return imageTag.createElement(p, parent, param, content);
   const url = safeURL(content);

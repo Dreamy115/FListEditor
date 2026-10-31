@@ -7,6 +7,45 @@
   const status = message => { $('localImageStatus').textContent = message; };
   $('manageImageMappings').addEventListener('click', () => $('localImagePanel').showModal());
   $('closeImageMappings').addEventListener('click', () => $('localImagePanel').close());
+  let pickerResolve = null;
+  function finishPick(id) {
+    const resolve = pickerResolve; pickerResolve = null;
+    $('inlineImagePicker').close(); resolve?.(id);
+  }
+  $('cancelInlineImage').addEventListener('click', () => finishPick(null));
+  $('inlineImagePicker').addEventListener('close', () => {
+    const resolve = pickerResolve; pickerResolve = null; resolve?.(null);
+  });
+  $('customInlineImageForm').addEventListener('submit', event => {
+    event.preventDefault();
+    const id = $('customInlineImageId').value.trim();
+    if (!/^[1-9]\d{0,19}$/.test(id)) {
+      $('inlineImagePickerStatus').textContent = 'Enter a positive numeric F-List image ID (up to 20 digits).';
+      $('customInlineImageId').setAttribute('aria-invalid', 'true'); return;
+    }
+    finishPick(id);
+  });
+  async function pick() {
+    await ready;
+    const list = $('mappedImageChoices'); list.replaceChildren();
+    $('customInlineImageId').value = '';
+    $('customInlineImageId').removeAttribute('aria-invalid');
+    $('inlineImagePickerStatus').textContent = '';
+    for (const record of records.values()) {
+      const button = document.createElement('button'); button.type = 'button'; button.className = 'mapped-image-choice';
+      const image = document.createElement('img'); image.src = record.url; image.alt = ''; image.loading = 'lazy';
+      const label = document.createElement('span');
+      const id = document.createElement('strong'); id.textContent = '#' + record.id;
+      const name = document.createElement('span'); name.textContent = record.name;
+      label.append(id, name); button.append(image, label);
+      button.setAttribute('aria-label', 'Insert F-List image ' + record.id);
+      button.addEventListener('click', () => finishPick(record.id)); list.append(button);
+    }
+    if (!records.size) {
+      const empty = document.createElement('p'); empty.textContent = 'No mapped images yet. Enter a custom ID below, or add preview images using Image mappings.'; list.append(empty);
+    }
+    return new Promise(resolve => { pickerResolve = resolve; $('inlineImagePicker').showModal(); });
+  }
   function openMapping(id) {
     const record = records.get(id);
     $('localImageId').value = id;
@@ -122,7 +161,7 @@
     changed();
   }).catch(() => { status('Browser image storage is unavailable. Attachments cannot be saved here.'); });
   globalThis.FolioLocalImages = {
-    get: id => records.get(id), get revision() { return revision; }, ready,
+    get: id => records.get(id), get revision() { return revision; }, ready, pick,
     clear: async () => { await ready; await storage(store => store.clear()); records.clear(); changed(); status('All preview attachments removed.'); }
   };
 })();

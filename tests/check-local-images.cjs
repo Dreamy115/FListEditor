@@ -38,6 +38,61 @@ const fs = require('node:fs/promises');
     const html = await page.evaluate(() => FolioScreenshot.html(document.getElementById('previewPage'),'Test'));
     assert.ok(html.includes(pixels), 'HTML embeds local image');
     assert.ok(await page.evaluate(async () => (await FolioScreenshot.capture(document.getElementById('previewPage'))).size > 1000));
+    await page.locator('#closeImageMappings').click();
+    await page.locator('#mixedMode').click();
+    const adjacent = '{img:12345|portrait}{img:12345}';
+    await page.locator('#source').fill(adjacent);
+    await page.waitForFunction(() => document.querySelectorAll('#preview .local-inline-image').length === 2);
+    const stacked = await page.locator('#preview .local-inline-image').evaluateAll(images => {
+      const [first,second] = images.map(image => image.getBoundingClientRect());
+      return first.height > 0 && second.top >= first.bottom;
+    });
+    assert.ok(stacked, 'Adjacent image macros stack vertically in the preview');
+    assert.equal(await page.locator('#source').inputValue(), adjacent, 'Preview stacking never adds source newlines');
+    await page.locator('#bbMode').click();
+    for (const theme of ['flist-blue','classic']) {
+      await page.locator('#theme').selectOption(theme);
+      for (const [outer,inner] of [['left','left'],['left','center'],['left','right'],['center','left'],['right','center']]) {
+        const code = `[${outer}][${inner}][img=12345][/img][img=12345][/img][/${inner}][/${outer}]`;
+        await page.locator('#source').fill(code);
+        await page.waitForFunction(() => document.querySelectorAll('#preview .local-inline-image').length === 2);
+        const valid = await page.locator('#preview .local-inline-image').evaluateAll((images, alignment) => {
+          const [first,second] = images.map(image => image.getBoundingClientRect());
+          const block = images[0].parentElement.getBoundingClientRect();
+          const position = alignment === 'left' ? first.left - block.left : alignment === 'right' ? block.right - first.right : (first.left + first.right - block.left - block.right) / 2;
+          return first.height > 0 && second.top >= first.bottom && Math.abs(position) < 1;
+        }, inner);
+        assert.ok(valid, `${theme}: stacked images follow ${inner} alignment inside ${outer}`);
+        assert.equal(await page.locator('#source').inputValue(), code);
+      }
+    }
+    for (const mixed of [false,true]) {
+      await page.locator(mixed ? '#mixedMode' : '#bbMode').click();
+      await page.locator('#source').fill('before label after');
+      await page.locator('#source').evaluate(element => element.setSelectionRange(7,12));
+      await page.locator('[data-insert="inlineimg"]').click();
+      await page.getByRole('button',{name:'Insert F-List image 12345',exact:true}).click();
+      assert.equal(await page.locator('#source').inputValue(), mixed ? 'before {img:12345|label} after' : 'before [img=12345]label[/img] after');
+      await page.locator('#undoEdit').click();
+      assert.equal(await page.locator('#source').inputValue(), 'before label after', 'Image insertion is one undo action');
+      await page.locator('#source').fill('');
+      await page.locator('[data-insert="inlineimg"]').click();
+      await page.locator('#customInlineImageId').fill('not-an-id');
+      await page.getByRole('button',{name:'Insert ID',exact:true}).click();
+      assert.equal(await page.locator('#inlineImagePicker').isVisible(), true);
+      assert.equal(await page.locator('#source').inputValue(), '');
+      await page.locator('#customInlineImageId').fill('98765');
+      await page.getByRole('button',{name:'Insert ID',exact:true}).click();
+      assert.equal(await page.locator('#source').inputValue(), mixed ? '{img:98765}' : '[img=98765][/img]');
+      await page.locator('[data-insert="inlineimg"]').click();
+      await page.keyboard.press('Escape');
+      assert.equal(await page.locator('#source').inputValue(), mixed ? '{img:98765}' : '[img=98765][/img]', 'Cancel leaves source unchanged');
+    }
+    await page.locator('#bbMode').click(); await page.locator('#source').fill(source);
+    await page.waitForFunction(expected => {
+      const saved = JSON.parse(localStorage.getItem('folio-f-list-studio-v1'));
+      return saved?.mixed === false && saved.drafts.find(draft => draft.id === saved.active)?.content === expected;
+    }, source);
     await page.reload(); await page.evaluate(() => FolioLocalImages.ready);
     await page.waitForFunction(() => document.querySelector('#preview .local-inline-image'));
     assert.equal(await page.locator('#source').inputValue(), source, 'Source survives reload unchanged');

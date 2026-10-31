@@ -980,7 +980,7 @@ $('previewFontSize').addEventListener('input',e=>{
  $('preview').style.fontSize=size==='site'?'':size+'px';$('previewPage').style.setProperty('--horizon-rem',(size==='site'?'16':size)+'px');persist();
 });
 $('previewFontSize').addEventListener('change',setPreviewFontSize);
-// All toolbar insertion tools edit the source directly, with no prompt or modal.
+// Inline images use a picker; other insertion tools edit the source directly.
 const insertionSpecs={
  link:{prefix:'[url=https://example.com]',suffix:'[/url]',fallback:'link text',select:'https://example.com'},
  image:{prefix:'[img]',suffix:'[/img]',fallback:'https://example.com/image.png'},
@@ -1001,8 +1001,9 @@ const markdownInsertionSpecs={
  eicon:{prefix:'{eicon:',suffix:'}',fallback:'eicon-name'},
  noparse:{prefix:'`',suffix:'`',fallback:'literal **text**'}
 };
-function insertTag(type){
+function insertTag(type,imageId='12345'){
  let spec=(data.mixed?markdownInsertionSpecs:insertionSpecs)[type];if(!spec)return;
+ if(type==='inlineimg')spec={...spec,prefix:spec.prefix.replace('12345',imageId),select:imageId};
  const s=source.selectionStart,e=source.selectionEnd,chosen=source.value.slice(s,e);
  if(data.mixed&&type==='inlineimg'&&chosen)spec={...spec,prefix:spec.prefix+'|'};
  if(data.mixed&&type==='noparse'){
@@ -1016,7 +1017,13 @@ function insertTag(type){
  replaceRange(text,s,e,at<0?s+text.length:s+at,at<0?s+text.length:s+at+target.length);
 }
 
-document.querySelectorAll('[data-insert]').forEach(btn=>btn.addEventListener('click',()=>insertTag(btn.dataset.insert)));
+document.querySelectorAll('[data-insert]').forEach(btn=>btn.addEventListener('click',async()=>{
+ if(btn.dataset.insert!=='inlineimg'){insertTag(btn.dataset.insert);return}
+ const start=source.selectionStart,end=source.selectionEnd;
+ const id=await FolioLocalImages.pick();
+ if(!id)return;
+ source.setSelectionRange(start,end);insertTag('inlineimg',id);
+}));
 // A searchable reference that stays inside the editor rather than blocking it.
 const guideExamples=[
  ['Basics','Bold and italics','Mix emphasis in a sentence','**Bold**, *italic*, and ***both***.'],

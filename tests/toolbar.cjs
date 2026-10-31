@@ -60,3 +60,14 @@ for(const [tag,markdown,bbcode] of [
 data.mixed=true;reset('First\nSecond');context.wrapInline('heading2');
 assert.equal(context.markdownToBB(source.value),'[heading]First\nSecond[/heading]');
 console.log('H2 and alignment toolbar checks passed');
+
+for(const mixed of [true,false]){
+ data.mixed=mixed;
+ for(const type of ['inlineimg','image']){
+  reset();context.insertTag(type);
+  assert.ok(!source.value.endsWith('\n'), 'Image insertion must not add source newlines');
+  const image=source.value;
+  reset('after');source.selectionEnd=0;context.insertTag(type);
+  assert.equal(source.value,image+'after','Following source text is unchanged');
+ }
+}

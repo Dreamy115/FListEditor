@@ -73,7 +73,7 @@
  <button class="pill" data-insert="user">@ Character link</button>
  <button class="pill" data-insert="eicon">✿ Eicon</button>
   <button class="pill" data-insert="icon">◈ Avatar icon</button>
-  <button class="pill" data-insert="inlineimg">▣ F-List image ID</button>
+  <button class="pill" data-insert="inlineimg" aria-haspopup="dialog" aria-controls="inlineImagePicker">▣ F-List image ID</button>
   <button class="pill" data-insert="noparse">{ } Literal text</button>
 
  <button class="pill" id="guideBtn" aria-expanded="false" aria-controls="guidePanel">? Examples &amp; macros</button>
@@ -101,10 +101,19 @@
 </section>
 </div>
 
+ <dialog class="local-images" id="inlineImagePicker" aria-labelledby="inlineImagePickerTitle">
+  <div class="local-image-heading"><h2 id="inlineImagePickerTitle">Insert F-List image</h2><button type="button" class="btn" id="cancelInlineImage">Cancel</button></div>
+  <p>Choose a mapped image or enter a custom F-List image ID. Only the ID is inserted into your source; mappings are local preview overrides and final F-List inlines may look different.</p>
+  <h3 class="mapped-image-heading">Mapped images</h3><div id="mappedImageChoices" class="mapped-image-choices" role="group" aria-label="Mapped images"></div>
+  <form id="customInlineImageForm"><div class="local-image-fields"><label for="customInlineImageId">Custom F-List image ID<input id="customInlineImageId" type="text" inputmode="numeric" maxlength="20" placeholder="12345" aria-describedby="customInlineImageHelp inlineImagePickerStatus"></label><button type="submit" class="btn">Insert ID</button></div></form>
+  <p id="customInlineImageHelp">Find the ID using <strong>Insert inline</strong> in F-List's built-in profile editor. Copy the number from <code>[img=12345][/img]</code>. A custom ID does not require a preview mapping.</p>
+  <p id="inlineImagePickerStatus" role="status"></p>
+ </dialog>
  <dialog class="local-images" id="localImagePanel" aria-labelledby="localImageTitle">
   <div class="local-image-heading"><h2 id="localImageTitle">Inline image mappings</h2><button type="button" class="btn" id="closeImageMappings">Close</button></div>
   <p id="localImageHelp"><strong>Preview only: no F-List login or upload.</strong> Attach a file or image URL to an existing F-List image ID. Local files stay in this browser; URL images load from their host. These attachments do not update F-List or verify the ID. <strong>Final inlines on F-List may differ in size, layout or content from this preview.</strong> Your source code is never changed. BBCode keeps the original ID.</p>
-  <div class="local-image-fields"><label for="localImageId">F-List image ID<input id="localImageId" type="text" inputmode="numeric" placeholder="12345" maxlength="20" aria-describedby="localImageHelp"></label><button type="button" class="btn" id="attachLocalImage">Attach local file</button><input type="file" id="localImageFile" accept="image/png,image/jpeg,image/gif,image/webp" hidden></div>
+  <div id="localImageIdHelp" class="image-id-tip"><strong class="image-id-tip-title">Where to find your image ID</strong><p>Open F-List's built-in profile editor and use <strong>Insert inline</strong>. Copy the number from the inserted code, for example <code>12345</code> from <code>[img=12345][/img]</code>.</p></div>
+  <div class="local-image-fields"><label for="localImageId">F-List image ID<input id="localImageId" type="text" inputmode="numeric" placeholder="12345" maxlength="20" aria-describedby="localImageHelp localImageIdHelp"></label><button type="button" class="btn" id="attachLocalImage">Attach local file</button><input type="file" id="localImageFile" accept="image/png,image/jpeg,image/gif,image/webp" hidden></div>
   <div class="local-image-fields"><label for="localImageUrl">Image URL<input id="localImageUrl" type="url" placeholder="https://example.com/image.png" aria-describedby="localImageHelp"></label><button type="button" class="btn" id="attachImageUrl">Attach URL</button></div>
   <p>One attachment per ID, shared across this browser's characters and templates. Attaching again replaces it. Files: PNG, JPEG, GIF or WebP, up to 8 MB. Attachments are separate from JSON backups; HTML exports embed local files, while URL images remain remote. Remote hosts may block images or exclude them from PNG exports.</p>
   <p id="localImageStatus" role="status">Attachments are saved only in this browser.</p>
