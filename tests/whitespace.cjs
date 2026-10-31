@@ -13,7 +13,7 @@ const cases = [
   ['intentional blanks', '\n:::center\n\nInside\n\n:::\n\nAfter\n', '[center]\nInside\n[/center]\nAfter\n'],
   ['adjacent blocks', ':::big\nOne\n:::\n:::small\nTwo\n:::', '[big]One[/big][small]Two[/small]'],
   ['fenced literal', '```\n**literal**\n\n  indented  \n```', '[noparse]**literal**\n\n  indented  [/noparse]'],
-  ['raw literal', '[noparse]\n**literal**\n[/noparse]', '[noparse]\n**literal**\n[/noparse]'],
+  ['raw brackets', '[b]text[/b]', '[noparse][b][/noparse]text[noparse][/b][/noparse]'],
   ['content whitespace', '  First  \r\n\r\nSecond\r\n', '  First  \n\nSecond\n'],
   ['unclosed block', ':::center\nText', '[center]Text[/center]'],
   ['invalid color', ':::color nope\nText\n:::', 'Text'],

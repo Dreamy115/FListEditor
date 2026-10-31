@@ -3,7 +3,7 @@
   // Highlight source without parsing it into editable HTML or changing whitespace.
   function lex(text, mixed) {
     const pattern = mixed
-      ? /```[^\n]*(?:\n[\s\S]*?(?:\n[ \t]*```[^\n]*|(?![\s\S])))?|\[noparse\][\s\S]*?(?:\[\/noparse\]|(?![\s\S]))|\{noparse\|[^}\n]*\}|`[^`\n]*`|\\[^\n]|\\$|^[ \t]*>[^\n]*|^[ \t]*:::[^\n]*|^[ \t]*#{1,6}[ \t]+|^[ \t]*(?:-{3,}|\*{3,}|_{3,})[ \t]*$|^[ \t]*(?:>[ \t]?|[-*+][ \t]+|\d+\.[ \t]+)|!?\[[^\]\n]*\]\(https?:\/\/[^\s)]+\)|\[\/?[a-z]+(?:=[^\]\n]*)?\]|\{[a-z]+(?::[^|}\n]*)?(?:\||\})|\}|\*{1,3}[^*\n]+\*{1,3}|__[^_\n]+__|_[^_\n]+_|~~[^~\n]+~~|\+\+[^+\n]+\+\+/gim
+      ? /```[^\n]*(?:\n[\s\S]*?(?:\n[ \t]*```[^\n]*|(?![\s\S])))?|\{noparse\|[^}\n]*\}|`[^`\n]*`|\\[^\n]|\\$|^[ \t]*>[^\n]*|^[ \t]*:::[^\n]*|^[ \t]*#{1,6}[ \t]+|^[ \t]*(?:-{3,}|\*{3,}|_{3,})[ \t]*$|^[ \t]*(?:>[ \t]?|[-*+][ \t]+|\d+\.[ \t]+)|!?\[[^\]\n]*\]\(https?:\/\/[^\s)]+\)|\[\/?[a-z]+(?:=[^\]\n]*)?\]|\{[a-z]+(?::[^|}\n]*)?(?:\||\})|\}|\*{1,3}[^*\n]+\*{1,3}|__[^_\n]+__|_[^_\n]+_|~~[^~\n]+~~|\+\+[^+\n]+\+\+/gim
       : /\[noparse\][\s\S]*?(?:\[\/noparse\]|(?![\s\S]))|\[\/?[a-z]+(?:=[^\]\n]*)?\]/gi;
     const tokens = [];
     let last = 0;
@@ -39,7 +39,7 @@
       else if (/^[ \t]*:::/.test(value)) kind = 'block';
       else if (value.startsWith('{') || value === '}') kind = 'macro';
       else if (/^!?\[.*\]\(https?:/i.test(value)) kind = 'link';
-      else if (value.startsWith('[')) kind = 'tag';
+      else if (value.startsWith('[')) kind = mixed ? 'literal' : 'tag';
       else if (/^[ \t]*(?:#|>|[-*+]|\d+\.)/.test(value)) kind = 'marker';
       const marker = kind === 'marker' ? (/^[ \t]*#/.test(value) ? 'heading' : /^[ \t]*>/.test(value) ? 'quote' : 'list') : undefined;
       const inlineColor = mixed && value.match(/^\{color:\s*([a-z]+)\s*\|$/i);

@@ -51,18 +51,21 @@
  <button class="tool" data-wrap="s" title="Strikethrough"><s>S</s></button>
  <span class="sep"></span>
  <button class="tool tool-label" data-wrap="heading" title="Large heading (#)">H1</button>
+ <button class="tool tool-label" data-wrap="heading2" title="Heading (##)" aria-label="Heading level 2">H2</button>
  <button class="tool" data-wrap="big" title="Larger text">A+</button>
  <button class="tool" data-wrap="small" title="Smaller text" style="font-size:11px">A−</button>
- <button class="tool" data-wrap="sup" title="Superscript">x<sup>n</sup></button>
- <button class="tool" data-wrap="sub" title="Subscript">x<sub>n</sub></button>
+ <button class="tool script-tool" data-wrap="sup" title="Superscript" aria-label="Superscript"><span class="script-icon" aria-hidden="true">x<sup>2</sup></span></button>
+ <button class="tool script-tool" data-wrap="sub" title="Subscript" aria-label="Subscript"><span class="script-icon" aria-hidden="true">x<sub>2</sub></span></button>
  <span class="sep"></span>
  <button class="tool" data-wrap="center" title="Center alignment">☷</button>
+ <button class="tool tool-label" data-wrap="right" title="Right alignment" aria-label="Right alignment">Right</button>
+ <button class="tool tool-label" data-wrap="justify" title="Justified alignment" aria-label="Justified alignment">Justify</button>
+ <button type="button" class="tool" data-action="divider" title="Insert divider" aria-label="Insert divider">&mdash;</button>
  <button class="tool" data-wrap="quote" title="Block quote (>)">❝</button>
- <button class="tool" data-action="hr" title="Horizontal rule">―</button>
  <span class="sep"></span>
+ <button type="button" class="tool" id="fontBtn" title="Unicode text fonts" aria-label="Choose a text font" aria-expanded="false" aria-controls="fontPalette">Font &#9662;</button>
  <button class="tool" id="colorBtn" title="F-List text color presets" aria-label="Choose an F-List color" aria-expanded="false" aria-controls="colorPalette"><span class="color-swatch" style="--swatch:purple"></span><span style="font-size:11px">▾</span></button>
  <button class="tool" data-insert="link" title="Insert link">↗</button>
- <button class="tool" data-insert="image" title="Insert image">▧</button>
  </div>
  <div class="toolbar-row secondrow">
  <button class="pill" id="openTemplateManager">My templates</button>
@@ -72,14 +75,14 @@
   <button class="pill" data-insert="icon">◈ Avatar icon</button>
   <button class="pill" data-insert="inlineimg">▣ F-List image ID</button>
   <button class="pill" data-insert="noparse">{ } Literal text</button>
- <button class="pill" data-action="divider">＋ Divider</button>
- <button class="pill" data-action="details">＋ Info row</button>
+
  <button class="pill" id="guideBtn" aria-expanded="false" aria-controls="guidePanel">? Examples &amp; macros</button>
  </div>
+ <div id="fontPalette" class="color-palette" hidden aria-label="Unicode text fonts"></div>
  <div id="colorPalette" class="color-palette" hidden aria-label="F-List named text colors"></div>
  </div>
  <div id="confirmBar" class="confirmbar" hidden><span id="confirmText"></span><button type="button" class="btn primary" id="confirmYes">Confirm</button><button type="button" class="btn" id="confirmNo">Cancel</button></div>
-<section id="guidePanel" class="guide-panel" hidden aria-label="Formatting guide"><div class="guide-head"><div><strong>Formatting &amp; macro cookbook</strong><p>Block macro markers (:::) and dividers (---) absorb the adjacent source newline. Add a blank line beside a marker for a visible break. Ordinary prose newlines remain visible. All templates are Markdown-first. Insert examples, nest macros, and export regular F-List BBCode. Only 12 named F-List colors are supported; legacy hex values are mapped to the nearest preset. Switching modes converts the source in both directions.</p></div><button type="button" class="guide-close" id="closeGuide" aria-label="Close guide">×</button></div><div class="guide-tools"><input id="guideSearch" type="search" aria-label="Search formatting examples" placeholder="Search examples, tags, macros…"><div id="guideTabs" class="guide-tabs"></div></div><div id="guideExamples" class="guide-examples"></div></section>
+<section id="guidePanel" class="guide-panel" hidden aria-label="Formatting guide"><div class="guide-head"><div><strong>Formatting &amp; macro cookbook</strong><p>Block macro markers (:::) and dividers (---) absorb the adjacent source newline. Add a blank line beside a marker for a visible break. Ordinary prose newlines remain visible. All templates use Markdown and macros. Square-bracket BBCode is literal here; use BBCode mode for raw tags. Insert examples, nest macros, and export regular F-List BBCode. Only 12 named F-List colors are supported; legacy hex values are mapped to the nearest preset. Switching modes converts the source in both directions.</p></div><button type="button" class="guide-close" id="closeGuide" aria-label="Close guide">×</button></div><div class="guide-tools"><input id="guideSearch" type="search" aria-label="Search formatting examples" placeholder="Search examples, tags, macros…"><div id="guideTabs" class="guide-tabs"></div></div><div id="guideExamples" class="guide-examples"></div></section>
 <div class="sourcebar"><div><div><span id="modeHint">Markdown and custom macros. Switch to BBCode to compile; switch back to decompile.</span></div></div><div class="seg"><button id="mixedMode" class="active" title="Switch to Markdown+ and decompile the current BBCode">Markdown+</button><button id="bbMode" title="Switch to BBCode and compile the current Markdown+">BBCode</button></div></div>
 
  <div class="editorwrap"><div class="editor-shell"><div id="sourceGutter" class="source-gutter" aria-hidden="true"><div id="sourceLineNumbers"></div></div><div id="sourceSectionTint" class="source-section-tint" aria-hidden="true" hidden><div class="source-section-band"></div></div><pre id="sourceHighlight" class="editor-highlights" aria-hidden="true"></pre><textarea class="editor" id="source" spellcheck="true" aria-label="Profile description source" placeholder="Start writing your character's story…"></textarea></div></div>

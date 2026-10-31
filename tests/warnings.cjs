@@ -18,7 +18,7 @@ assert.match(warnings('[b][i]text[/b][/i]')[0], /Misnested/);
 assert.deepEqual(warnings('[b]text[/i]'), ['Unmatched [/i]', 'Unclosed [b]']);
 assert.deepEqual(warnings('[noparse][table]'), ['Unclosed [noparse]']);
 assert.deepEqual(warnings('::: literal [CUSTOM]text[/CUSTOM]'), ['[custom] is not supported by F-List profiles']);
-assert.deepEqual(warnings(context.markdownToBB('**Good** [table]Bad[/table]')), ['[table] is not supported by F-List profiles']);
+assert.deepEqual(warnings(context.markdownToBB('**Good** [table]Bad[/table]')), []);
 assert.deepEqual(warnings(context.markdownToBB('`[table]literal[/table]`')), []);
 context.updateWarnings(['[table] is not supported by F-List profiles']);
 assert.ok(document.getElementById('warningDetails').classList.contains('has-issues'));
@@ -34,12 +34,12 @@ for (const color of ['red','orange','yellow','green','cyan','purple','blue','pin
   assert.deepEqual(colorWarnings(`[color=${color}]text[/color] {color:${color}|text}\n:::color ${color}\ntext\n:::`), []);
 }
 for (const color of ['rebeccapurple', '#ff0000', 'rgb(255, 0, 0)', 'var(--color)', '']) {
-  assert.equal(colorWarnings(`[color=${color}]text[/color]`).length, 1);
+  assert.equal(colorWarnings(`[color=${color}]text[/color]`, false).length, 1);
   assert.equal(colorWarnings(`{color:${color}|text}`).length, 1);
   assert.equal(colorWarnings(`:::color ${color}\ntext\n:::`).length, 1);
 }
-assert.match(colorWarnings('[color=#ff0000]text[/color]')[0], /exported as red/);
-assert.match(colorWarnings('[color]text[/color]')[0], /missing value/);
+assert.match(colorWarnings('[color=#ff0000]text[/color]', false)[0], /exported as red/);
+assert.match(colorWarnings('[color]text[/color]', false)[0], /missing value/);
 assert.match(warnings('[color=teal]text[/color]')[0], /not supported/);
 assert.deepEqual(colorWarnings('[noparse][color=teal][/noparse]'), []);
 assert.deepEqual(colorWarnings('`{color:teal|example}`'), []);
@@ -47,7 +47,7 @@ assert.deepEqual(colorWarnings('```\n[color=teal]example[/color]\n```'), []);
 assert.deepEqual(colorWarnings('```\n[color=teal]example'), []);
 assert.equal(colorWarnings('`[color=teal]`', false).length, 1);
 assert.deepEqual(colorWarnings('{color:teal|plain text}', false), []);
-assert.equal(colorWarnings('[color=teal]a[/color][color=teal]b[/color]').length, 1);
+assert.equal(colorWarnings('[color=teal]a[/color][color=teal]b[/color]', false).length, 1);
 console.log('Unsupported color warning checks passed');
 const macroWarnings = text => Array.from(context.macroWarnings(text));
 for (const input of ['{typo|text}', '{b}', '{link:javascript:alert(1)|click}', '{img:invalid}', '{user:Name|unexpected}', '{b|{typo|nested}}', ':::typo\ntext\n:::', ':::center unexpected\ntext', ':::bad-name\ntext', ':::']) {
@@ -55,7 +55,7 @@ for (const input of ['{typo|text}', '{b}', '{link:javascript:alert(1)|click}', '
 }
 assert.match(macroWarnings('{b|unfinished')[0], /Unclosed inline macro/);
 assert.match(macroWarnings(':::center\ntext')[0], /Unclosed block macro/);
-for (const input of ['{b|bold}', '{b|{i|nested}}', '{link:https://example.com|link}', '{img:123|label}', '{user:Name}', '{br}', '{hr}', ':::center\ntext\n:::', '`{typo|literal}`', '```\n{typo|literal}\n:::bad\n```', '[noparse]{typo|literal}[/noparse]', '{noparse|{typo|literal}}', '\\{typo|literal\\}']) {
+for (const input of ['{b|bold}', '{b|{i|nested}}', '{link:https://example.com|link}', '{img:123|label}', '{user:Name}', '{br}', '{hr}', ':::center\ntext\n:::', '`{typo|literal}`', '```\n{typo|literal}\n:::bad\n```', '{noparse|{typo|literal}}', '\\{typo|literal\\}']) {
   assert.deepEqual(macroWarnings(input), [], input);
 }
 const invalidMacro = '{link:invalid|text}';
@@ -69,7 +69,8 @@ assert.equal(located[0].end, 15);
 located = locate('Good\n[color=teal]bad[/color]', false);
 assert.equal(located[0].line, 2);
 assert.equal(located[0].start, 5);
-located = locate('# Heading\n\n[table]bad[/table]');
+assert.deepEqual(locate('# Heading\n\n[table]bad[/table]'), []);
+located = locate('# Heading\n\n[table]bad[/table]', false);
 assert.equal(located[0].line, 3);
 assert.equal(located[0].start, 11);
 assert.deepEqual(locate('`{typo|bad}`\n[noparse][table][/noparse]'), []);
@@ -107,7 +108,7 @@ assert.match(issues[0].message, /does not accept an argument/);
 assert.equal(issues[0].line, 2); // Root input error precedes the outer unclosed block.
 assert.match(issues[1].message, /Unclosed block/);
 assert.deepEqual(locate('```\n:::bad\n:::\n```'), []);
-assert.deepEqual(locate('[noparse]\n:::bad\n:::\n[/noparse]'), []);
+assert.ok(locate('[noparse]\n:::bad\n:::\n[/noparse]').length>0);
 assert.deepEqual(locate(':::collapse Title\n:::center\ntext\n:::\n:::'), []);
 // The editor and footer consume the same source ranges, including plain text.
 vm.runInContext(fs.readFileSync('src/syntax.js','utf8'), context);
@@ -137,7 +138,7 @@ for (const closing of ['::','::::']) {
   assert.match(diagnostics[0].message,/Malformed block macro closing marker/);
 }
 
-for(const input of ['![Portrait](https://example.com/image.png)', '{img:https://example.com/image.png}', '{image:https://example.com/image.png}', '[img]https://example.com/image.png[/img]', '[img=https://example.com/image.png]Portrait[/img]']){
+for(const input of ['![Portrait](https://example.com/image.png)', '{img:https://example.com/image.png}', '{image:https://example.com/image.png}']){
  const compiled=context.markdownToBB(input);
  assert.ok(warnings(compiled).some(message=>message.startsWith('External image URLs ')),input);
  const located=Array.from(context.locatedWarnings('Intro\n'+input,true,context.markdownToBB('Intro\n'+input)));
@@ -148,3 +149,17 @@ assert.deepEqual(warnings('[noparse][img]https://example.com/image.png[/img][/no
 assert.deepEqual(warnings(context.markdownToBB('`{img:https://example.com/image.png}`')),[]);
 assert.ok(!source.includes("['Basics','Image from URL'"));
 console.log('External image URL warning and source navigation checks passed');
+
+for(const input of ['{font:smallcaps|outer {font:bold|inner}}','{font:bold|{color:purple|{font:monospace|inner}}}']){
+ assert.ok(Array.from(context.macroWarnings(input)).some(message=>message.startsWith('Nested font macros')));
+ const issue=Array.from(context.locatedWarnings('Intro\n'+input,true,context.markdownToBB('Intro\n'+input))).find(issue=>issue.message.startsWith('Nested font macros'));
+ assert.ok(issue);assert.equal(issue.line,2);assert.ok(issue.start>6);
+}
+for(const input of ['{font:bold|First} {font:smallcaps|Second}','{color:purple|{font:bold|Text}}','`{font:bold|{font:smallcaps|literal}}`','{font:bold|{noparse|{font:smallcaps|literal}}}']){
+ assert.ok(!Array.from(context.macroWarnings(input)).some(message=>message.startsWith('Nested font macros')),input);
+}
+console.log('Nested font macro warning checks passed');
+
+for(const input of [':::font bold\n{font:italic|Nested}\n:::',':::font bold\n:::font italic\nNested\n:::\n:::'])assert.ok(locate(input).some(issue=>issue.message.startsWith('Nested font macros')),input);
+assert.deepEqual(locate(':::font bold\nfirst\nsecond\n:::'),[]);
+assert.ok(locate(':::font invalid\nText\n:::').some(issue=>issue.message.includes('supported font')));

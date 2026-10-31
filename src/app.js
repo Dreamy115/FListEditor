@@ -236,6 +236,7 @@ function updateMode(){
 function wrapInline(tag,placeholder='your text'){
  const s=source.selectionStart,e=source.selectionEnd,selected=source.value.slice(s,e)||placeholder;
  let prefix='['+tag+']',suffix='[/'+tag.split('=')[0]+']',block=false;
+ if(tag==='heading2'){prefix='[heading]';suffix='[/heading]'}
  if(tag==='heading'){prefix='[heading][big]';suffix='[/big][/heading]'}
  if(data.mixed){
   if(tag==='quote'){
@@ -246,10 +247,12 @@ function wrapInline(tag,placeholder='your text'){
   }
   const marks={b:'**',i:'*',u:'++',s:'~~'};
   if(marks[tag]&&!selected.includes('\n')){prefix=marks[tag];suffix=marks[tag]}
+  else if(tag==='heading2'&&!selected.includes('\n')){prefix='## ';suffix='';block=true}
+  else if(tag==='heading2'){prefix=':::heading\n';suffix='\n:::';block=true}
   else if(tag==='heading'&&!selected.includes('\n')){prefix='# ';suffix='';block=true}
   else if(tag==='big'&&!selected.includes('\n')){prefix='{big|';suffix='}'}
   else if(tag==='heading'){prefix=':::heading\n:::big\n';suffix='\n:::\n:::';block=true}
-  else if(tag==='center'||selected.includes('\n')){prefix=':::'+tag+'\n';suffix='\n:::';block=true}
+  else if(['center','right','justify'].includes(tag)||selected.includes('\n')){prefix=':::'+tag+'\n';suffix='\n:::';block=true}
   else{prefix='{'+tag+'|';suffix='}'}
  }
  const lead=block&&s>0&&source.value[s-1]!=='\n'?'\n':'';
@@ -260,8 +263,66 @@ function replaceRange(text,s=source.selectionStart,e=source.selectionEnd,selStar
 function addLine(text){const s=source.selectionStart,e=source.selectionEnd,lead=s>0&&source.value[s-1]!=='\n'?'\n':'',tail=e<source.value.length&&source.value[e]!=='\n'?'\n':'';replaceRange(lead+text+tail,s,e,s+lead.length+text.length,s+lead.length+text.length)}
 function getCompiled(){return normalizeColorTags(data.mixed?markdownToBB(source.value):source.value)}
 // Extended Markdown compiles to the ordinary F-List tags, never custom tags in the export.
-const macroInlineNames=new Set(['color','b','i','s','big','small','u','underline','sup','sub','user','icon','eicon','img','image','link','noparse','br','heading','hr']);
-const macroBlockNames=new Set(['center','left','right','justify','indent','quote','collapse','big','small','color','heading','b','i','u','s']);
+const macroInlineNames=new Set(['center','left','right','justify','indent','quote','collapse','font','color','b','i','s','big','small','u','underline','sup','sub','user','icon','eicon','img','image','link','noparse','br','heading','hr']);
+const macroBlockNames=new Set(['font','center','left','right','justify','indent','quote','collapse','big','small','color','heading','b','i','u','s']);
+// Unicode alphabets export as ordinary text, without unsupported [font] tags.
+const fontAlphabet='ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+function unicodeAlphabet(upper,lower,digits=null,exceptions={}){
+ return [...fontAlphabet].map((char,index)=>exceptions[char]||String.fromCodePoint(index<26?upper+index:index<52?lower+index-26:digits===null?char.codePointAt(0):digits+index-52));
+}
+const fontStyles={
+ smallcaps:{label:'Small caps',chars:[...('ABCDEFGHIJKLMNOPQRSTUVWXYZ\u1d00\u0299\u1d04\u1d05\u1d07\ua730\u0262\u029c\u026a\u1d0a\u1d0b\u029f\u1d0d\u0274\u1d0f\u1d18\ua7af\u0280\ua731\u1d1b\u1d1c\u1d20\u1d21x\u028f\u1d22'+'0123456789')]},
+ bold:{label:'Bold Unicode',chars:[...Array.from({length:26},(_,i)=>String.fromCodePoint(0x1d400+i)),...Array.from({length:26},(_,i)=>String.fromCodePoint(0x1d41a+i)),...Array.from({length:10},(_,i)=>String.fromCodePoint(0x1d7ce+i))]},
+ doublestruck:{label:'Double-struck',chars:[...Array.from({length:26},(_,i)=>({2:'\u2102',7:'\u210d',13:'\u2115',15:'\u2119',16:'\u211a',17:'\u211d',25:'\u2124'}[i]||String.fromCodePoint(0x1d538+i))),...Array.from({length:26},(_,i)=>String.fromCodePoint(0x1d552+i)),...Array.from({length:10},(_,i)=>String.fromCodePoint(0x1d7d8+i))]},
+ italic:{label:'Italic Unicode',chars:unicodeAlphabet(0x1d434,0x1d44e,null,{h:'\u210e'})},
+ bolditalic:{label:'Bold italic Unicode',chars:unicodeAlphabet(0x1d468,0x1d482)},
+ sans:{label:'Sans serif',chars:unicodeAlphabet(0x1d5a0,0x1d5ba,0x1d7e2)},
+ sansbold:{label:'Sans serif bold',chars:unicodeAlphabet(0x1d5d4,0x1d5ee,0x1d7ec)},
+ fraktur:{label:'Fraktur',chars:unicodeAlphabet(0x1d504,0x1d51e,null,{C:'\u212d',H:'\u210c',I:'\u2111',R:'\u211c',Z:'\u2128'})},
+ monospace:{label:'Monospace',chars:[...Array.from({length:26},(_,i)=>String.fromCodePoint(0x1d670+i)),...Array.from({length:26},(_,i)=>String.fromCodePoint(0x1d68a+i)),...Array.from({length:10},(_,i)=>String.fromCodePoint(0x1d7f6+i))]},
+ fullwidth:{label:'Fullwidth',chars:[...fontAlphabet].map(c=>String.fromCodePoint(c.charCodeAt(0)+0xfee0))}
+};
+function applyFont(text,name){
+ const style=fontStyles[name];if(!style)return text;
+ // Preserve BBCode parameters, URLs, image labels and literal text.
+ return text.split(/(\[noparse\][\s\S]*?\[\/noparse\]|\[(?:url|img|user|icon|eicon)(?:=[^\]]*)?\][\s\S]*?\[\/(?:url|img|user|icon|eicon)\]|\[[^\]\n]*\])/gi).map((part,i)=>i%2?part:[...part].map(c=>{const index=fontAlphabet.indexOf(c);return index<0?c:style.chars[index]}).join('')).join('');
+}
+function decompileFonts(text,escapePlain){
+ const plain=value=>escapePlain?escapePlainMarkdown(value):value;
+ const reverse=new Map();
+ for(const [name,style] of Object.entries(fontStyles))style.chars.forEach((char,i)=>{if(char!==fontAlphabet[i])reverse.set(char,{name,char:fontAlphabet[i]})});
+ let result='',buffer='',style=null;
+ const flush=()=>{if(buffer)result+=style?'{font:'+style+'|'+plain(buffer)+'}':plain(buffer);buffer=''};
+ // Only decode characters uniquely belonging to a known alphabet. Ordinary
+ // letters beside small caps may be unrelated text and must stay untouched.
+ const chars=[...text];
+ if(text.includes('\n')){
+  const names=new Set(chars.map(char=>reverse.get(char)?.name).filter(Boolean));
+  if(names.size===1){const name=[...names][0],decoded=chars.map(char=>reverse.get(char)?.char||char).join('');
+   if(applyFont(decoded,name)===text)return '\uE006:::font '+name+'\n'+plain(decoded)+'\n:::\uE007';
+  }
+ }
+
+ for(let index=0;index<chars.length;index++){
+  const char=chars[index];
+  // Bridge unchanged characters only between runs of the same font. This
+  // includes small-cap x, capitals and punctuation, without changing output
+  // or taking leading/trailing plain text into the macro.
+  if(style&&!reverse.has(char)&&char!=='\n'&&char!=='\r'){
+   let end=index;
+   while(end<chars.length&&!reverse.has(chars[end])&&chars[end]!=='\n'&&chars[end]!=='\r'){
+    const alphabetIndex=fontAlphabet.indexOf(chars[end]);
+    if(alphabetIndex>=0&&fontStyles[style].chars[alphabetIndex]!==chars[end])break;
+    end++;
+   }
+   if(end>index&&reverse.get(chars[end])?.name===style){buffer+=chars.slice(index,end).join('');index=end-1;continue}
+  }
+  const entry=reverse.get(char),next=entry?.name||null;
+  if(next!==style){flush();style=next}
+  buffer+=entry?.char||char;
+ }
+ flush();return result;
+}
 // F-List accepts exactly these twelve named colors, not arbitrary CSS hex codes.
 const presetColors={
  red:'#f00',orange:'#f60',yellow:'#ff0',green:'#0f0',
@@ -297,23 +358,34 @@ function colorWarning(value){
 function colorWarnings(text,mixed=true){
  const issues=[];
  // Literal examples are not color definitions.
- text=text.replace(/\[noparse\][\s\S]*?(?:\[\/noparse\]|$)/gi,'');
+ if(!mixed)text=text.replace(/\[noparse\][\s\S]*?(?:\[\/noparse\]|$)/gi,'');
  if(mixed)text=text.replace(/^\s*```[^\n]*\n[\s\S]*?(?:^\s*```[^\n]*(?:\n|$)|(?![\s\S]))/gm,'').replace(/`[^`\n]+`/g,'');
  const check=value=>{const warning=colorWarning(value);if(warning)issues.push(warning)};
- for(const m of text.matchAll(/\[color(?:=([^\]\n]*))?\]/gi))check(m[1]);
+ if(!mixed)for(const m of text.matchAll(/\[color(?:=([^\]\n]*))?\]/gi))check(m[1]);
  if(mixed){
   for(const m of text.matchAll(/\{color(?::([^|}\n]*))?\|/gi))check(m[1]);
   for(const m of text.matchAll(/^\s*:::color(?:[ \t]+([^\n]*))?$/gmi))check(m[1]);
  }
  return [...new Set(issues)];
 }
+function numericCharacterReference(reference){
+ const match=reference.match(/^&#(?:x([0-9a-f]+)|([0-9]+));$/i);
+ if(!match)return null;
+ const code=parseInt(match[1]||match[2],match[1]?16:10);
+ if(!Number.isSafeInteger(code)||code<0x20||code>0x10ffff||(code>=0x7f&&code<=0x9f)||(code>=0xd800&&code<=0xdfff))return null;
+ return String.fromCodePoint(code);
+}
+function literalBBCode(text){
+ // A literal closing noparse tag must be split so it cannot end its wrapper.
+ return '[noparse]'+text.replace(/\[\/noparse\]/gi,tag=>'[[/noparse]'+tag.slice(1)+'[noparse]')+'[/noparse]';
+}
 function inlineMarkdown(text,protectedParts=[],issues=[]){
  const warn=message=>issues.push(message);
  const protect=value=>{const id=protectedParts.length;protectedParts.push(value);return '\uE000'+id+'\uE001'};
  // Shield literal inline code before interpreting any BBCode or custom macros.
- text=text.replace(/`([^`\n]+)`/g,(_,literal)=>protect('[noparse]'+literal+'[/noparse]'));
- // Shield raw BBCode tag delimiters (the contents still accept Markdown).
- text=text.replace(/\[\/?(?:b|i|u|s|sup|sub|heading|big|small|center|right|left|justify|indent|quote|color|url|collapse|img|user|icon|eicon|noparse|hr)(?:=[^\]\n]*)?\]/gi,m=>protect(m));
+ text=text.replace(/`([^`\n]+)`/g,(_,literal)=>protect(literalBBCode(literal)));
+ // Explicitly escaped bracket expressions stay literal even for known tags.
+ text=text.replace(/(\\+)(\[[^\[\]\n]*\])/g,(_,slashes,literal)=>slashes.length%2?slashes.slice(0,-1)+protect(literalBBCode(literal)):slashes+literal);
  // Support nested inline macros, e.g. {color:purple|**bright**}.
  let output='';
  for(let i=0;i<text.length;){
@@ -326,8 +398,9 @@ function inlineMarkdown(text,protectedParts=[],issues=[]){
   const name=m[1].toLowerCase(),arg=(m[3]||'').trim(),body=m[4];let compiled=null;
   if(name==='br'&&body===undefined&&!arg)compiled='\n';
   else if(name==='hr'&&body===undefined&&!arg)compiled='[hr]';
+  else if(name==='font'&&body!==undefined&&Object.hasOwn(fontStyles,arg.toLowerCase()))compiled=applyFont(inlineMarkdown(body,[],issues),arg.toLowerCase());
   else if(name==='color'&&body!==undefined){const color=resolvedColor(arg);const content=inlineMarkdown(body,protectedParts,issues);compiled=color?'[color='+color+']'+content+'[/color]':content;}
-  else if(['b','i','s','big','small','u','underline','sup','sub','noparse','heading'].includes(name)&&body!==undefined){let tag=name==='underline'?'u':name;compiled='['+tag+']'+(name==='noparse'?body:inlineMarkdown(body,protectedParts,issues))+'[/'+tag+']'}
+  else if(['b','i','s','big','small','u','underline','sup','sub','noparse','heading','center','left','right','justify','indent','quote','collapse'].includes(name)&&body!==undefined){let tag=name==='underline'?'u':name;compiled='['+tag+(tag==='collapse'&&arg?'='+arg:'')+']'+(name==='noparse'?body:inlineMarkdown(body,protectedParts,issues))+'[/'+tag+']'}
   else if(['user','icon','eicon'].includes(name)&&arg&&body===undefined&&!/[\[\]{}]/.test(arg))compiled='['+name+']'+arg+'[/'+name+']';
   else if(['img','image'].includes(name)&&arg){if(/^\d+$/.test(arg))compiled='[img='+arg+']'+(body===undefined?'':body)+'[/img]';else if(body===undefined&&safeUrl(arg))compiled='[img]'+arg+'[/img]'}
   else if(name==='link'&&safeUrl(arg)&&body!==undefined)compiled='[url='+arg+']'+inlineMarkdown(body,protectedParts,issues)+'[/url]';
@@ -341,6 +414,13 @@ function inlineMarkdown(text,protectedParts=[],issues=[]){
   if(!safeUrl(url))return match;
   return protect(match.startsWith('!')?'[img]'+url+'[/img]':'[url='+url+']'+inlineMarkdown(label,protectedParts,issues)+'[/url]');
  });
+ // Decode once, after parsing syntax, so encoded delimiters remain literal.
+ text=text.replace(/&#(?:x[0-9a-f]+|[0-9]+);/gi,reference=>{
+  const char=numericCharacterReference(reference);
+  return char===null?reference:protect(/[\[\]]/.test(char)?literalBBCode(char):char);
+ });
+ // Remaining bracket expressions are prose, not supported BBCode or links.
+ text=text.replace(/\[[^\[\]\n]*\]/g,literal=>protect(literalBBCode(literal)));
  text=text.replace(/\*\*\*([^*\n]+)\*\*\*/g,'[b][i]$1[/i][/b]')
   .replace(/\*\*([^*\n]+)\*\*/g,'[b]$1[/b]')
   .replace(/__([^_\n]+)__/g,'[b]$1[/b]')
@@ -362,29 +442,38 @@ function markdownToBB(input,issues=[]){
   close(value){pendingBreak=false;afterClose=true;parts.push(value)},
   heading(value){pendingBreak=false;afterClose=true;trailingHeading=true;parts.push(value)}
  };
- let inFence=false,inNoParse=false;
+ let inFence=false;
  for(let index=0;index<lines.length;index++){
   let line=lines[index];
   if(index===lines.length-1&&line===''&&trailingHeading)continue;
   if(line!=='')trailingHeading=false;
-  const soft=!inFence&&!inNoParse&&index<lines.length-1&&((line.match(/\\+$/)||[''])[0].length%2===1);
+  const soft=!inFence&&index<lines.length-1&&((line.match(/\\+$/)||[''])[0].length%2===1);
   if(soft)line=line.slice(0,-1).replace(/[ \t]*$/,' ');
   try{
   const trimmed=line.trim();
   // A fenced code block is literal text. F-List supports noparse, not Markdown fences.
-  if(/^```/.test(trimmed)){if(!inNoParse){if(inFence)out.close('[/noparse]');else out.open('[noparse]');inFence=!inFence;continue}}
+  if(/^```/.test(trimmed)){if(inFence)out.close('[/noparse]');else out.open('[noparse]');inFence=!inFence;continue}
   if(inFence){out.push(line);continue}
-  if(inNoParse){out.push(line);if(/\[\/noparse\]/i.test(line))inNoParse=false;continue}
-  if(/\[noparse\]/i.test(line)){inNoParse=!/\[\/noparse\]/i.test(line);out.push(line);continue}
   if(trimmed===':::'){
    if(stack.length){const closing=stack.pop();if(closing)out.close('[/'+closing+']');continue}
    issues.push('Unmatched block macro closing marker: :::; exported as literal text');out.push(line);continue;
   }
   const block=line.match(/^\s*:::([a-z]+)(?:\s+(.+))?\s*$/i);
   if(block){const tag=block[1].toLowerCase(),arg=(block[2]||'').trim();
+   if(tag==='font'&&Object.hasOwn(fontStyles,arg.toLowerCase())){
+    const body=[];let depth=1,fenced=false;
+    while(++index<lines.length){
+     const next=lines[index],marker=next.trim();
+     if(/^```/.test(marker))fenced=!fenced;
+     if(!fenced){if(/^:::[a-z]/i.test(marker))depth++;else if(marker===':::'&&--depth===0)break}
+     body.push(next);
+    }
+    if(depth)issues.push('Unclosed block macro: :::font; closing marker added on export');
+    out.open(applyFont(markdownToBB(body.join('\n'),issues),arg.toLowerCase()));out.close('');continue;
+   }
    if(macroBlockNames.has(tag)){
     if(tag==='color'&&!resolvedColor(arg)){stack.push('');continue;}
-    if((tag==='collapse'&&arg&&!/[\[\]]/.test(arg))||(tag==='color'&&resolvedColor(arg))||(!['collapse','color'].includes(tag)&&!arg)){
+    if((tag==='collapse'&&arg&&!/[\[\]]/.test(arg))||(tag==='color'&&resolvedColor(arg))||(!['collapse','color','font'].includes(tag)&&!arg)){
      out.open('['+tag+(arg?'='+(tag==='color'?resolvedColor(arg):arg):'')+']');stack.push(tag);continue;
     }
    }
@@ -449,7 +538,7 @@ function parseBBCode(input){
  return root;
 }
 function escapePlainMarkdown(text){
- return text.replace(/([\\*_{}`~+])/g,'\\$1')
+ return text.replace(/&(?=#(?:x[0-9a-f]+|[0-9]+);)/gi,'&#x26;').replace(/\p{S}/gu,char=>'&#x'+char.codePointAt(0).toString(16).toUpperCase()+';').replace(/([\\*_{}`~+])/g,'\\$1')
   .replace(/^(\s*)(#{1,6}\s|>\s|[-*+]\s|(?:-{3,}|\*{3,}|_{3,})\s*$)/gm,(_,indent,lead)=>indent+'\\'+lead);
 }
 function bbcodeToMarkdown(input,escapePlain=true){
@@ -462,17 +551,23 @@ function bbcodeToMarkdown(input,escapePlain=true){
  const boundaries=value=>'\uE006'+value+'\uE007';
  function block(tag,arg,body){if(editableLayout)return boundaries(':::'+tag+(arg?' '+arg:'')+'\uE007'+body+'\uE006:::');return boundaries(':::'+tag+(arg?' '+arg:'')+'\n'+body+'\n:::')}
  function convert(node){
-  if(node.text!==undefined)return escapePlain?escapePlainMarkdown(node.text):node.text;
+  if(node.text!==undefined)return decompileFonts(node.text,escapePlain);
   if(!node.tag)return children(node);
   if(node.unclosed)return raw(node);
+  if(node.tag==='noparse'){
+   const literal=node.children.map(raw).join(''),candidate=escapePlainMarkdown(literal);
+   if(markdownToBB(candidate)===raw(node))return candidate;
+  }
   const tag=node.tag,content=children(node),plain=node.children.map(raw).join('');
   const inline=!/[\r\n]/.test(content)&&!hasBlocks(node);
   // Markdown block syntax needs its own lines. Keep BBCode wrappers when
   // those syntax boundaries would change significant whitespace on export.
-  if(preserveLayout&&(blockTags.has(tag)||['heading','hr','noparse'].includes(tag)||!inline)){
-   if(tag==='hr')return '[hr]';
-   if(tag==='noparse')return raw(node);
-   return node.open+content+'[/'+tag+']';
+  if(preserveLayout&&tag!=='noparse'){
+   const body=content.replace(/\n/g,'{br}');
+   if(tag==='hr')return '{hr}';
+   if(['b','i','u','s','sup','sub','big','small','heading'].includes(tag))return '{'+tag+'|'+body+'}';
+   if(tag==='color')return '{color:'+node.param+'|'+body+'}';
+   if(blockTags.has(tag))return '{'+tag+(tag==='collapse'?':'+node.param:'')+'|'+body+'}';
   }
   if(tag==='hr')return boundaries('---');
   if(tag==='heading'){
@@ -664,9 +759,32 @@ function countWarnings(compiled){
  if(/<\/?(?:div|span|table|p|br)\b/i.test(parsedText))issues.push('HTML is not supported in descriptions');
  return [...new Set(issues)];
 }
+function nestedFontWarnings(text){
+ const searchable=warningSource(text,true),stack=[],blocks=[],issues=[];
+ const message='Nested font macros are not supported; use one font macro per text span';
+ for(let index=0;index<searchable.length;index++){
+  if(index===0||searchable[index-1]==='\n'){
+   const marker=searchable.slice(index).match(/^[ \t]*:::(?:([a-z]+)(?:[ \t]+[^\n]*)?)?[ \t]*(?=\n|$)/i);
+   if(marker){
+    const name=marker[1]?.toLowerCase();
+    if(!name)blocks.pop();
+    else{if(name==='font'&&blocks.includes('font'))issues.push({message,start:index,end:index+marker[0].length,line:text.slice(0,index).split('\n').length});blocks.push(name)}
+    index+=marker[0].length-1;continue;
+   }
+  }
+  if(searchable[index]==='\\'){index++;continue}
+  if(searchable[index]==='}'){stack.pop();continue}
+  if(searchable[index]!=='{')continue;
+  const header=searchable.slice(index).match(/^\{([a-z]+)(?::[^|{}\n]*)?\|/i);
+  const name=header?.[1].toLowerCase(),literal=stack.some(item=>item.literal)||name==='noparse';
+  if(name==='font'&&!literal&&(blocks.includes('font')||stack.some(item=>item.name==='font'&&!item.literal)))issues.push({message,start:index,end:index+header[0].length,line:text.slice(0,index).split('\n').length});
+  stack.push({name,literal});
+ }
+ return issues;
+}
 function macroWarnings(text){
  const issues=[];markdownToBB(text,issues);
- return [...new Set([...issues.filter(message=>!message.includes('block macro')),...blockMacroWarnings(text).map(issue=>issue.message)])];
+ return [...new Set([...issues.filter(message=>!message.includes('block macro')),...blockMacroWarnings(text).map(issue=>issue.message),...nestedFontWarnings(text).map(issue=>issue.message)])];
 }
 function blockMacroWarnings(text){
  const searchable=warningSource(text,true),stack=[],issues=[];
@@ -689,7 +807,8 @@ function blockMacroWarnings(text){
   if(!parsed)error='Malformed block macro: '+marker+'; use :::name to open a block';
   else if(!macroBlockNames.has(name))error='Unknown block macro: '+marker+'; check the macro name';
   else if(name==='collapse'&&(!arg||/[\[\]]/.test(arg)))error='Invalid block macro: '+marker+'; collapse requires a title without square brackets';
-  else if(!['collapse','color'].includes(name)&&arg)error='Invalid block macro: '+marker+'; '+name+' does not accept an argument';
+  else if(name==='font'&&!Object.hasOwn(fontStyles,arg.toLowerCase()))error='Invalid block macro: '+marker+'; choose a supported font';
+  else if(!['collapse','color','font'].includes(name)&&arg)error='Invalid block macro: '+marker+'; '+name+' does not accept an argument';
   if(error)report(error,start,end);
   // Recover the intended nesting for diagnostics, even when compilation leaves
   // this opener literal. Its closing marker is a consequence, not a new error.
@@ -701,15 +820,15 @@ function blockMacroWarnings(text){
 // Preserve source offsets while excluding literal examples from diagnostic navigation.
 function warningSource(text,mixed){
  const blank=value=>value.replace(/[^\n]/g,' ');
- text=text.replace(/(\[noparse\])([\s\S]*?)(\[\/noparse\]|$)/gi,(_,open,body,close)=>open+blank(body)+close);
+ if(!mixed)text=text.replace(/(\[noparse\])([\s\S]*?)(\[\/noparse\]|$)/gi,(_,open,body,close)=>open+blank(body)+close);
  if(mixed)text=text.replace(/^\s*```[^\n]*\n[\s\S]*?(?:^\s*```[^\n]*(?:\n|$)|(?![\s\S]))/gm,blank).replace(/`[^`\n]+`/g,blank).replace(/\\[{}]/g,blank);
  return text;
 }
 function locatedWarnings(text,mixed,compiled){
  const searchable=warningSource(text,mixed),records=[];
  const add=(message,start,end)=>{const line=text.slice(0,start).split('\n').length;if(!records.some(item=>item.message===message&&item.start===start))records.push({message,start,end,line})};
- const messages=[...countWarnings(compiled),...colorWarnings(text,mixed),...(mixed?macroWarnings(text).filter(message=>!message.includes('block macro')):[])];
- if(mixed)records.push(...blockMacroWarnings(text));
+ const messages=[...countWarnings(compiled),...colorWarnings(text,mixed),...(mixed?macroWarnings(text).filter(message=>!message.includes('block macro')&&!message.startsWith('Nested font macros')):[])];
+ if(mixed)records.push(...blockMacroWarnings(text),...nestedFontWarnings(text));
  for(const message of messages){
   let matches=[];
   if(message.startsWith('Color ')){
@@ -812,7 +931,7 @@ function requestApplyTemplate(content,name,targetId){
 }
 document.querySelectorAll('[data-template]').forEach(btn=>btn.addEventListener('click',()=>loadTemplateForm('builtin:'+btn.dataset.template)));
 document.querySelectorAll('[data-wrap]').forEach(btn=>btn.addEventListener('click',()=>wrapInline(btn.dataset.wrap)));
-document.querySelectorAll('[data-action]').forEach(btn=>btn.addEventListener('click',()=>{switch(btn.dataset.action){case 'hr':case 'divider':addLine(data.mixed?'---':'[hr]');break;case 'details':addLine(data.mixed?'**Field:** Details':'[b]Field:[/b] Details');break}}));
+document.querySelectorAll('[data-action]').forEach(btn=>btn.addEventListener('click',()=>{switch(btn.dataset.action){case 'divider':addLine(data.mixed?'---':'[hr]');break;case 'details':addLine(data.mixed?'**Field:** Details':'[b]Field:[/b] Details');break}}));
 
 const palette=$('colorPalette');
 function wrapColor(name){if(!colorSafe(name))return;
@@ -831,6 +950,19 @@ colorNames.forEach(name=>{const btn=document.createElement('button');btn.type='b
  btn.addEventListener('click',()=>{wrapColor(name);palette.hidden=true;$('colorBtn').setAttribute('aria-expanded','false')});palette.append(btn)});
 const colorHint=document.createElement('span');colorHint.className='palette-hint';colorHint.textContent='F-List named presets only';palette.append(colorHint);
 $('colorBtn').addEventListener('click',()=>{palette.hidden=!palette.hidden;$('colorBtn').setAttribute('aria-expanded',String(!palette.hidden))});
+const fontPalette=$('fontPalette');
+function wrapFont(name){
+ if(!Object.hasOwn(fontStyles,name))return;
+ const start=source.selectionStart,end=source.selectionEnd,chosen=source.value.slice(start,end)||'your text';
+ const multiline=chosen.includes('\n'),prefix=multiline?':::font '+name+'\n':'{font:'+name+'|',suffix=multiline?'\n:::':'}',text=data.mixed?prefix+chosen+suffix:applyFont(chosen,name);
+ replaceRange(text,start,end,data.mixed?start+prefix.length:start,data.mixed?start+prefix.length+chosen.length:start+text.length);
+}
+for(const [name,style] of Object.entries(fontStyles)){
+ const button=document.createElement('button');button.type='button';button.className='palette-option';
+ button.textContent=applyFont(style.label,name);button.setAttribute('aria-label','Apply '+style.label+' font');
+ button.addEventListener('click',()=>{wrapFont(name);fontPalette.hidden=true;$('fontBtn').setAttribute('aria-expanded','false')});fontPalette.append(button);
+}
+$('fontBtn').addEventListener('click',()=>{fontPalette.hidden=!fontPalette.hidden;$('fontBtn').setAttribute('aria-expanded',String(!fontPalette.hidden))});
 function switchMode(toMixed){
  if(data.mixed===toMixed)return;
  rememberSelection();
@@ -922,6 +1054,7 @@ const guideExamples=[
  ['Basics','Heading and divider','Break your bio into readable sections','# About me\nA curious traveller.\n\n---\n## Story hooks'],
  ['Basics','Heading levels','One # adds heading + big; two or more # add a regular heading','# Large heading\n## Standard heading\n### Smaller heading'],
  ['Basics','Big text','Use the inline macro for F-List big text','{big|Large text}'],
+ ['Basics','Unicode symbols','Hexadecimal or decimal numeric character references become Unicode on export; literal code stays unchanged.','&#x25C6; Star: &#x2605; Decimal diamond: &#9670;'],
  ['Basics','Links','A link with human-friendly text','[Visit my inspiration board](https://example.com)'],
  ['Basics','Quotes','Standard Markdown blockquotes','> “Everything has a price.”'],
  ['Basics','Bullet list','Plain text bullets compatible with F-List','- Adventurous\n- Sarcastic\n- Fond of stargazing'],
@@ -935,6 +1068,10 @@ const guideExamples=[
  ['Macros','Character mention','Clickable F-List character name','A friend: {user:Character Name}'],
  ['Macros','Character avatar','Show another character’s icon','{icon:Character Name}'],
  ['Macros','Eicon','Display an uploaded F-List eicon','{eicon:eicon-name}'],
+ ['Macros','Small caps font','Unicode letters; uppercase stays uppercase. x has no small-cap equivalent. Decompilation detects styled text, but cannot recover an invisible font choice.','{font:smallcaps|ABCDabcd}'],
+ ['Macros','Fancy fonts','Unicode text fonts export without font tags. Use bold, doublestruck, italic, bolditalic, sans, sansbold, fraktur, monospace or fullwidth. Only visibly styled characters are recovered on conversion from BBCode.','{font:bold|Bold 123} {font:doublestruck|Lucas} {font:monospace|Mono 123} {font:fullwidth|Wide 123}'],
+ ['Macros','Multiline font','Use a font block for multiple lines. Inline font macros stay on one line.',':::font bold\nfirst line\nsecond line\n:::'],
+ ['Macros','More Unicode fonts','Italic, bold italic, sans serif, sans serif bold and Fraktur. Decompilation recovers styled characters and bridges unchanged characters between matching font runs.','{font:italic|Elegant} {font:bolditalic|Emphasis} {font:sans|Modern 123} {font:sansbold|Strong 123} {font:fraktur|Gothic}'],
  ['Macros','Uploaded profile image','Reference a numeric F-List image ID','{img:12345}'],
  ['Macros','Labeled profile image','Preserve the text associated with an uploaded image','{img:12345|Portrait label}'],
  ['Macros','Heading block','Multiline headings use the same spacing rules as other block macros',':::heading\n{color:cyan|Character name}\n{big|Subtitle}\n:::'],

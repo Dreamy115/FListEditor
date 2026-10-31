@@ -13,11 +13,11 @@ for (const mixed of [true, false]) {
   highlight(layer, sample, mixed);
   assert.equal(layer.textContent, sample + '\n');
   assert.equal(layer.querySelector('script'), null);
-  assert.ok(layer.querySelector('.syntax-tag'));
+  assert.ok(layer.querySelector(mixed?'.syntax-literal':'.syntax-tag'));
 }
 assert.ok(tokenize(sample, true).some(t => t.kind === 'macro'));
 assert.ok(!tokenize(sample, false).some(t => t.kind === 'macro'));
-for (const [source,kind] of [['{sup|2}', 'macro'], ['{sub|2}', 'macro'], ['[sup]2[/sup]', 'tag'], ['[sub]2[/sub]', 'tag']]) {
+for (const [source,kind] of [['{sup|2}', 'macro'], ['{sub|2}', 'macro'], ['[sup]2[/sup]', 'literal'], ['[sub]2[/sub]', 'literal']]) {
   assert.ok(tokenize(source, true).some(token => token.kind === kind && token.text.startsWith(kind === 'macro' ? '{' : '[')));
 }
 for (const color of ['red','orange','yellow','green','cyan','purple','blue','pink','black','brown','white','gray']) {
@@ -30,7 +30,7 @@ for (const color of ['red','orange','yellow','green','cyan','purple','blue','pin
     assert.equal(layer.textContent, source+'\n');
   }
 }
-for (const literal of ['```\n**raw**\n{br}\n```', '[noparse][b]raw[/b]\n[/noparse]']) {
+for (const literal of ['```\n**raw**\n{br}\n```']) {
   const tokens = tokenize(literal, true);
   assert.equal(tokens.length, 1);
   assert.equal(tokens[0].kind, 'literal');
@@ -53,7 +53,7 @@ for (const marks of ['*', '**', '***', '_', '__', '~~', '++']) {
   assert.ok(layer.querySelector('.syntax-macro'));
 }
 const nested = tokenize('*Text {color:cyan|Name} [b]bold[/b] `literal`*', true);
-for (const kind of ['emphasis', 'macro', 'tag', 'literal']) assert.ok(nested.some(t => t.kind === kind));
+for (const kind of ['emphasis', 'macro', 'literal']) assert.ok(nested.some(t => t.kind === kind));
 assert.equal(tokenize('*Italic*', true)[0].kind, 'emphasis');
 assert.equal(tokenize('- List item', true)[0].kind, 'marker');
 assert.equal(tokenize('# Heading', true)[0].marker, 'heading');
@@ -74,7 +74,7 @@ const deep = ':::center\n:::color cyan\n*{color:cyan|{big|[b][i]Nested[/i][/b]}}
 const deepTokens = tokenize(deep, true);
 assert.equal(deepTokens.map(t => t.text).join(''), deep);
 assert.equal(deepTokens.find(t => t.text === ':::center').kind, 'block');
-for (const kind of ['block', 'macro', 'tag']) {
+for (const kind of ['block', 'macro']) {
   const containers = deepTokens.filter(t => t.kind === kind);
   assert.ok(containers.some(t => t.depth === 1), kind);
   assert.ok(containers.every(t => t.pair !== undefined && !t.unmatched), kind);
@@ -87,7 +87,7 @@ for (const kind of ['block', 'macro', 'tag']) {
 const deepLayer = document.createElement('pre');
 highlight(deepLayer, deep, true);
 assert.equal(deepLayer.querySelectorAll('.source-line-anchor').length, deep.split('\n').length);
-for (const kind of ['block', 'macro', 'tag']) {
+for (const kind of ['block', 'macro']) {
   assert.ok(deepLayer.querySelector('.syntax-' + kind + '.syntax-depth-0'));
   assert.ok(deepLayer.querySelector('.syntax-' + kind + '.syntax-depth-1'));
 }
@@ -99,8 +99,8 @@ for (const open of deepTokens.filter(t => t.partner > t.start)) {
 context.FolioSyntax.markActive(deepLayer, deep.indexOf('{big|') + 2);
 assert.equal(deep.slice(deepLayer.activeSyntaxRange.start, deepLayer.activeSyntaxRange.end), '{big|[b][i]Nested[/i][/b]}');
 context.FolioSyntax.markActive(deepLayer, deep.indexOf('Nested') + 2);
-assert.equal(deep.slice(deepLayer.activeSyntaxRange.start, deepLayer.activeSyntaxRange.end), '[i]Nested[/i]');
-assert.equal([...deepLayer.querySelectorAll('.syntax-active-delimiter')].map(s => s.textContent).join(''), '[i][/i]');
+assert.equal(deep.slice(deepLayer.activeSyntaxRange.start, deepLayer.activeSyntaxRange.end), '{big|[b][i]Nested[/i][/b]}');
+assert.equal([...deepLayer.querySelectorAll('.syntax-active-delimiter')].map(s => s.textContent).join(''), '{big|}');
 context.FolioSyntax.markActive(deepLayer, deep.length);
 assert.equal(deepLayer.activeSyntaxRange, null);
 assert.equal(deepLayer.querySelectorAll('.syntax-active-delimiter').length, 0);

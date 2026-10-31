@@ -1,0 +1,18 @@
+const assert=require('node:assert/strict'),fs=require('node:fs'),vm=require('node:vm');
+const app=fs.readFileSync('src/app.js','utf8'),context=vm.createContext({URL});
+vm.runInContext(app.slice(app.indexOf('const macroInlineNames='),app.indexOf('function renderBB(')),context);
+const compile=text=>context.markdownToBB(text),decode=text=>context.bbcodeToMarkdown(text);
+for(const input of ['&#x25C6;','&#X25c6;','&#9670;'])assert.equal(compile(input),'\u25c6');
+assert.equal(decode('\u25c6'),'&#x25C6;');
+assert.equal(compile('&#x1F600;'),'\u{1f600}');
+for(const input of ['A \u25c6 B','[b]\u2605[/b]','\u{1f600} \u2192','literal &#x25C6; text','literal &#9670;'])assert.equal(compile(decode(input)),input,input);
+assert.equal(compile('**&#x25C6;**'),'[b]\u25c6[/b]');
+assert.equal(compile('{color:purple|&#x25C6;}'),'[color=purple]\u25c6[/color]');
+assert.equal(compile('&#123;b|Text&#125;'),'{b|Text}');
+assert.equal(compile('&#42;&#42;text&#42;&#42;'),'**text**');
+assert.equal(compile('&#x26;#x25C6;'),'&#x25C6;');
+assert.equal(compile('`&#x25C6;`'),'[noparse]&#x25C6;[/noparse]');
+assert.equal(compile('```\n&#x25C6;\n```'),'[noparse]&#x25C6;[/noparse]');
+assert.equal(compile('{noparse|&#x25C6;}'),'[noparse]&#x25C6;[/noparse]');
+for(const input of ['&#xD800;','&#x110000;','&#0;','&#10;','&#x7F;','&#xZZ;','&#x25C6','&diamond;'])assert.equal(compile(input),input);
+console.log('Numeric character reference compilation and decompilation checks passed');

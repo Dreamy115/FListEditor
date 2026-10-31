@@ -29,7 +29,7 @@ Import this .md file or paste its contents into a blank character in Markdown+ m
 {heading|An explicit inline heading}
 
 Nested formatting: {color:purple|{b|Bright {i|ideas} with {u|depth}}}.
-Raw BBCode mixed with Markdown+: [b]native bold[/b], [i]native italic[/i], and [color=cyan]**mixed syntax**[/color].
+Bracket text stays literal in Markdown+: [b]not a bold tag[/b], [i]not an italic tag[/i], and [there]. Use **Markdown bold** or {color:cyan|a color macro} for formatting.
 
 ## 2. All twelve profile colors
 
@@ -168,13 +168,6 @@ A second section with the same title tests occurrence-based view-state matching.
 <https://example.com/autolink>
 {link:https://example.com/macro|A macro link with {i|an italic label}}
 
-External image in Markdown syntax:
-![](https://www.f-list.net/images/avatar/default.png)
-
-External image via each macro alias:
-{img:https://www.f-list.net/images/avatar/default.png}
-{image:https://www.f-list.net/images/avatar/default.png}
-
 Numeric images intentionally show placeholders without profile image metadata:
 {img:12345|Labeled observatory portrait}
 {image:12346|Image alias label}
@@ -200,9 +193,10 @@ Explicit literal macro: {noparse|**also literal** {typo|not a warning here}}.
 A blank line remains, too.
 ```
 
-[noparse]
-Raw noparse block: **literal** {unknown|literal}.
-[/noparse]
+```text
+Literal block: **literal** {unknown|literal}.
+[noparse] is ordinary bracket text in Markdown+ mode.
+```
 
 Escaped syntax: \*asterisks\*, \_underscores\_, \{b|literal braces\}, \[b\]literal brackets\[/b\].
 
@@ -241,7 +235,7 @@ A deliberately long line for wrapping and gutter alignment: the astronomer recor
 These are manual checks; importing source cannot exercise application controls automatically. Use a disposable character and template for replacement checks.
 
 1. Live preview: edit a word and verify the preview, word/character counts, and local save status update.
-2. Formatting: select disposable text and try every toolbar formatting, alignment, quote, color, link, image, collapse, divider, and field/details action. Test Ctrl+B, Ctrl+I, and Ctrl+U. Undo each insertion.
+2. Formatting: select disposable text and try every toolbar formatting, H1/H2, center/right/justify alignment, Sup/Sub, quote, color, font, link, numeric image, collapse, and divider action. Test Ctrl+B, Ctrl+I, and Ctrl+U. Undo each insertion.
 3. History: type, format, and switch modes; use Undo/Redo and Ctrl+Z, Ctrl+Y, or Ctrl+Shift+Z. Verify each action restores the expected source and mode.
 4. Conversion: switch Markdown+ to BBCode and back. Compare rendered content, significant whitespace, nested blocks, literal text, numeric image labels, and list numbers. Equivalent source spelling may change.
 5. Export: compare Copy BBCode with Export .bbcode. Export .md from both modes; exporting from BBCode should leave the current draft and mode unchanged. Import the downloaded Markdown into a disposable character.
@@ -251,7 +245,7 @@ These are manual checks; importing source cannot exercise application controls a
 9. Template application: apply displayed unsaved template edits to a disposable target and confirm replacement, including an empty target and targets in both source modes. Verify applying does not implicitly save the template. Use New from this template and verify it creates a separate character. Clone both a built-in and custom template and verify independent copies.
 10. Editor isolation: switch between a character and an unsaved template; verify separate source, mode, cursor, history, preview scroll, and collapse states. Check the unsaved-template leave-page prompt using a disposable edit.
 11. Cookbook: open Examples & macros, search for a feature, switch categories, and insert an example into disposable source. Undo the insertion.
-12. Syntax: inspect Markdown, raw BBCode, literal content, nested inline macros, and block colors. Move the caret between nested sections; check the active full-width tint. Scroll and resize to check wrapped-line gutter alignment. Temporarily remove a closing marker to inspect unmatched-marker highlighting, then undo.
+12. Syntax: inspect Markdown, literal bracket text, nested inline macros, and block colors in Markdown+; inspect native tags in BBCode mode. Move the caret between nested sections; check the active full-width tint. Scroll and resize to check wrapped-line gutter alignment. Temporarily remove a closing marker to inspect unmatched-marker highlighting, then undo.
 13. App appearance: try Folio, Graphite dark, Paper light, and Verdant in character and template editors. Check editor text, caret, gutter, syntax, and warnings; reload to verify the choice persists.
 14. Profile appearance: try F-List Blue, Dark, Light, Midnight lilac, Light parchment, and Obsidian. Inspect all twelve colors, links, quotes, and collapses. Changing appearance should not change exported BBCode.
 15. Preview size: try 1, 16, 16.5, and 200 pixels, then clear the field for Site default. Verify persistence after reload and unchanged exported BBCode.
@@ -272,7 +266,7 @@ Invalid color: expect a supported-color suggestion; hex red should normalize to 
 ```text
 {color:#ff0000|Legacy red}
 {color:teal|Unsupported named color}
-[color]Missing color value[/color]
+{color:|Missing color value}
 ```
 
 Malformed nested opener: expect the error at the malformed opener without a cascade of unmatched closers.
@@ -304,11 +298,12 @@ Unclosed constructs: test each line or block independently.
 :::center
 Missing closing marker
 ```
+In BBCode mode only:
 ```text
 [b]Missing closing tag
 ```
 
-Unsupported and misnested BBCode: expect guidance about supported formatting and tag order.
+Unsupported and misnested BBCode: paste these into **BBCode mode** to check supported formatting and tag order. In Markdown+ they are literal text.
 ```text
 [table]Unsupported profile tag[/table]
 [b][i]Wrong closing order[/b][/i]
@@ -323,3 +318,63 @@ Invalid link and image arguments: expect inline macro warnings.
 ```
 
 Repeat the same bad macro on two separate lines and verify both warning locations are available. Repeat raw BBCode errors in BBCode mode to check native-mode diagnostics. Literal examples in this saved showcase should remain warning-free.
+
+## 10. Unicode font verification
+
+{font:smallcaps|ABCDabcd your text}
+{font:bold|Bold 123}
+{font:doublestruck|Lucas CHNPQRZ 123}
+{font:italic|Italic h}
+{font:bolditalic|Bold italic}
+{font:sans|Sans serif 123}
+{font:sansbold|Sans serif bold 123}
+{font:fraktur|Fraktur CHIRZ}
+{font:monospace|Monospace 123}
+{font:fullwidth|Fullwidth 123}
+
+:::font bold
+first line
+second line
+:::
+
+:::font smallcaps
+your text
+extra examples
+:::
+
+Plain boundaries: prefix{font:smallcaps|a}suffix and x{font:smallcaps|a}x.
+Preserved middle characters: {font:smallcaps|aXXXb} and {font:italic|a 123 b}.
+Different styles: {font:bold|First} {font:italic|Second}.
+Literal Unicode: `ʏᴏᴜʀ ᴛᴇxᴛ` and `{font:bold|literal macro}`.
+
+Switch to BBCode and back. The visible characters and whitespace should remain
+identical. Only recognizable styled runs become font macros; unchanged interior
+characters may join matching font runs. Multiline styled text should use font
+blocks. Font choices that do not change the text cannot be recovered.
+
+Intentional nested-font warning: copy this out of its fence to activate it.
+```text
+:::font bold
+{font:italic|Nested font}
+:::
+```
+
+External image warning: activate this specimen in Markdown+.
+```text
+![Portrait](https://example.com/portrait.png)
+{img:https://example.com/portrait.png}
+```
+
+## 11. Full-app backup and purge checks
+
+Use disposable local data for these checks. Save template edits first. Export all
+data using the footer, change characters/templates and appearance settings, then
+import the full-app JSON and confirm replacement. Verify all saved characters,
+templates and settings return. The action-bar Backup is a single-profile backup
+and is not a full-app import file.
+
+Cancel Purge data first and verify nothing changes. After retaining a full-app
+backup, confirm Purge data and verify characters/templates are cleared and
+settings reset. Import the saved full-app backup to restore them. Undo history,
+cursor positions, unsaved template edits and preview expansion state are not
+included in a full-app backup.

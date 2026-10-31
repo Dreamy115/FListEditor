@@ -48,3 +48,15 @@ reset('Line one\nLine two');context.wrapInline('heading');
 assert.equal(context.markdownToBB(source.value),'[heading][big]Line one\nLine two[/big][/heading]');
 reset('literal {macro}');context.insertTag('noparse');assert.equal(source.value,'`literal {macro}`');
 reset('a `backtick`');context.insertTag('noparse');assert.equal(context.markdownToBB(source.value),'[noparse]a `backtick`[/noparse]');
+
+for(const [tag,markdown,bbcode] of [
+ ['heading2','## Text','[heading]Text[/heading]'],
+ ['right',':::right\nText\n:::','[right]Text[/right]'],
+ ['justify',':::justify\nText\n:::','[justify]Text[/justify]']
+]){
+ data.mixed=true;reset('Text');context.wrapInline(tag);assert.equal(source.value,markdown);assert.equal(context.markdownToBB(source.value),bbcode);
+ data.mixed=false;reset('Text');context.wrapInline(tag);assert.equal(source.value,bbcode);
+}
+data.mixed=true;reset('First\nSecond');context.wrapInline('heading2');
+assert.equal(context.markdownToBB(source.value),'[heading]First\nSecond[/heading]');
+console.log('H2 and alignment toolbar checks passed');

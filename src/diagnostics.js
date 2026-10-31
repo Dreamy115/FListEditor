@@ -1,7 +1,7 @@
 (() => {
   'use strict';
   const examples = {
-    color: '{color:purple|text}', link: '{link:https://example.com|text}',
+    font: '{font:smallcaps|text}', color: '{color:purple|text}', link: '{link:https://example.com|text}',
     img: '{img:12345|image label}', image: '{image:12345|image label}',
     user: '{user:Character Name}', icon: '{icon:Character Name}', eicon: '{eicon:name}',
     br: '{br}', hr: '{hr}', noparse: '{noparse|literal text}'
@@ -33,6 +33,9 @@
           : fragment.startsWith('{') ? '{color:' + suggestion + '|' : ':::color ' + suggestion;
         fix('Use ' + suggestion, replacement);
       }
+    } else if (message.startsWith('Nested font macros')) {
+      result.help = 'Use one font per text span. Move the inner font macro outside the outer one, or remove one of the font wrappers.';
+      result.example = '{font:smallcaps|First} {font:bold|Second}';
     } else if (message.includes('block macro')) {
       const parsed = fragment.trim().match(/^:+\s*([a-z]+)?/i), name = parsed?.[1]?.toLowerCase();
       if (message.includes('closing marker') && !name) {
@@ -46,14 +49,14 @@
         const suggestion = config.blockNames.has(name) ? name : name && nearest(name, config.blockNames);
         result.help = 'Open a block with :::name and close it with ::: on a separate line. Nest each block inside its parent.';
         if (suggestion) {
-          result.example = ':::' + suggestion + (suggestion === 'color' ? ' purple' : suggestion === 'collapse' ? ' More details' : '') + '\ntext\n:::';
-          if (!['color', 'collapse'].includes(suggestion)) fix('Use :::' + suggestion, ':::' + suggestion);
+          result.example = ':::' + suggestion + (suggestion === 'font' ? ' bold' : suggestion === 'color' ? ' purple' : suggestion === 'collapse' ? ' More details' : '') + '\ntext\n:::';
+          if (!['font', 'color', 'collapse'].includes(suggestion)) fix('Use :::' + suggestion, ':::' + suggestion);
         } else result.example = ':::center\ntext\n:::';
       }
     } else if (/inline macro/.test(message)) {
       const name = fragment.match(/^\{([a-z]+)/i)?.[1]?.toLowerCase();
       const suggestion = config.inlineNames.has(name) ? name : name && nearest(name, config.inlineNames);
-      result.help = message.startsWith('Unclosed') ? 'Close each opening brace with }. In nested macros, close the inner macro first.'
+      result.help = message.startsWith('Unclosed') ? 'Inline macros must fit on one line. For multiline fonts use :::font bold, the text on following lines, and a closing :::. Close each opening brace with }.'
         : 'Use {name|text} for formatting, or {name:argument} for a user, icon, or image. Links need a valid http(s) URL and a text body.';
       result.example = suggestion ? examples[suggestion] || '{' + suggestion + '|text}' : '{b|{i|text}}';
       if (suggestion && suggestion !== name) fix('Change macro to ' + suggestion, fragment.replace(/^\{[a-z]+/i, '{' + suggestion));
