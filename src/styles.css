@@ -127,3 +127,5 @@
 .source-diagnostic button{border:1px solid var(--editor-warning,#e8a640);border-radius:5px;background:#80808018;color:inherit;padding:5px 9px;margin:2px 0 8px;cursor:pointer}
 .source-diagnostic button:hover,.source-diagnostic button:focus-visible{background:#80808035;outline:2px solid var(--editor-warning,#e8a640);outline-offset:1px}
 .source-diagnostic small{display:block;opacity:.7;font-size:10px}
+
+.data-actions{display:grid;gap:6px;margin-bottom:14px}.data-actions .btn{width:100%;padding:7px 10px;font-size:11px}

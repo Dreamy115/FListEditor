@@ -136,3 +136,15 @@ for (const closing of ['::','::::']) {
   assert.equal(diagnostics[0].line,4);
   assert.match(diagnostics[0].message,/Malformed block macro closing marker/);
 }
+
+for(const input of ['![Portrait](https://example.com/image.png)', '{img:https://example.com/image.png}', '{image:https://example.com/image.png}', '[img]https://example.com/image.png[/img]', '[img=https://example.com/image.png]Portrait[/img]']){
+ const compiled=context.markdownToBB(input);
+ assert.ok(warnings(compiled).some(message=>message.startsWith('External image URLs ')),input);
+ const located=Array.from(context.locatedWarnings('Intro\n'+input,true,context.markdownToBB('Intro\n'+input)));
+ const issue=located.find(issue=>issue.message.startsWith('External image URLs '));
+ assert.ok(issue,input);assert.equal(issue.line,2);assert.equal(issue.start,6);
+}
+assert.deepEqual(warnings('[noparse][img]https://example.com/image.png[/img][/noparse]'),[]);
+assert.deepEqual(warnings(context.markdownToBB('`{img:https://example.com/image.png}`')),[]);
+assert.ok(!source.includes("['Basics','Image from URL'"));
+console.log('External image URL warning and source navigation checks passed');

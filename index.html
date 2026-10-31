@@ -29,7 +29,7 @@
   <div id="customTemplateList" class="custom-template-list"></div>
   <button class="btn manage-templates" id="manageTemplates">Manage templates</button>
  </div>
- <div class="side-bottom"><div><b>●</b> Private by design</div><div>Drafts saved in this browser.</div><div style="margin-top:12px"><a href="https://www.f-list.net/" target="_blank" rel="noopener noreferrer">Open F-List ↗</a></div></div>
+ <div class="side-bottom"><div class="data-actions" aria-label="App data"><button type="button" class="btn" id="exportAll">Export all data</button><button type="button" class="btn" id="importAll">Import all data</button><button type="button" class="btn delete-button" id="purgeData">Purge data</button></div><div><b>●</b> Private by design</div><div>Drafts saved in this browser.</div><div style="margin-top:12px"><a href="https://www.f-list.net/" target="_blank" rel="noopener noreferrer">Open F-List ↗</a></div></div>
 </aside>
 <section class="workspace" id="sourcePane">
  <div class="topbar"><div class="editor-title"><div class="eyebrow" id="editorContext">Editing character profile</div><input id="profileName" class="titlefield" aria-label="Character name" maxlength="100" value="New Character" spellcheck="false" /></div><div class="editor-actions"><button type="button" class="btn clone-button" id="cloneEditor" title="Clone current character">Clone</button><button type="button" class="btn" id="backToProfile" hidden>Back to profile</button><button class="btn delete-button" id="deleteDraft" title="Delete this draft">Delete</button></div></div>
@@ -97,6 +97,7 @@
 </div>
 
 <div id="toast" class="toast" role="status" aria-live="polite"></div>
+<input type="file" id="appDataImport" accept=".json,application/json" hidden />
 <input type="file" id="fileImport" accept=".txt,.md,.bbcode,.json,text/plain,application/json" hidden />
 <script src="src/horizon-renderer.js"></script>
 <script src="src/syntax.js"></script>

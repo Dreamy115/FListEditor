@@ -660,6 +660,7 @@ function countWarnings(compiled){
  }
  for(const tag of stack)issues.push('Unclosed ['+tag+']');
  const parsedText=compiled.replace(/\[noparse\][\s\S]*?(?:\[\/noparse\]|$)/gi,'');
+ if(/\[img\][\s\S]*?\[\/img\]|\[img=(?!\d+\])[^\]\n]*\]/i.test(parsedText))issues.push('External image URLs are not supported by F-List profiles; use an uploaded profile image ID such as [img=12345] instead');
  if(/<\/?(?:div|span|table|p|br)\b/i.test(parsedText))issues.push('HTML is not supported in descriptions');
  return [...new Set(issues)];
 }
@@ -718,6 +719,8 @@ function locatedWarnings(text,mixed,compiled){
   }else if(/^(?:Invalid|Malformed|Unclosed inline)/.test(message)){
    const marker=message.slice(message.indexOf(': ')+2).replace(/; exported as literal text$/,'');
    let index=searchable.indexOf(marker);while(index>=0){matches.push({index,0:marker});index=searchable.indexOf(marker,index+marker.length)}
+  }else if(message.startsWith('External image URLs ')){
+   matches=[...searchable.matchAll(mixed?/!\[[^\]\n]*\]\([^\n)]*\)|\{(?:img|image):https?:[^}\n]*\}|\[img\][\s\S]*?\[\/img\]|\[img=(?!\d+\])[^\]\n]*\]/gi:/\[img\][\s\S]*?\[\/img\]|\[img=(?!\d+\])[^\]\n]*\]/gi)];
   }else if(message.startsWith('HTML '))matches=[...searchable.matchAll(/<\/?(?:div|span|table|p|br)\b[^>]*>/gi)];
   else{
    const tag=message.match(/\[(\/?[a-z0-9_*-]+)\]/i)?.[1];
@@ -920,7 +923,6 @@ const guideExamples=[
  ['Basics','Heading levels','One # adds heading + big; two or more # add a regular heading','# Large heading\n## Standard heading\n### Smaller heading'],
  ['Basics','Big text','Use the inline macro for F-List big text','{big|Large text}'],
  ['Basics','Links','A link with human-friendly text','[Visit my inspiration board](https://example.com)'],
- ['Basics','Image from URL','The target site may restrict external images','![A portrait](https://example.com/portrait.png)'],
  ['Basics','Quotes','Standard Markdown blockquotes','> “Everything has a price.”'],
  ['Basics','Bullet list','Plain text bullets compatible with F-List','- Adventurous\n- Sarcastic\n- Fond of stargazing'],
  ['Basics','Numbered list','Numbers remain readable','1. First encounter\n2. Second chance\n3. Final chapter'],
@@ -951,7 +953,6 @@ const guideExamples=[
  ['Macros','Bold & italic containers','Macros help when deeply nested emphasis cannot be written cleanly','{b|Bold text with *italic* inside} and {i|italic with **bold** inside}'],
  ['Macros','Nested formatting','Combine ordinary Markdown with a custom color macro','{color:purple|**Bright**, *italic*, and ++underlined++ text}'],
  ['Layout','Nested sections','A secret inside a colored centered section',':::center\n:::color purple\n# Private notes\n**Status:** Hidden\n:::collapse More information\n*The full story goes here.*\n:::\n:::\n:::'],
- ['Recipes','Decompiled profile','What a former BBCode profile looks like after conversion',':::center\n:::color purple\n# Old profile\n:::\n:::'],
  ['Recipes','Character card','A ready-made compact profile',':::center\n# ✦ Astra Vale ✦\n{color:purple|*An enigma in plain sight*}\n:::\n\n---\n**Species:** Unknown\n**Occupation:** Scout\n**Personality:** Clever, guarded, curious'],
  ['Recipes','Relationship section','Character links plus an expandable roster','# Connections\n- {user:First Companion}: Trusted friend\n- {user:Second Companion}: An old rival\n\n:::collapse More connections\n{icon:Another Character} A mysterious ally.\n:::'],
  ['Recipes','Roleplay hooks','Small sections to inspire interaction','## Roleplay hooks\n- You recognize the locket she wears.\n- She seems to be waiting for someone.\n- There is a bounty on her name.'],
@@ -990,6 +991,54 @@ const slug=()=> (active().name||'character').trim().replace(/[^a-z0-9_-]+/gi,'_'
 $('downloadCode').addEventListener('click',()=>{download(getCompiled(),slug()+'.bbcode');toast('BBCode exported')});
 $('downloadMarkdown').addEventListener('click',()=>{download(data.mixed?source.value:bbcodeToMarkdown(source.value,true),slug()+'.md','text/markdown;charset=utf-8');toast('Markdown source exported')});
 $('backupBtn').addEventListener('click',()=>{download(JSON.stringify({format:'folio-profile',version:1,name:active().name,content:active().content,mixed:data.mixed},null,2),slug()+'.folio.json','application/json');toast('Editable backup exported')});
+// Full-app backups contain the complete persisted state, separate from profile backups.
+function validateAppBackup(record){
+ if(!record||record.format!=='folio-app'||record.version!==1)throw Error('Unsupported app backup');
+ const value=record.data;
+ if(!value||!Array.isArray(value.drafts)||!value.drafts.length||value.drafts.length>80||!Array.isArray(value.customTemplates)||value.customTemplates.length>100)throw Error('Invalid app data');
+ for(const records of [value.drafts,value.customTemplates]){
+  const ids=new Set();
+  for(const item of records){
+   if(!item||typeof item.id!=='string'||!item.id||ids.has(item.id)||typeof item.name!=='string'||typeof item.content!=='string'||item.content.length>1500000||('mixed' in item&&typeof item.mixed!=='boolean'))throw Error('Invalid character or template');
+   ids.add(item.id);
+  }
+ }
+ if(!value.drafts.some(draft=>draft.id===value.active)||typeof value.mixed!=='boolean'||typeof value.previewNoteDismissed!=='boolean'||!['folio','graphite','forest','paper'].includes(value.editorTheme)||!Array.from($('theme').options).some(option=>option.value===value.theme)||!parsePreviewFontSize(value.previewFontSize)||typeof value.splitRatio!=='number'||!Number.isFinite(value.splitRatio)||value.splitRatio<.25||value.splitRatio>.75)throw Error('Invalid app settings');
+ return value;
+}
+function replaceAppData(next){
+ clearTimeout(saveTimer);editorLoaded=false;templateSession=null;
+ templateEditors.clear();characterEditors.clear();editHistories.clear();
+ data=next;setEditorTheme();setTheme();applyPaneSplit();
+ $('previewNote').hidden=data.previewNoteDismissed;
+ loadDraft(data.active);
+}
+$('exportAll').addEventListener('click',()=>{
+ stashEditor();
+ const snapshot=JSON.parse(JSON.stringify(templateSession?{...data,mixed:templateSession.returnContext.mixed}:data));
+ for(const draft of snapshot.drafts){const context=characterEditors.get(draft.id);if(context)draft.mixed=context.mixed}
+ download(JSON.stringify({format:'folio-app',version:1,data:snapshot},null,2),'folio-all-data.json','application/json');
+ toast('All characters, saved templates and settings exported');
+});
+$('importAll').addEventListener('click',()=>$('appDataImport').click());
+$('appDataImport').addEventListener('change',async event=>{
+ const file=event.target.files[0];event.target.value='';if(!file)return;
+ let next;
+ try{next=validateAppBackup(JSON.parse(await file.text()))}catch(error){toast('Not a valid full-app Folio backup');return}
+ requestConfirmation('Replace ALL characters, templates and settings with this backup? Unsaved template edits will be lost.',()=>{
+  // Write first so a storage failure leaves the current session intact.
+  try{localStorage.setItem(STORAGE,JSON.stringify(next))}catch(error){toast('Import failed: browser storage unavailable or full');return}
+  replaceAppData(next);toast('All app data imported');
+ });
+});
+$('purgeData').addEventListener('click',()=>requestConfirmation('Permanently delete ALL locally saved characters, templates and settings, including unsaved edits? Export all data first to keep a backup.',()=>{
+ try{localStorage.removeItem(STORAGE)}catch(error){toast('Could not delete local data');return}
+ const draft={id:makeId(),name:'New Character',content:''};
+ replaceAppData({customTemplates:[],drafts:[draft],active:draft.id,theme:'flist-blue',editorTheme:'folio',previewFontSize:'16',splitRatio:.524,previewNoteDismissed:false,mixed:true});
+ clearTimeout(saveTimer);
+ try{localStorage.removeItem(STORAGE);$('saveStatus').textContent='Local data purged'}catch(error){toast('Could not delete local data');return}
+ toast('All local app data purged');
+}));
 $('importBtn').addEventListener('click',()=>$('fileImport').click());
 $('fileImport').addEventListener('change',async(e)=>{const file=e.target.files[0];e.target.value='';if(!file)return;if(file.size>1500000){toast('File is too large (max 1.5 MB)');return}let str=await file.text(),name=file.name.replace(/\.(folio\.json|bbcode|txt|md|json)$/i,'');if(file.name.toLowerCase().endsWith('.json')){try{const record=JSON.parse(str);if(typeof record.content!=='string')throw Error('No profile content');name=String(record.name||name);str=record.content;if(typeof record.mixed==='boolean'){data.mixed=record.mixed;updateMode()}}catch(error){toast('Not a valid Folio backup');return}}
  const apply=()=>{if(templateSession){rememberSelection();active().name=name.slice(0,100);$('profileName').value=active().name;source.value=str;syncFromEditor();commitEdit('action')}else{active().name=name.slice(0,100);active().content=str;loadDraft(data.active)}toast('Source imported')};if(source.value.trim())requestConfirmation('Replace this draft with the imported file?',apply);else apply()});
