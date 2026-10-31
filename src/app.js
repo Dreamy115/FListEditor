@@ -915,7 +915,8 @@ function updateActiveSyntax(){
 function updateLineNumbers(){
  const layer=$('sourceHighlight'),numbers=$('sourceLineNumbers');
  const anchors=layer.querySelectorAll('.source-line-anchor');
- source.parentElement.style.setProperty('--gutter-width',Math.max(3,String(anchors.length).length+1)+'ch');
+ layer.style.paddingBottom=getComputedStyle(source).paddingBottom;
+ source.parentElement.style.setProperty('--gutter-width',Math.max(36,String(anchors.length).length*7+15)+'px');
  layer.style.width=(source.clientWidth+2)+'px';
  const fragment=document.createDocumentFragment();
  for(const anchor of anchors){
@@ -924,20 +925,27 @@ function updateLineNumbers(){
   number.style.top=anchor.offsetTop+'px';fragment.appendChild(number);
  }
  numbers.replaceChildren(fragment);numbers.style.top='0px';
- // Match the glyph baseline, including the editor's fractional line-height.
+ // Content changes and rewrapping can clamp the textarea's scroll position.
+ // Synchronize both layers before measuring the gutter's baseline.
+ syncHighlightScroll();
+ // Align glyph bottoms, then lift the smaller digits for optical alignment.
  if(anchors.length&&numbers.firstChild){
   const range=document.createRange();range.selectNodeContents(numbers.firstChild);
-  const delta=range.getBoundingClientRect().top-anchors[0].getBoundingClientRect().top;
-  numbers.style.top=-delta+'px';
+  const delta=range.getBoundingClientRect().bottom-anchors[0].getBoundingClientRect().bottom;
+  numbers.style.top=(-delta-1)+'px';
  }
  updateActiveSyntax();
 }
 function syncHighlightScroll(){
  const layer=$('sourceHighlight');
  layer.style.width=(source.clientWidth+2)+'px';
+ // The textarea and pre can differ by a final line box after wrapping or
+ // browser layout rounding. Give the overlay enough scroll range at EOF.
+ const missing=source.scrollTop-(layer.scrollHeight-layer.clientHeight);
+ if(missing>0)layer.style.paddingBottom=(parseFloat(getComputedStyle(layer).paddingBottom)+missing+1)+'px';
  layer.scrollTop=source.scrollTop;layer.scrollLeft=source.scrollLeft;
  FolioSyntax.paintActive(layer);
- $('sourceLineNumbers').style.transform='translateY('+(-source.scrollTop)+'px)';
+ $('sourceLineNumbers').style.transform='translateY('+(-layer.scrollTop)+'px)';
 }
 source.addEventListener('scroll',syncHighlightScroll);
 source.addEventListener('select',updateActiveSyntax);

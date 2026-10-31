@@ -32,9 +32,9 @@
 .editor-shell .editor::selection{background:#8b75dc66;color:transparent}
 @media(forced-colors:active){.editor-highlights{display:none}.editor-shell .editor{color:CanvasText;-webkit-text-fill-color:CanvasText;caret-color:CanvasText}}
 
-.editor-shell{--gutter-width:3ch}
+.editor-shell{--gutter-width:36px}
 .editor-shell .editor,.editor-highlights{padding-left:calc(var(--gutter-width) + 18px)}
-.source-gutter{position:absolute;inset:1px auto 1px 1px;width:var(--gutter-width);overflow:hidden;z-index:2;pointer-events:none;user-select:none;background:#131722;border-radius:10px 0 0 10px;border-right:1px solid #303448;font:13.5px/1.73 ui-monospace,SFMono-Regular,Consolas,"Liberation Mono",monospace}
+.source-gutter{position:absolute;inset:1px auto 1px 1px;width:var(--gutter-width);overflow:hidden;z-index:2;pointer-events:none;user-select:none;background:#131722;border-radius:10px 0 0 10px;border-right:1px solid #303448;font:11.5px/23.355px ui-monospace,SFMono-Regular,Consolas,"Liberation Mono",monospace}
 #sourceLineNumbers{position:absolute;inset:0 0 auto 0}
 .source-line-number{position:absolute;right:7px;color:#a0a9c8;text-align:right}
 .source-line-number.active{color:#ddd4ff}
