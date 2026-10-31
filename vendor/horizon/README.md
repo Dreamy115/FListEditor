@@ -1,0 +1,24 @@
+# Horizon renderer source
+
+Upstream: https://github.com/Fchat-Horizon/Horizon
+Revision: `a832077900e5c5b4ef9a12af136e8af773be8302`.
+
+The files in `bbcode/` are unmodified upstream sources. They are compiled into
+`src/horizon-renderer.js` with TypeScript by `scripts/build-renderer.cjs`.
+Run `npm ci` then `npm run build:renderer` after changing the adapter or sources.
+The checked-in generated renderer lets normal Python builds run without npm.
+
+Horizon is licensed under MPL-2.0; see LICENSE.md. The original F-Chat code's
+MIT notice is retained in LICENSE.old (Copyright 2018–2026 Dragonfruit Ventures,
+LLC). Horizon contributors include Sylvia Roselie and respective contributors.
+The generated renderer and adapted `src/horizon-preview.css` are covered by
+MPL-2.0. Source form is provided in this repository, including the adapter and
+build script. This notice does not select a license for the rest of Folio.
+
+Browser adaptation: Vue-backed link/avatar components are replaced with small
+DOM components; client settings have local defaults; collapse scheduling uses
+setTimeout. Numeric inline-image IDs retain placeholders when metadata is
+unavailable. External URL images remain a Folio extension. Horizon's parser
+and standard profile tag rules otherwise run directly, including nesting limits
+and literal noparse behavior. CSS is scoped and adapted to Folio's preview;
+this does not reproduce an entire Horizon theme or authenticated client state.

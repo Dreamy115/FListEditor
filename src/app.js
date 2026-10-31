@@ -101,9 +101,9 @@ Describe the character's appearance and observed behaviours.
 - **Witness:** {user:Character Name}
 :::`
 };
-let data={drafts:[{id:makeId(),name:'New Character',content:intro}],active:null,theme:'default',mixed:true};
+let data={drafts:[{id:makeId(),name:'New Character',content:intro}],active:null,theme:'flist-blue',previewFontSize:'16',mixed:true};
 data.active=data.drafts[0].id;
-try{const loaded=JSON.parse(localStorage.getItem(STORAGE));if(loaded&&Array.isArray(loaded.drafts)&&loaded.drafts.length){const valid=loaded.drafts.filter(d=>typeof d.id==='string'&&typeof d.name==='string'&&typeof d.content==='string').slice(0,80);if(valid.length){data={drafts:valid,active:valid.some(d=>d.id===loaded.active)?loaded.active:valid[0].id,theme:['default','classic','noir'].includes(loaded.theme)?loaded.theme:'default',mixed:loaded.mixed!==false}}}}catch(e){}
+try{const loaded=JSON.parse(localStorage.getItem(STORAGE));if(loaded&&Array.isArray(loaded.drafts)&&loaded.drafts.length){const valid=loaded.drafts.filter(d=>typeof d.id==='string'&&typeof d.name==='string'&&typeof d.content==='string').slice(0,80);if(valid.length){data={drafts:valid,active:valid.some(d=>d.id===loaded.active)?loaded.active:valid[0].id,theme:Array.from($('theme').options).some(option=>option.value===loaded.theme)?loaded.theme:'flist-blue',previewFontSize:parsePreviewFontSize(loaded.previewFontSize)||'16',mixed:loaded.mixed!==false}}}}catch(e){}
 let saveTimer=null,toastTimer=null;
 // Undo is managed explicitly because setRangeText() and textarea.value edits do not
 // consistently enter the browser's native undo stack across browsers.
@@ -173,13 +173,25 @@ function updateMode(){
   : 'Plain F-List BBCode. Switch to Markdown+ to decompile into editable Markdown and macros.';
  refresh();persist();
 }
-function wrapInline(tag,placeholder='your text'){const s=source.selectionStart,e=source.selectionEnd,selected=source.value.slice(s,e)||placeholder;replaceRange('['+tag+']'+selected+'[/'+tag.split('=')[0]+']',s,e,s+tag.length+2,s+tag.length+2+selected.length)}
+function wrapInline(tag,placeholder='your text'){
+ const s=source.selectionStart,e=source.selectionEnd,selected=source.value.slice(s,e)||placeholder;
+ let prefix='['+tag+']',suffix='[/'+tag.split('=')[0]+']',block=false;
+ if(data.mixed){
+  const marks={b:'**',i:'*',u:'++',s:'~~'};
+  if(marks[tag]&&!selected.includes('\n')){prefix=marks[tag];suffix=marks[tag]}
+  else if(['center','quote','heading'].includes(tag)||selected.includes('\n')){prefix=':::'+tag+'\n';suffix='\n:::';block=true}
+  else{prefix='{'+tag+'|';suffix='}'}
+ }
+ const lead=block&&s>0&&source.value[s-1]!=='\n'?'\n':'';
+ const tail=block&&e<source.value.length&&source.value[e]!=='\n'?'\n':'';
+ replaceRange(lead+prefix+selected+suffix+tail,s,e,s+lead.length+prefix.length,s+lead.length+prefix.length+selected.length);
+}
 function replaceRange(text,s=source.selectionStart,e=source.selectionEnd,selStart=s+text.length,selEnd=selStart){rememberSelection();source.focus();source.setRangeText(text,s,e,'end');source.setSelectionRange(selStart,selEnd);syncFromEditor();commitEdit('action')}
-function addLine(text){const pos=source.selectionStart;replaceRange('\n'+text+'\n',pos,pos,pos+1+text.length,pos+1+text.length)}
+function addLine(text){const s=source.selectionStart,e=source.selectionEnd,lead=s>0&&source.value[s-1]!=='\n'?'\n':'',tail=e<source.value.length&&source.value[e]!=='\n'?'\n':'';replaceRange(lead+text+tail,s,e,s+lead.length+text.length,s+lead.length+text.length)}
 function getCompiled(){return normalizeColorTags(data.mixed?markdownToBB(source.value):source.value)}
 // Extended Markdown compiles to the ordinary F-List tags, never custom tags in the export.
-const macroInlineNames=new Set(['color','b','i','s','big','small','u','underline','sup','sub','user','icon','eicon','img','image','link','noparse']);
-const macroBlockNames=new Set(['center','left','right','justify','indent','quote','collapse','big','small','color']);
+const macroInlineNames=new Set(['color','b','i','s','big','small','u','underline','sup','sub','user','icon','eicon','img','image','link','noparse','br','heading','hr']);
+const macroBlockNames=new Set(['center','left','right','justify','indent','quote','collapse','big','small','color','heading','b','i','u','s']);
 // F-List accepts exactly these twelve named colors, not arbitrary CSS hex codes.
 const presetColors={
  red:'#e15261',orange:'#ed9a41',yellow:'#e8cf62',green:'#69c879',
@@ -229,10 +241,12 @@ function inlineMarkdown(text,protectedParts=[]){
   const expression=text.slice(i+1,j-1),m=expression.match(/^([a-z]+)(:([^|]*))?(?:\|([\s\S]*))?$/i);
   if(!m||!macroInlineNames.has(m[1].toLowerCase())){output+=text.slice(i,j);i=j;continue}
   const name=m[1].toLowerCase(),arg=(m[3]||'').trim(),body=m[4];let compiled=null;
-  if(name==='color'&&body!==undefined){const color=resolvedColor(arg);const content=inlineMarkdown(body,protectedParts);compiled=color?'[color='+color+']'+content+'[/color]':content;}
-  else if(['b','i','s','big','small','u','underline','sup','sub','noparse'].includes(name)&&body!==undefined){let tag=name==='underline'?'u':name;compiled='['+tag+']'+(name==='noparse'?body:inlineMarkdown(body,protectedParts))+'[/'+tag+']'}
+  if(name==='br'&&body===undefined&&!arg)compiled='\n';
+  else if(name==='hr'&&body===undefined&&!arg)compiled='[hr]';
+  else if(name==='color'&&body!==undefined){const color=resolvedColor(arg);const content=inlineMarkdown(body,protectedParts);compiled=color?'[color='+color+']'+content+'[/color]':content;}
+  else if(['b','i','s','big','small','u','underline','sup','sub','noparse','heading'].includes(name)&&body!==undefined){let tag=name==='underline'?'u':name;compiled='['+tag+']'+(name==='noparse'?body:inlineMarkdown(body,protectedParts))+'[/'+tag+']'}
   else if(['user','icon','eicon'].includes(name)&&arg&&body===undefined&&!/[\[\]{}]/.test(arg))compiled='['+name+']'+arg+'[/'+name+']';
-  else if(['img','image'].includes(name)&&arg&&body===undefined){if(/^\d+$/.test(arg))compiled='[img='+arg+'][/img]';else if(safeUrl(arg))compiled='[img]'+arg+'[/img]'}
+  else if(['img','image'].includes(name)&&arg){if(/^\d+$/.test(arg))compiled='[img='+arg+']'+(body===undefined?'':body)+'[/img]';else if(body===undefined&&safeUrl(arg))compiled='[img]'+arg+'[/img]'}
   else if(name==='link'&&safeUrl(arg)&&body!==undefined)compiled='[url='+arg+']'+inlineMarkdown(body,protectedParts)+'[/url]';
   output+=compiled===null?text.slice(i,j):protect(compiled);i=j;
  }
@@ -252,17 +266,30 @@ function inlineMarkdown(text,protectedParts=[]){
  let revealed=text;for(let n=0;n<16&&revealed.includes('\uE000');n++){const next=revealed.replace(/\uE000(\d+)\uE001/g,(_,id)=>protectedParts[+id]??'');if(next===revealed)break;revealed=next}return revealed;
 }
 function markdownToBB(input){
- const lines=input.replace(/\r\n?/g,'\n').split('\n'),out=[],stack=[];
+ const lines=input.replace(/\r\n?/g,'\n').split('\n'),parts=[],stack=[];
+ // Only content lines contribute breaks. Macro/fence delimiters attach to their
+ // contents: pretty-printing BBCode tags would create visible F-List spacing.
+ let pendingBreak=false,afterClose=false;
+ const beforeLine=()=>{if(pendingBreak)parts.push('\n');pendingBreak=false};
+ const out={
+  push(value){if(value===''&&afterClose){parts.push('\n');return}beforeLine();parts.push(value);pendingBreak=true;afterClose=false},
+  open(value){pendingBreak=false;afterClose=false;parts.push(value)},
+  close(value){pendingBreak=false;afterClose=true;parts.push(value)}
+ };
  let inFence=false,inNoParse=false;
- for(const line of lines){
+ for(let index=0;index<lines.length;index++){
+  let line=lines[index];
+  const soft=!inFence&&!inNoParse&&index<lines.length-1&&((line.match(/\\+$/)||[''])[0].length%2===1);
+  if(soft)line=line.slice(0,-1);
+  try{
   const trimmed=line.trim();
   // A fenced code block is literal text. F-List supports noparse, not Markdown fences.
-  if(/^```/.test(trimmed)){if(!inNoParse){out.push(inFence?'[/noparse]':'[noparse]');inFence=!inFence;continue}}
+  if(/^```/.test(trimmed)){if(!inNoParse){if(inFence)out.close('[/noparse]');else out.open('[noparse]');inFence=!inFence;continue}}
   if(inFence){out.push(line);continue}
   if(inNoParse){out.push(line);if(/\[\/noparse\]/i.test(line))inNoParse=false;continue}
   if(/\[noparse\]/i.test(line)){inNoParse=!/\[\/noparse\]/i.test(line);out.push(line);continue}
   if(trimmed===':::'){
-   if(stack.length){const closing=stack.pop();if(closing)out.push('[/'+closing+']');continue}
+   if(stack.length){const closing=stack.pop();if(closing)out.close('[/'+closing+']');continue}
    out.push(line);continue;
   }
   const block=line.match(/^\s*:::([a-z]+)(?:\s+(.+))?\s*$/i);
@@ -270,21 +297,26 @@ function markdownToBB(input){
    if(macroBlockNames.has(tag)){
     if(tag==='color'&&!resolvedColor(arg)){stack.push('');continue;}
     if((tag==='collapse'&&arg&&!/[\[\]]/.test(arg))||(tag==='color'&&resolvedColor(arg))||(!['collapse','color'].includes(tag)&&!arg)){
-     out.push('['+tag+(arg?'='+(tag==='color'?resolvedColor(arg):arg):'')+']');stack.push(tag);continue;
+     out.open('['+tag+(arg?'='+(tag==='color'?resolvedColor(arg):arg):'')+']');stack.push(tag);continue;
     }
    }
   }
-  if(/^\s*#{1,6}\s+/.test(line)){out.push('[heading]'+inlineMarkdown(line.replace(/^\s*#{1,6}\s+/,'').replace(/\s+#+\s*$/,''))+'[/heading]');continue}
-  if(/^\s*(?:-{3,}|\*{3,}|_{3,})\s*$/.test(line)){out.push('[hr]');continue}
+  const heading=line.match(/^[ \t]*(#{1,6})[ \t]+(.*)$/);
+  if(heading){
+   const level=heading[1].length,content=inlineMarkdown(heading[2].replace(/\s+#+\s*$/,''));
+   out.push(level===1?'[heading][big]'+content+'[/big][/heading]':level===3?'[big]'+content+'[/big]':'[heading]'+content+'[/heading]');continue;
+  }
+  if(/^\s*(?:-{3,}|\*{3,}|_{3,})\s*$/.test(line)){out.close('[hr]');continue}
   const quote=line.match(/^\s*>\s?(.*)$/);if(quote){out.push('[quote]'+inlineMarkdown(quote[1])+'[/quote]');continue}
   const bullet=line.match(/^(\s*)[-*+]\s+(.+)$/);if(bullet){out.push(bullet[1]+'• '+inlineMarkdown(bullet[2]));continue}
   // Numbered lists are already readable as plain text on F-List.
   out.push(inlineMarkdown(line));
+  }finally{if(soft)pendingBreak=false}
  }
  // Do not silently drop a missing closing ::: marker.
- while(stack.length)out.push('[/'+stack.pop()+']');
- if(inFence)out.push('[/noparse]');
- return out.join('\n');
+ while(stack.length){const closing=stack.pop();if(closing)out.close('[/'+closing+']')}
+ if(inFence)out.close('[/noparse]');
+ return parts.join('');
 }
 const allowedTags=new Set(['b','i','u','s','sup','sub','heading','big','small','center','right','left','justify','indent','quote','color','url','collapse','img','user','icon','eicon','noparse','hr']);
 function safeUrl(value){try{const u=new URL(value);return ['http:','https:'].includes(u.protocol)?u.href:null}catch(e){return null}}
@@ -321,21 +353,34 @@ function escapePlainMarkdown(text){
   .replace(/^(\s*)(#{1,6}\s|>\s|[-*+]\s|(?:-{3,}|\*{3,}|_{3,})\s*$)/gm,(_,indent,lead)=>indent+'\\'+lead);
 }
 function bbcodeToMarkdown(input,escapePlain=true){
- const tree=parseBBCode(normalizeColorTags(input));
+ const normalized=normalizeColorTags(input),tree=parseBBCode(normalized);
+ let preserveLayout=false,editableLayout=false;
  const blockTags=new Set(['center','left','right','justify','indent','quote','collapse']);
  const raw=node=>node.text!==undefined?node.text:node.tag==='hr'?'[hr]':node.open+node.children.map(raw).join('')+(node.unclosed?'':'[/'+node.tag+']');
  const children=node=>node.children.map(convert).join('');
  const hasBlocks=node=>node.children.some(child=>child.tag&&(blockTags.has(child.tag)||child.tag==='heading'||hasBlocks(child)));
- const boundaries=value=>'\uE006'+value.replace(/^\n+|\n+$/g,'')+'\uE007';
- function block(tag,arg,body){return boundaries(':::'+tag+(arg?' '+arg:'')+'\n'+body.replace(/^\n+|\n+$/g,'')+'\n:::')}
+ const boundaries=value=>'\uE006'+value+'\uE007';
+ function block(tag,arg,body){if(editableLayout)return boundaries(':::'+tag+(arg?' '+arg:'')+'\uE007'+body+'\uE006:::');return boundaries(':::'+tag+(arg?' '+arg:'')+'\n'+body+'\n:::')}
  function convert(node){
   if(node.text!==undefined)return escapePlain?escapePlainMarkdown(node.text):node.text;
   if(!node.tag)return children(node);
   if(node.unclosed)return raw(node);
   const tag=node.tag,content=children(node),plain=node.children.map(raw).join('');
   const inline=!/[\r\n]/.test(content)&&!hasBlocks(node);
+  // Markdown block syntax needs its own lines. Keep BBCode wrappers when
+  // those syntax boundaries would change significant whitespace on export.
+  if(preserveLayout&&(blockTags.has(tag)||['heading','hr','noparse'].includes(tag)||!inline)){
+   if(tag==='hr')return '[hr]';
+   if(tag==='noparse')return raw(node);
+   return node.open+content+'[/'+tag+']';
+  }
   if(tag==='hr')return boundaries('---');
-  if(tag==='heading')return inline?boundaries('# '+content):raw(node);
+  if(tag==='heading'){
+   if(editableLayout||!inline)return block('heading','',content);
+   const large=node.children.length===1&&node.children[0].tag==='big';
+   return boundaries(large?'# '+children(node.children[0]):'## '+content);
+  }
+  if(tag==='big'&&inline&&!editableLayout)return boundaries('### '+content);
   if(['b','i','u','s'].includes(tag)){
    const marks={b:'**',i:'*',u:'++',s:'~~'};
    // Nested emphasis with surrounding prose is ambiguous to the compact parser.
@@ -362,7 +407,7 @@ function bbcodeToMarkdown(input,escapePlain=true){
   }
   if(['user','icon','eicon'].includes(tag))return /^[^{}\[\]\n]+$/.test(plain)?'{'+tag+':'+plain+'}':raw(node);
   if(tag==='img'){
-   if(node.param&&/^\d+$/.test(node.param)&&!plain.trim())return '{img:'+node.param+'}';
+   if(node.param&&/^\d+$/.test(node.param)&&!/[{}\r\n]/.test(plain))return '{img:'+node.param+(plain?'|'+plain:'')+'}';
    if(!node.param&&safeUrl(plain.trim()))return '{img:'+plain.trim()+'}';
    return raw(node);
   }
@@ -376,40 +421,55 @@ function bbcodeToMarkdown(input,escapePlain=true){
  const result=children(tree);
  // Boundary sentinels ensure the Markdown syntax lands on its own line,
  // while reusing line breaks that were already present in the BBCode.
- return result.replace(/[\uE006\uE007\n]+/g,part=>'\n'.repeat(Math.max(1,(part.match(/\n/g)||[]).length))).trim();
+ const markdown=result.replace(/[\uE006\uE007\n]+/g,part=>'\n'.repeat(Math.max(1,(part.match(/\n/g)||[]).length))).trim();
+ if(markdownToBB(markdown)===normalized.replace(/\r\n?/g,'\n'))return preferHashHeadings(markdown);
+ editableLayout=true;
+ const editable=children(tree).replace(/^[\uE006\uE007]+|[\uE006\uE007]+$/g,'')
+  .replace(/[\uE006\uE007\n]+/g,part=>'\n'.repeat((part.match(/\n/g)||[]).length+(/[\uE006\uE007]/.test(part)?1:0)));
+ if(markdownToBB(editable)===normalized.replace(/\r\n?/g,'\n'))return preferHashHeadings(editable);
+ editableLayout=false;preserveLayout=true;
+ return preferHashHeadings(children(tree));
 }
-function renderBB(input){
- const root=document.createDocumentFragment();let cursor=root;
- const stack=[];
- const token=/\[(\/?)((?:[a-z]+))(?:=([^\]\n]*))?\]/gi;let previous=0,match;
- const appendText=(value)=>{if(value)cursor.appendChild(document.createTextNode(value))};
- function close(tag){const idx=stack.map(x=>x.tag).lastIndexOf(tag);if(idx<0)return false;while(stack.length>idx){const frame=stack.pop();if(frame.tag==='url'&&!frame.param){const href=safeUrl(frame.el.textContent.trim());if(href)frame.el.href=href;else{frame.el.removeAttribute('href');frame.el.title='Invalid URL'}}if(['eicon','user','icon','img','noparse'].includes(frame.tag))finishSpecial(frame);cursor=stack.length?stack[stack.length-1].inner:root}return true}
- function finishSpecial(frame){const str=frame.inner.textContent.trim();const holder=frame.el;holder.replaceChildren();if(frame.tag==='noparse'){holder.append(document.createTextNode(str));return}if(frame.tag==='user'||frame.tag==='icon'){const href='https://www.f-list.net/c/'+encodeURIComponent(str);const a=document.createElement('a');a.href=href;a.target='_blank';a.rel='noopener noreferrer';a.className='usermention';if(frame.tag==='icon'){const img=document.createElement('img');img.className='eicon';img.alt=str;img.loading='lazy';img.src='https://static.f-list.net/images/avatar/'+encodeURIComponent(str.toLowerCase())+'.png';a.append(img)}else a.textContent='@'+str;holder.append(a);return}
- if(frame.tag==='eicon'){if(!/^[\w\- ]{1,80}$/.test(str)){holder.textContent='[eicon]'+str+'[/eicon]';return}const img=document.createElement('img');img.className='eicon';img.alt='eicon: '+str;img.loading='lazy';img.src='https://static.f-list.net/images/eicon/'+encodeURIComponent(str.toLowerCase())+'.gif';holder.append(img);return}
- if(frame.tag==='img'){const imageSrc=frame.param?'':safeUrl(str);if(imageSrc){const img=document.createElement('img');img.className='profileimg';img.alt='Profile image';img.loading='lazy';img.src=imageSrc;holder.append(img)}else{const span=document.createElement('span');span.className='placeholder-image';span.textContent=frame.param?'▧ F-List inline image #'+frame.param+' (preview unavailable)':'▧ Image unavailable: '+str.slice(0,90);holder.append(span)}}
+// Choose heading notation locally, so one tightly packed heading does not
+// force every other heading in the profile back to explicit macros.
+function preferHashHeadings(markdown){
+ const expected=markdownToBB(markdown);
+ const unwrapBig=text=>{
+  if(!text.startsWith('{big|')||!text.endsWith('}'))return null;
+  let depth=0;
+  for(let i=0;i<text.length;i++){
+   if(text[i]==='\\'){i++;continue}
+   if(text[i]==='{')depth++;
+   if(text[i]==='}'&&--depth===0&&i!==text.length-1)return null;
+  }
+  return depth===0?text.slice(5,-1):null;
+ };
+ const patterns=[/^:::heading\n([^\n]*)\n:::$/gm,/^\{big\|[^\n]*\}$/gm];
+ for(const pattern of patterns){
+  // Work backwards to keep offsets stable after each accepted replacement.
+  for(const match of [...markdown.matchAll(pattern)].reverse()){
+   const body=match[1]===undefined?unwrapBig(match[0]):match[1];
+   if(body===null)continue;
+   const large=match[1]===undefined?null:unwrapBig(body);
+   const replacement=match[1]===undefined?'### '+body:large===null?'## '+body:'# '+large;
+   const candidate=markdown.slice(0,match.index)+replacement+markdown.slice(match.index+match[0].length);
+   if(markdownToBB(candidate)===expected)markdown=candidate;
+  }
  }
- function make(tag,param){let el,inner;
- switch(tag){case 'b':el=document.createElement('strong');break;case 'i':el=document.createElement('em');break;case 'u':el=document.createElement('u');break;case 's':el=document.createElement('s');break;case 'sup':el=document.createElement('sup');break;case 'sub':el=document.createElement('sub');break;case 'heading':el=document.createElement('h2');break;case 'big':case 'small':el=document.createElement('span');el.className=tag;break;case 'center':case 'right':case 'justify':case 'left':el=document.createElement('div');el.className='align-'+tag;break;case 'indent':el=document.createElement('div');el.className='indent';break;case 'quote':el=document.createElement('blockquote');break;case 'color':el=document.createElement('span');if(colorSafe(param))el.style.color=presetColors[colorSafe(param)];break;case 'url':el=document.createElement('a');el.target='_blank';el.rel='nofollow noopener noreferrer';if(safeUrl(param||''))el.href=safeUrl(param);break;case 'collapse':el=document.createElement('details');{let summary=document.createElement('summary');summary.textContent=param||'More details';el.append(summary);inner=document.createElement('div');inner.className='foldbody';el.append(inner)}break;case 'eicon':case 'icon':case 'user':case 'img':case 'noparse':el=document.createElement('span');inner=document.createElement('span');el.append(inner);break;default:return null}
- return {tag,param,el,inner:inner||el}}
- while((match=token.exec(input))!==null){
- const [full,closing,rawTag,rawParam]=match,tag=rawTag.toLowerCase(),param=(rawParam||'').trim();
- // Inside noparse, preserve all tags except its closing tag.
- if(stack.some(f=>f.tag==='noparse')&&!(closing&&tag==='noparse'))continue;
- // Treat special content tags as raw until closed.
- const special=stack.findLast(f=>['eicon','user','icon','img'].includes(f.tag));
- if(special&&!(closing&&tag===special.tag))continue;
- if(!allowedTags.has(tag)){continue}
- appendText(input.slice(previous,match.index));previous=token.lastIndex;
- if(tag==='hr'&&!closing){cursor.append(document.createElement('hr'));continue}
- if(closing){if(!close(tag))appendText(full);continue}
- const frame=make(tag,param);if(!frame){appendText(full);continue}cursor.append(frame.el);stack.push(frame);cursor=frame.inner;
- }
- appendText(input.slice(previous));return root;
+ return markdown;
 }
+function renderBB(input){return FolioHorizon.render(input)}
 function countWarnings(compiled){let issues=[];const opens={};for(const m of compiled.matchAll(/\[(\/?)((?:[a-z]+))(?:=[^\]\n]*)?\]/gi)){let tag=m[2].toLowerCase();if(!allowedTags.has(tag)){if(['session','list','li','size','table','font','spoiler','youtube','code'].includes(tag))issues.push('Unsupported or unverified tag: '+tag);continue}if(tag==='hr')continue;if(m[1]){if((opens[tag]||0)===0)issues.push('Unmatched [/'+tag+']');else opens[tag]--}else opens[tag]=(opens[tag]||0)+1}Object.keys(opens).filter(tag=>opens[tag]).forEach(tag=>issues.push('Unclosed ['+tag+']'));if(/<\/?(?:div|span|table|p|br)\b/i.test(compiled))issues.push('HTML is not supported in descriptions');return [...new Set(issues)]}
-function refresh(){const bb=getCompiled();$('previewTitle').textContent=$('profileName').value.trim()||'Untitled character';const preview=$('preview');preview.replaceChildren();try{preview.appendChild(renderBB(bb))}catch(e){preview.textContent='Preview error: '+e.message}const text=source.value;$('stats').textContent=(text.trim()?text.trim().split(/\s+/).length:0)+' words · '+text.length.toLocaleString()+' characters';const problems=[...countWarnings(bb),...colorWarnings(source.value)];$('warningCount').textContent=problems.length?problems.length+' potential issue'+(problems.length===1?'':'s'):'No obvious issues';$('warningCount').title=problems.join('\n')}
+function refresh(){FolioSyntax.highlight($('sourceHighlight'),source.value,data.mixed);syncHighlightScroll();const bb=getCompiled();$('previewTitle').textContent=$('profileName').value.trim()||'Untitled character';const preview=$('preview');preview.replaceChildren();try{preview.appendChild(renderBB(bb))}catch(e){preview.textContent='Preview error: '+e.message}const text=source.value;$('stats').textContent=(text.trim()?text.trim().split(/\s+/).length:0)+' words · '+text.length.toLocaleString()+' characters';const problems=[...countWarnings(bb),...colorWarnings(source.value)];$('warningCount').textContent=problems.length?problems.length+' potential issue'+(problems.length===1?'':'s'):'No obvious issues';$('warningCount').title=problems.join('\n')}
 function syncFromEditor(){active().content=source.value;refresh();scheduleSave()}
 function syncName(){active().name=$('profileName').value||'Untitled character';renderDrafts();refresh();scheduleSave()}
+function syncHighlightScroll(){
+ const layer=$('sourceHighlight');
+ layer.style.width=(source.clientWidth+2)+'px';
+ layer.scrollTop=source.scrollTop;layer.scrollLeft=source.scrollLeft;
+}
+source.addEventListener('scroll',syncHighlightScroll);
+new ResizeObserver(syncHighlightScroll).observe(source);
 source.addEventListener('input',e=>{syncFromEditor();commitEdit('typing',e.inputType||'input')});
 // Some browsers dispatch historyUndo/historyRedo beforeinput rather than keydown.
 source.addEventListener('beforeinput',e=>{
@@ -422,12 +482,16 @@ $('newDraft').addEventListener('click',()=>{let d={id:makeId(),name:'Untitled ch
 $('deleteDraft').addEventListener('click',()=>requestConfirmation('Delete the current draft? This cannot be undone.',()=>{data.drafts=data.drafts.filter(d=>d.id!==data.active);if(!data.drafts.length)data.drafts.push({id:makeId(),name:'New Character',content:''});loadDraft(data.drafts[0].id);toast('Draft deleted')}));
 document.querySelectorAll('[data-template]').forEach(btn=>btn.addEventListener('click',()=>{const type=btn.dataset.template;const apply=()=>{rememberSelection();source.value=data.mixed?templates[type]:markdownToBB(templates[type]);source.focus();syncFromEditor();commitEdit('action');toast('Markdown-first template applied')};if(source.value.trim())requestConfirmation('Replace this draft with the '+type+' template?',apply);else apply()}));
 document.querySelectorAll('[data-wrap]').forEach(btn=>btn.addEventListener('click',()=>wrapInline(btn.dataset.wrap)));
-document.querySelectorAll('[data-action]').forEach(btn=>btn.addEventListener('click',()=>{switch(btn.dataset.action){case 'hr':case 'divider':addLine('[hr]');break;case 'details':addLine('[b]Field:[/b] Details');break}}));
+document.querySelectorAll('[data-action]').forEach(btn=>btn.addEventListener('click',()=>{switch(btn.dataset.action){case 'hr':case 'divider':addLine(data.mixed?'---':'[hr]');break;case 'details':addLine(data.mixed?'**Field:** Details':'[b]Field:[/b] Details');break}}));
 const palette=$('colorPalette');
 function wrapColor(name){if(!colorSafe(name))return;
  if(!data.mixed){wrapInline('color='+name);return}
  const s=source.selectionStart,e=source.selectionEnd,chosen=source.value.slice(s,e)||'your text';
- const prefix='{color:'+name+'|';replaceRange(prefix+chosen+'}',s,e,s+prefix.length,s+prefix.length+chosen.length);
+ const block=chosen.includes('\n');
+ const lead=block&&s>0&&source.value[s-1]!=='\n'?'\n':'';
+ const tail=block&&e<source.value.length&&source.value[e]!=='\n'?'\n':'';
+ const prefix=lead+(block?':::color '+name+'\n':'{color:'+name+'|'),suffix=block?'\n:::'+tail:'}';
+ replaceRange(prefix+chosen+suffix,s,e,s+prefix.length,s+prefix.length+chosen.length);
 }
 colorNames.forEach(name=>{const btn=document.createElement('button');btn.type='button';btn.className='palette-option';btn.title='Apply F-List '+name;
  btn.setAttribute('aria-label','Apply '+name+' text color');
@@ -457,7 +521,26 @@ function switchMode(toMixed){
 }
 $('mixedMode').addEventListener('click',()=>switchMode(true));
 $('bbMode').addEventListener('click',()=>switchMode(false));
-$('theme').addEventListener('change',e=>{data.theme=e.target.value;setTheme();persist()});function setTheme(){$('previewPage').className='previewpage'+(data.theme==='default'?'':' '+data.theme);$('theme').value=data.theme}
+$('theme').addEventListener('change',e=>{data.theme=e.target.value;setTheme();persist()});function setTheme(){$('previewPage').className='previewpage'+(data.theme==='default'?'':' '+data.theme);$('theme').value=data.theme;setPreviewFontSize()}
+function parsePreviewFontSize(value){
+ if(value==null)return null;
+ const text=String(value??'').trim().toLowerCase();
+ if(text===''||text==='site')return 'site';
+ if(!/^(?:\d+(?:\.\d+)?|\.\d+)(?:\s*px)?$/.test(text))return null;
+ const size=Number(text.replace(/\s*px$/,''));return Number.isFinite(size)&&size>=1&&size<=200?String(size):null;
+}
+function setPreviewFontSize(){
+ $('preview').style.fontSize=data.previewFontSize==='site'?'':data.previewFontSize+'px';
+ $('previewFontSize').value=data.previewFontSize==='site'?'':data.previewFontSize;
+ $('previewFontSize').removeAttribute('aria-invalid');
+}
+$('previewFontSize').addEventListener('input',e=>{
+ const size=parsePreviewFontSize(e.target.value);
+ if(!size){e.target.setAttribute('aria-invalid','true');return}
+ e.target.removeAttribute('aria-invalid');data.previewFontSize=size;
+ $('preview').style.fontSize=size==='site'?'':size+'px';persist();
+});
+$('previewFontSize').addEventListener('change',setPreviewFontSize);
 // All toolbar insertion tools edit the source directly, with no prompt or modal.
 const insertionSpecs={
  link:{prefix:'[url=https://example.com]',suffix:'[/url]',fallback:'link text',select:'https://example.com'},
@@ -469,20 +552,36 @@ const insertionSpecs={
  eicon:{prefix:'[eicon]',suffix:'[/eicon]',fallback:'eicon-name'},
  noparse:{prefix:'[noparse]',suffix:'[/noparse]',fallback:'literal **text**'},
 };
+const markdownInsertionSpecs={
+ link:{prefix:'[',suffix:'](https://example.com)',fallback:'link text',select:'https://example.com'},
+ image:{prefix:'![](',suffix:')',fallback:'https://example.com/image.png'},
+ inlineimg:{prefix:'{img:12345',suffix:'}',fallback:'',select:'12345'},
+ collapse:{prefix:':::collapse More details\n',suffix:'\n:::',fallback:'Write details here',select:'More details',block:true},
+ user:{prefix:'{user:',suffix:'}',fallback:'Character Name'},
+ icon:{prefix:'{icon:',suffix:'}',fallback:'Character Name'},
+ eicon:{prefix:'{eicon:',suffix:'}',fallback:'eicon-name'},
+ noparse:{prefix:'{noparse|',suffix:'}',fallback:'literal **text**'}
+};
 function insertTag(type){
- const spec=insertionSpecs[type];if(!spec)return;
+ let spec=(data.mixed?markdownInsertionSpecs:insertionSpecs)[type];if(!spec)return;
  const s=source.selectionStart,e=source.selectionEnd,chosen=source.value.slice(s,e);
- const text=spec.prefix+(chosen||spec.fallback)+spec.suffix;
+ if(data.mixed&&type==='inlineimg'&&chosen)spec={...spec,prefix:spec.prefix+'|'};
+ if(data.mixed&&type==='noparse'&&(chosen.includes('\n')||/[{}]/.test(chosen)))spec={prefix:'```\n',suffix:'\n```',fallback:'literal text',block:true};
+ const lead=spec.block&&s>0&&source.value[s-1]!=='\n'?'\n':'';
+ const tail=spec.block&&e<source.value.length&&source.value[e]!=='\n'?'\n':'';
+ const text=lead+spec.prefix+(chosen||spec.fallback)+spec.suffix+tail;
  const target=spec.select||(!chosen?spec.fallback:null);
  const at=target?text.indexOf(target):-1;
  replaceRange(text,s,e,at<0?s+text.length:s+at,at<0?s+text.length:s+at+target.length);
 }
+
 document.querySelectorAll('[data-insert]').forEach(btn=>btn.addEventListener('click',()=>insertTag(btn.dataset.insert)));
 // A searchable reference that stays inside the editor rather than blocking it.
 const guideExamples=[
  ['Basics','Bold and italics','Mix emphasis in a sentence','**Bold**, *italic*, and ***both***.'],
  ['Basics','Underline and strikethrough','Underline uses a Folio extension','++Underlined++ and ~~crossed out~~.'],
  ['Basics','Heading and divider','Break your bio into readable sections','# About me\nA curious traveller.\n\n---\n## Story hooks'],
+ ['Basics','Heading levels','One # adds heading + big; two add heading; three add big','# Large heading\n## Standard heading\n### Large text'],
  ['Basics','Links','A link with human-friendly text','[Visit my inspiration board](https://example.com)'],
  ['Basics','Image from URL','The target site may restrict external images','![A portrait](https://example.com/portrait.png)'],
  ['Basics','Quotes','Standard Markdown blockquotes','> “Everything has a price.”'],
@@ -497,6 +596,9 @@ const guideExamples=[
  ['Macros','Character avatar','Show another character’s icon','{icon:Character Name}'],
  ['Macros','Eicon','Display an uploaded F-List eicon','{eicon:eicon-name}'],
  ['Macros','Uploaded profile image','Reference a numeric F-List image ID','{img:12345}'],
+ ['Macros','Labeled profile image','Preserve the text associated with an uploaded image','{img:12345|Portrait label}'],
+ ['Macros','Heading block','Multiline headings use the same spacing rules as other block macros',':::heading\n{color:cyan|Character name}\n{big|Subtitle}\n:::'],
+ ['Macros','Inline heading and divider','Insert headings and rules without extra line breaks','{heading|About me}{hr}Profile text'],
  ['Macros','Big and small','Use F-List native size tags','{big|Shout!} and {small|a whisper.}'],
  ['Macros','Superscript & subscript','Text above or below the baseline','H{sub|2}O and x{sup|2}'],
  ['Macros','Literal inline text','Prevent formatting for a segment','{noparse|**This is not bold**}'],

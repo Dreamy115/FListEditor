@@ -1,0 +1,35 @@
+/* Adapted from Horizon scss/_bbcode.scss, revision a832077900e5c5b4ef9a12af136e8af773be8302.
+ * MPL-2.0; see vendor/horizon/LICENSE.md and README.md for source and notices. */
+.description .bbcode {white-space:pre-wrap;overflow-wrap:anywhere;max-width:100%}
+.description .bigText {font-size:1.4em}
+.description .smallText {font-size:.8em}
+.description .leftText,.description .centerText,.description .rightText,.description .justifyText {display:block}
+.description .leftText {text-align:left}
+.description .centerText {text-align:center}
+.description .rightText {text-align:right}
+.description .justifyText {text-align:justify}
+.description .indentText {padding-left:5%}
+.description .character-avatar {display:inline;width:50px;height:50px;vertical-align:middle;object-fit:contain}
+.description .redText {color:#f00}
+.description .blueText {color:#06f}
+.description .greenText {color:#0f0}
+.description .yellowText {color:#ff0}
+.description .cyanText {color:#0ff}
+.description .purpleText {color:#93f}
+.description .brownText {color:#8a6d3b}
+.description .pinkText {color:#f9c}
+.description .grayText {color:#ccc}
+.description .orangeText {color:#f60}
+.description .whiteText {color:#fff}
+.description .blackText {color:#000}
+.description .bbcode h2 {font-size:1.5em;font-weight:bold}
+.description .bbcode-collapse {border:1px solid #9d90bf58;border-radius:8px;margin:9px 0;overflow:hidden}
+.description .bbcode-collapse-header {font-weight:bold;cursor:pointer;padding:.4em .75em;background:#8f7eb31c}
+.description .bbcode-collapse-header:before {content:'▾ ';}
+.description .collapsed > .bbcode-collapse-header:before {content:'▸ ';}
+.description .bbcode-collapse-body {margin-left:.5rem;overflow-y:hidden;transition:height .2s}
+.description .card-body {padding:.75em}
+.description .inline-image {max-width:100%;height:auto}
+.description .row {display:flex;flex-wrap:wrap;gap:1em}
+.description .row > div {flex:1;min-width:0}
+@media(prefers-reduced-motion:reduce){.description .bbcode-collapse-body {transition:none}}

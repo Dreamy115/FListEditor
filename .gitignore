@@ -1,7 +1,9 @@
 __pycache__/
+node_modules/
 *.py[cod]
 .DS_Store
 Thumbs.db
-.vscode/
+.vscode/*
+!.vscode/tasks.json
 .idea/
 dist/

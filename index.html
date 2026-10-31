@@ -6,6 +6,8 @@
 <meta name="color-scheme" content="dark" />
 <title>Folio | F-List Profile Studio</title>
 <link rel="stylesheet" href="src/styles.css">
+<link rel="stylesheet" href="src/horizon-preview.css">
+<link rel="stylesheet" href="src/flist-themes.css">
 </head>
 <body>
 <div class="app">
@@ -62,22 +64,24 @@
  <div id="colorPalette" class="color-palette" hidden aria-label="F-List named text colors"></div>
  </div>
  <div id="confirmBar" class="confirmbar" hidden><span id="confirmText"></span><button type="button" class="btn primary" id="confirmYes">Confirm</button><button type="button" class="btn" id="confirmNo">Cancel</button></div>
-<section id="guidePanel" class="guide-panel" hidden aria-label="Formatting guide"><div class="guide-head"><div><strong>Formatting &amp; macro cookbook</strong><p>All templates are Markdown-first. Insert examples, nest macros, and export regular F-List BBCode. Only 12 named F-List colors are supported; legacy hex values are mapped to the nearest preset. Switching modes converts the source in both directions.</p></div><button type="button" class="guide-close" id="closeGuide" aria-label="Close guide">×</button></div><div class="guide-tools"><input id="guideSearch" type="search" aria-label="Search formatting examples" placeholder="Search examples, tags, macros…"><div id="guideTabs" class="guide-tabs"></div></div><div id="guideExamples" class="guide-examples"></div></section>
+<section id="guidePanel" class="guide-panel" hidden aria-label="Formatting guide"><div class="guide-head"><div><strong>Formatting &amp; macro cookbook</strong><p>Block macro markers (:::) and dividers (---) absorb the adjacent source newline. Add a blank line beside a marker for a visible break. Ordinary prose newlines remain visible. All templates are Markdown-first. Insert examples, nest macros, and export regular F-List BBCode. Only 12 named F-List colors are supported; legacy hex values are mapped to the nearest preset. Switching modes converts the source in both directions.</p></div><button type="button" class="guide-close" id="closeGuide" aria-label="Close guide">×</button></div><div class="guide-tools"><input id="guideSearch" type="search" aria-label="Search formatting examples" placeholder="Search examples, tags, macros…"><div id="guideTabs" class="guide-tabs"></div></div><div id="guideExamples" class="guide-examples"></div></section>
 <div class="sourcebar"><div><strong>Profile description</strong><div><span id="modeHint">Markdown and custom macros. Switch to BBCode to compile; switch back to decompile.</span></div></div><div class="seg"><button id="mixedMode" class="active" title="Switch to Markdown+ and decompile the current BBCode">Markdown+</button><button id="bbMode" title="Switch to BBCode and compile the current Markdown+">BBCode</button></div></div>
- <div class="editorwrap"><textarea class="editor" id="source" spellcheck="true" aria-label="Profile description source" placeholder="Start writing your character's story…"></textarea></div>
+ <div class="editorwrap"><div class="editor-shell"><pre id="sourceHighlight" class="editor-highlights" aria-hidden="true"></pre><textarea class="editor" id="source" spellcheck="true" aria-label="Profile description source" placeholder="Start writing your character's story…"></textarea></div></div>
  <div class="statusbar"><span id="stats">0 words · 0 characters</span><span id="saveStatus">● Saved locally</span></div>
  <div class="actionbar"><button class="btn primary" id="copyCode">▤ &nbsp;Copy BBCode</button><button class="btn" id="downloadCode">↓ Export .bbcode</button><div class="grow"></div><button class="btn quiet" id="importBtn">↑ Import</button><button class="btn quiet" id="backupBtn">⇩ Backup</button></div>
 </section>
 <section class="previewarea">
  <div class="pvhead"><div><h2>Live preview</h2><span class="live">UPDATING AS YOU TYPE</span></div><button class="btn quiet" id="openSite" title="Open F-List in a new tab">Visit F-List ↗</button></div>
- <div class="pvcontrols"><label>Profile appearance</label><select id="theme" aria-label="Preview theme"><option value="default">Midnight lilac</option><option value="classic">Light parchment</option><option value="noir">Obsidian</option></select></div>
+ <div class="pvcontrols"><label for="theme">Profile appearance</label><select id="theme" aria-label="Preview theme"><optgroup label="F-List site schemes"><option value="flist-blue">F-List Blue (default)</option><option value="flist-dark">F-List Dark</option><option value="flist-light">F-List Light</option></optgroup><optgroup label="Folio appearances"><option value="default">Midnight lilac</option><option value="classic">Light parchment</option><option value="noir">Obsidian</option></optgroup></select><label for="previewFontSize">Text size</label><input id="previewFontSize" type="text" inputmode="decimal" list="previewFontSizes" value="16" placeholder="Site default" aria-label="Preview text size in pixels" title="Enter 1?200 pixels; leave empty for site default" autocomplete="off"><datalist id="previewFontSizes"><option value="14"></option><option value="16"></option><option value="18"></option><option value="20"></option><option value="24"></option></datalist></div>
  <div class="frame"><div id="previewPage" class="previewpage"><div class="char-header"><div class="char-avatar">✦</div><div><h3 id="previewTitle">New Character</h3><small>Character description preview</small></div></div><div id="preview" class="description"></div></div></div>
- <div class="previewhelp"><strong>✦ A little note:</strong> Switching between Markdown+ and BBCode automatically converts the source. For older or complicated BBCode, keep a backup: unrecognized tags stay as BBCode and spacing can change. This is a close approximation, not F-List's own renderer. Only the 12 named F-List colors are exported; legacy hex colors are approximated to the nearest preset. Site themes, image permissions and unsupported tags may look different on your actual profile. Use <b>Copy BBCode</b>, then paste it into F-List's description editor.</div>
+ <div class="previewhelp"><strong>✦ A little note:</strong> Switching between Markdown+ and BBCode automatically converts the source. For older or complicated BBCode, keep a backup: unrecognized tags stay as BBCode and spacing can change. Preview uses the Horizon BBCode parser with a browser adapter. Numeric image IDs need profile image metadata and display placeholders here. Only the 12 named F-List colors are exported; legacy hex colors are approximated to the nearest preset. Site themes, image permissions and unsupported tags may look different on your actual profile. Use <b>Copy BBCode</b>, then paste it into F-List's description editor.</div>
  <div class="pvfoot"><span><span class="dot"></span> Local-only editor</span><span id="warningCount">No obvious issues</span></div>
 </section>
 </div>
 <div id="toast" class="toast" role="status" aria-live="polite"></div>
 <input type="file" id="fileImport" accept=".txt,.md,.bbcode,.json,text/plain,application/json" hidden />
+<script src="src/horizon-renderer.js"></script>
+<script src="src/syntax.js"></script>
 <script src="src/app.js"></script>
 </body>
 </html>
