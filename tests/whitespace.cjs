@@ -45,9 +45,10 @@ assert.equal(compile('{img:4645005|meanstoanend}'), '[img=4645005]meanstoanend[/
 assert.equal(compile('{heading|{color:cyan|Title}}{hr}Text'), '[heading][color=cyan]Title[/color][/heading][hr]Text');
 assert.equal(compile(':::heading\nFirst\nSecond\n:::'), '[heading]First\nSecond[/heading]');
 assert.equal(compile('Hello \\\nworld\nNext'), 'Hello world\nNext');
-assert.equal(compile('Hello{br}\\\nworld'), 'Hello\nworld');
-assert.equal(compile('# Title\\\nBody'), '[heading][big]Title[/big][/heading]Body');
-assert.equal(compile('One\\\r\nTwo'), 'OneTwo');
+assert.equal(compile('Hello{br}\\\nworld'), 'Hello\n world');
+assert.equal(compile('# Title\\\nBody'), '[heading][big]Title[/big][/heading] Body');
+assert.equal(compile('One\\\r\nTwo'), 'One Two');
+assert.equal(compile('ab'+String.fromCharCode(92)+'\ncd'), 'ab cd');
 assert.equal(compile('Literal\\\\\nNext'), 'Literal\\\nNext');
 assert.equal(compile('```\nLiteral\\\nNext\n```'), '[noparse]Literal\\\nNext[/noparse]');
 console.log(`${roundTrips.length} exact BBCode round trips passed`);
@@ -62,14 +63,20 @@ assert.equal(compile('Before\n\n---\n\nAfter'), 'Before\n[hr]\nAfter');
 for(const [markdown,bbcode] of [
  ['# Title','[heading][big]Title[/big][/heading]'],
  ['## Title','[heading]Title[/heading]'],
- ['### Title','[big]Title[/big]'],
+ ['### Title','[heading]Title[/heading]'],
  ['# **Bold**','[heading][big][b]Bold[/b][/big][/heading]'],
- ['### {color:cyan|Title} ###','[big][color=cyan]Title[/color][/big]'],
+ ['### {color:cyan|Title} ###','[heading][color=cyan]Title[/color][/heading]'],
  ['#### Title','[heading]Title[/heading]']
 ])assert.equal(compile(markdown),bbcode);
 assert.equal(context.bbcodeToMarkdown('[heading][big]Title[/big][/heading]'),'# Title');
 assert.equal(context.bbcodeToMarkdown('[heading]Title[/heading]'),'## Title');
-assert.equal(context.bbcodeToMarkdown('[big]Title[/big]'),'### Title');
+assert.equal(context.bbcodeToMarkdown('[big]Title[/big]'),'{big|Title}');
+for(const [tag,macro] of [['sup','{sup|2}'],['sub','{sub|2}']]){
+ const bbcode='H['+tag+']2[/'+tag+']O';
+ assert.equal(compile('H'+macro+'O'),bbcode,tag+' Markdown macro compiles');
+ assert.equal(compile(context.bbcodeToMarkdown(bbcode)),bbcode,tag+' round trip');
+ assert.equal(context.bbcodeToMarkdown('['+tag+']2[/'+tag+']'),macro,tag+' decompiles to inline macro');
+}
 assert.equal(compile(context.bbcodeToMarkdown('Before[big]Title[/big]After')),'Before[big]Title[/big]After');
 
 // A heading that needs macro spacing must not prevent hash headings elsewhere.
@@ -77,7 +84,7 @@ const mixedHeadings = '[center][heading][big]Largest[/big][/heading][/center]Bef
 const readableHeadings = context.bbcodeToMarkdown(mixedHeadings);
 assert.match(readableHeadings, /^# Largest$/m);
 assert.match(readableHeadings, /^## Standard$/m);
-assert.match(readableHeadings, /^### Large$/m);
+assert.match(readableHeadings, /\{big\|Large\}/);
 assert.equal(compile(readableHeadings), mixedHeadings);
 const nestedHeading = '[center][heading][big][color=cyan]Name[/color][/big][/heading][/center]Text';
 assert.match(context.bbcodeToMarkdown(nestedHeading), /^# \{color:cyan\|Name\}$/m);
@@ -159,9 +166,9 @@ assert.equal(compile('## Title\n\nabcd'),'[heading]Title[/heading]\nabcd');
 assert.equal(compile('Before\n## Title\nAfter'),'Before[heading]Title[/heading]After');
 assert.equal(compile('Before\n\n## Title\n\nAfter'),'Before\n[heading]Title[/heading]\nAfter');
 for(const [marker,open,close] of [
- ['#','[heading][big]','[/big][/heading]'], ['##','[heading]','[/heading]'], ['###','[big]','[/big]']
+ ['#','[heading][big]','[/big][/heading]'], ['##','[heading]','[/heading]']
 ]){
- for(const before of ['', 'Before', 'Before\n', '\n']){
+ for(const before of ['', 'Before', 'Before\n']){
   for(const after of ['', 'abcd', '\nabcd', '\n\nabcd', '\n', '\n\n']){
    const bbcode=before+open+'Title'+close+after;
    const markdown=context.bbcodeToMarkdown(bbcode);

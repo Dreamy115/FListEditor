@@ -17,6 +17,19 @@ for (const mixed of [true, false]) {
 }
 assert.ok(tokenize(sample, true).some(t => t.kind === 'macro'));
 assert.ok(!tokenize(sample, false).some(t => t.kind === 'macro'));
+for (const [source,kind] of [['{sup|2}', 'macro'], ['{sub|2}', 'macro'], ['[sup]2[/sup]', 'tag'], ['[sub]2[/sub]', 'tag']]) {
+  assert.ok(tokenize(source, true).some(token => token.kind === kind && token.text.startsWith(kind === 'macro' ? '{' : '[')));
+}
+for (const color of ['red','orange','yellow','green','cyan','purple','blue','pink','black','brown','white','gray']) {
+  for (const [source,mixed] of [['{color:'+color+'|}',true], ['[color='+color+']',false]]) {
+    const layer = document.createElement('pre'); highlight(layer, source, mixed);
+    const value = layer.querySelector('.syntax-color-value[data-color="'+color+'"]');
+    assert.ok(value, color+' color-name highlight');
+    assert.equal(value.textContent, color);
+    assert.equal(value.parentElement.classList.contains(mixed?'syntax-macro':'syntax-tag'), true);
+    assert.equal(layer.textContent, source+'\n');
+  }
+}
 for (const literal of ['```\n**raw**\n{br}\n```', '[noparse][b]raw[/b]\n[/noparse]']) {
   const tokens = tokenize(literal, true);
   assert.equal(tokens.length, 1);

@@ -3,6 +3,7 @@
 'use strict';
 const $ = id => document.getElementById(id);
 const source = $('source');
+let diagnosticHover;
 const STORAGE='folio-f-list-studio-v1';
 const makeId=()=> 'p'+Date.now().toString(36)+Math.random().toString(36).slice(2,7);
 // Templates are authored in Extended Markdown, never raw BBCode.
@@ -234,10 +235,9 @@ function wrapInline(tag,placeholder='your text'){
    replaceRange(lead+quoted+tail,s,e,s+lead.length+2,s+lead.length+quoted.length);return;
   }
   const marks={b:'**',i:'*',u:'++',s:'~~'};
-  const wholeLine=(s===0||source.value[s-1]==='\n')&&(e===source.value.length||source.value[e]==='\n');
   if(marks[tag]&&!selected.includes('\n')){prefix=marks[tag];suffix=marks[tag]}
   else if(tag==='heading'&&!selected.includes('\n')){prefix='# ';suffix='';block=true}
-  else if(tag==='big'&&!selected.includes('\n')&&wholeLine){prefix='### ';suffix='';block=true}
+  else if(tag==='big'&&!selected.includes('\n')){prefix='{big|';suffix='}'}
   else if(tag==='heading'){prefix=':::heading\n:::big\n';suffix='\n:::\n:::';block=true}
   else if(tag==='center'||selected.includes('\n')){prefix=':::'+tag+'\n';suffix='\n:::';block=true}
   else{prefix='{'+tag+'|';suffix='}'}
@@ -254,9 +254,9 @@ const macroInlineNames=new Set(['color','b','i','s','big','small','u','underline
 const macroBlockNames=new Set(['center','left','right','justify','indent','quote','collapse','big','small','color','heading','b','i','u','s']);
 // F-List accepts exactly these twelve named colors, not arbitrary CSS hex codes.
 const presetColors={
- red:'#e15261',orange:'#ed9a41',yellow:'#e8cf62',green:'#69c879',
- cyan:'#65d1d9',purple:'#a98de7',blue:'#6997df',pink:'#e88fbf',
- black:'#17171b',brown:'#996e4a',white:'#f0ecf0',gray:'#9997a2'
+ red:'#f00',orange:'#f60',yellow:'#ff0',green:'#0f0',
+ cyan:'#0ff',purple:'#93f',blue:'#06f',pink:'#f9c',
+ black:'#000',brown:'#8a6d3b',white:'#fff',gray:'#ccc'
 };
 const colorNames=Object.keys(presetColors);
 function colorSafe(param){const name=String(param||'').trim().toLowerCase();return Object.hasOwn(presetColors,name)?name:null}
@@ -279,13 +279,26 @@ function normalizeColorTags(text){const re=/\[(\/)?(color|noparse)(?:=([^\]\n]*)
  }
  return out+text.slice(last);
 }
-function colorWarnings(text){const issues=[];
- const check=value=>{if(!colorSafe(value))issues.push(closestPreset(value)?'Hex color '+value+' is approximated to an F-List preset':'Unsupported color '+value+' is stripped on export')};
- for(const m of text.matchAll(/\[color=([^\]\n]*)\]/gi))check(m[1]);
- for(const m of text.matchAll(/\{color:([^|}\n]+)\|/gi))check(m[1]);
- for(const m of text.matchAll(/^\s*:::color\s+(\S+).*$/gmi))check(m[1]);
- return [...new Set(issues)];}
-function inlineMarkdown(text,protectedParts=[]){
+function colorWarning(value){
+ if(colorSafe(value))return null;
+ const label=String(value||'').trim()||'(missing value)',preset=closestPreset(value);
+ return preset?'Color '+label+' is not supported by F-List profiles; exported as '+preset:'Color '+label+' is not supported by F-List profiles; formatting is stripped on export';
+}
+function colorWarnings(text,mixed=true){
+ const issues=[];
+ // Literal examples are not color definitions.
+ text=text.replace(/\[noparse\][\s\S]*?(?:\[\/noparse\]|$)/gi,'');
+ if(mixed)text=text.replace(/^\s*```[^\n]*\n[\s\S]*?(?:^\s*```[^\n]*(?:\n|$)|(?![\s\S]))/gm,'').replace(/`[^`\n]+`/g,'');
+ const check=value=>{const warning=colorWarning(value);if(warning)issues.push(warning)};
+ for(const m of text.matchAll(/\[color(?:=([^\]\n]*))?\]/gi))check(m[1]);
+ if(mixed){
+  for(const m of text.matchAll(/\{color(?::([^|}\n]*))?\|/gi))check(m[1]);
+  for(const m of text.matchAll(/^\s*:::color(?:[ \t]+([^\n]*))?$/gmi))check(m[1]);
+ }
+ return [...new Set(issues)];
+}
+function inlineMarkdown(text,protectedParts=[],issues=[]){
+ const warn=message=>issues.push(message);
  const protect=value=>{const id=protectedParts.length;protectedParts.push(value);return '\uE000'+id+'\uE001'};
  // Shield literal inline code before interpreting any BBCode or custom macros.
  text=text.replace(/`([^`\n]+)`/g,(_,literal)=>protect('[noparse]'+literal+'[/noparse]'));
@@ -297,17 +310,18 @@ function inlineMarkdown(text,protectedParts=[]){
   if(text[i]==='\\' && i+1<text.length && /[{}*_~+`\[\]\\#>\-]/.test(text[i+1])){output+=protect(text[i+1]);i+=2;continue}
   if(text[i]!=='{'){output+=text[i++];continue}
   let depth=1,j=i+1;for(;j<text.length&&depth;j++){if(text[j]==='{'&&text[j-1]!=='\\')depth++;else if(text[j]==='}'&&text[j-1]!=='\\')depth--}
-  if(depth){output+=text[i++];continue}
+  if(depth){if(/^[a-z][a-z0-9_-]*(?=[:|}\s]|$)/i.test(text.slice(i+1)))warn('Unclosed inline macro: '+text.slice(i));output+=text[i++];continue}
   const expression=text.slice(i+1,j-1),m=expression.match(/^([a-z]+)(:([^|]*))?(?:\|([\s\S]*))?$/i);
-  if(!m||!macroInlineNames.has(m[1].toLowerCase())){output+=text.slice(i,j);i=j;continue}
+  if(!m||!macroInlineNames.has(m[1].toLowerCase())){warn('Invalid or unknown inline macro: '+text.slice(i,j)+'; exported as literal text');output+=text.slice(i,j);i=j;continue}
   const name=m[1].toLowerCase(),arg=(m[3]||'').trim(),body=m[4];let compiled=null;
   if(name==='br'&&body===undefined&&!arg)compiled='\n';
   else if(name==='hr'&&body===undefined&&!arg)compiled='[hr]';
-  else if(name==='color'&&body!==undefined){const color=resolvedColor(arg);const content=inlineMarkdown(body,protectedParts);compiled=color?'[color='+color+']'+content+'[/color]':content;}
-  else if(['b','i','s','big','small','u','underline','sup','sub','noparse','heading'].includes(name)&&body!==undefined){let tag=name==='underline'?'u':name;compiled='['+tag+']'+(name==='noparse'?body:inlineMarkdown(body,protectedParts))+'[/'+tag+']'}
+  else if(name==='color'&&body!==undefined){const color=resolvedColor(arg);const content=inlineMarkdown(body,protectedParts,issues);compiled=color?'[color='+color+']'+content+'[/color]':content;}
+  else if(['b','i','s','big','small','u','underline','sup','sub','noparse','heading'].includes(name)&&body!==undefined){let tag=name==='underline'?'u':name;compiled='['+tag+']'+(name==='noparse'?body:inlineMarkdown(body,protectedParts,issues))+'[/'+tag+']'}
   else if(['user','icon','eicon'].includes(name)&&arg&&body===undefined&&!/[\[\]{}]/.test(arg))compiled='['+name+']'+arg+'[/'+name+']';
   else if(['img','image'].includes(name)&&arg){if(/^\d+$/.test(arg))compiled='[img='+arg+']'+(body===undefined?'':body)+'[/img]';else if(body===undefined&&safeUrl(arg))compiled='[img]'+arg+'[/img]'}
-  else if(name==='link'&&safeUrl(arg)&&body!==undefined)compiled='[url='+arg+']'+inlineMarkdown(body,protectedParts)+'[/url]';
+  else if(name==='link'&&safeUrl(arg)&&body!==undefined)compiled='[url='+arg+']'+inlineMarkdown(body,protectedParts,issues)+'[/url]';
+  if(compiled===null)warn('Invalid inline macro: '+text.slice(i,j)+'; exported as literal text');
   output+=compiled===null?text.slice(i,j):protect(compiled);i=j;
  }
  text=output;
@@ -315,7 +329,7 @@ function inlineMarkdown(text,protectedParts=[]){
  // Protect links and images, and ensure only valid http(s) URLs are exported.
  text=text.replace(/!?\[([^\]\n]*)\]\((https?:\/\/[^\s)]+)\)/gi,(match,label,url)=>{
   if(!safeUrl(url))return match;
-  return protect(match.startsWith('!')?'[img]'+url+'[/img]':'[url='+url+']'+inlineMarkdown(label,protectedParts)+'[/url]');
+  return protect(match.startsWith('!')?'[img]'+url+'[/img]':'[url='+url+']'+inlineMarkdown(label,protectedParts,issues)+'[/url]');
  });
  text=text.replace(/\*\*\*([^*\n]+)\*\*\*/g,'[b][i]$1[/i][/b]')
   .replace(/\*\*([^*\n]+)\*\*/g,'[b]$1[/b]')
@@ -326,7 +340,7 @@ function inlineMarkdown(text,protectedParts=[]){
   .replace(/(?<!\w)_([^_\n]+)_(?!\w)/g,'[i]$1[/i]');
  let revealed=text;for(let n=0;n<16&&revealed.includes('\uE000');n++){const next=revealed.replace(/\uE000(\d+)\uE001/g,(_,id)=>protectedParts[+id]??'');if(next===revealed)break;revealed=next}return revealed;
 }
-function markdownToBB(input){
+function markdownToBB(input,issues=[]){
  const lines=input.replace(/\r\n?/g,'\n').split('\n'),parts=[],stack=[];
  // Only content lines contribute breaks. Macro/fence delimiters attach to their
  // contents: pretty-printing BBCode tags would create visible F-List spacing.
@@ -344,7 +358,7 @@ function markdownToBB(input){
   if(index===lines.length-1&&line===''&&trailingHeading)continue;
   if(line!=='')trailingHeading=false;
   const soft=!inFence&&!inNoParse&&index<lines.length-1&&((line.match(/\\+$/)||[''])[0].length%2===1);
-  if(soft)line=line.slice(0,-1);
+  if(soft)line=line.slice(0,-1).replace(/[ \t]*$/,' ');
   try{
   const trimmed=line.trim();
   // A fenced code block is literal text. F-List supports noparse, not Markdown fences.
@@ -354,7 +368,7 @@ function markdownToBB(input){
   if(/\[noparse\]/i.test(line)){inNoParse=!/\[\/noparse\]/i.test(line);out.push(line);continue}
   if(trimmed===':::'){
    if(stack.length){const closing=stack.pop();if(closing)out.close('[/'+closing+']');continue}
-   out.push(line);continue;
+   issues.push('Unmatched block macro closing marker: :::; exported as literal text');out.push(line);continue;
   }
   const block=line.match(/^\s*:::([a-z]+)(?:\s+(.+))?\s*$/i);
   if(block){const tag=block[1].toLowerCase(),arg=(block[2]||'').trim();
@@ -364,29 +378,33 @@ function markdownToBB(input){
      out.open('['+tag+(arg?'='+(tag==='color'?resolvedColor(arg):arg):'')+']');stack.push(tag);continue;
     }
    }
-  }
+   issues.push('Invalid or unknown block macro: '+trimmed+'; exported as literal text');
+  }else if(trimmed.startsWith(':::'))issues.push('Malformed block macro: '+trimmed+'; exported as literal text');
   const heading=line.match(/^[ \t]*(#{1,6})[ \t]+(.*)$/);
   if(heading){
-   const level=heading[1].length,content=inlineMarkdown(heading[2].replace(/\s+#+\s*$/,''));
+   const level=heading[1].length,rawHeading=heading[2].replace(/\s+#+\s*$/,'');
+   const content=inlineMarkdown(soft?rawHeading.replace(/[ \t]+$/,''):rawHeading,[],issues);
    // Heading lines are structural, like ::: boundaries and dividers.
    // Their editing newline must not become an extra F-List line break.
-   out.heading(level===1?'[heading][big]'+content+'[/big][/heading]':level===3?'[big]'+content+'[/big]':'[heading]'+content+'[/heading]');continue;
+   out.heading(level===1?'[heading][big]'+content+'[/big][/heading]':'[heading]'+content+'[/heading]');
+   if(soft)parts.push(' ');
+   continue;
   }
   if(/^\s*(?:-{3,}|\*{3,}|_{3,})\s*$/.test(line)){out.close('[hr]');continue}
   const quote=line.match(/^[ \t]*>[ \t]?(.*)$/);
   if(quote){
    const body=[quote[1]];
    while(index+1<lines.length){const next=lines[index+1].match(/^[ \t]*>[ \t]?(.*)$/);if(!next)break;body.push(next[1]);index++}
-   out.push('[quote]'+markdownToBB(body.join('\n'))+'[/quote]');continue;
+   out.push('[quote]'+markdownToBB(body.join('\n'),issues)+'[/quote]');continue;
   }
   const bullet=line.match(/^([ \t]*)[-*+]([ \t]+)(.*)$/);
-  if(bullet){out.push(bullet[1]+'•'+bullet[2]+inlineMarkdown(bullet[3]));continue}
+  if(bullet){out.push(bullet[1]+'•'+bullet[2]+inlineMarkdown(bullet[3],[],issues));continue}
   // Numbered lists are already readable as plain text on F-List.
-  out.push(inlineMarkdown(line));
+  out.push(inlineMarkdown(line,[],issues));
   }finally{if(soft)pendingBreak=false}
  }
  // Do not silently drop a missing closing ::: marker.
- while(stack.length){const closing=stack.pop();if(closing)out.close('[/'+closing+']')}
+ while(stack.length){const closing=stack.pop();issues.push('Unclosed block macro'+(closing?': :::'+closing:'')+'; closing marker added on export');if(closing)out.close('[/'+closing+']')}
  if(inFence)out.close('[/noparse]');
  return parts.join('');
 }
@@ -452,7 +470,7 @@ function bbcodeToMarkdown(input,escapePlain=true){
    const large=node.children.length===1&&node.children[0].tag==='big';
    return boundaries(large?'# '+children(node.children[0]):'## '+content);
   }
-  if(tag==='big'&&inline&&!editableLayout&&!preserveLayout)return boundaries('### '+content);
+  if(tag==='big'&&inline&&!editableLayout&&!preserveLayout)return '{big|'+content+'}';
   if(['b','i','u','s'].includes(tag)){
    const marks={b:'**',i:'*',u:'++',s:'~~'};
    if(!inline)return block(tag,'',content);
@@ -495,14 +513,30 @@ function bbcodeToMarkdown(input,escapePlain=true){
   return raw(node);
  }
  const result=children(tree);
+ const restoreHashBoundaryBreaks=(markdown,expected)=>{
+  for(const match of [...markdown.matchAll(/^#{1,6} [^\n]*(?:\n|$)/gm)].reverse()){
+   const line=match[0],start=match.index,end=start+line.length;
+   const addBefore=start>0&&markdown[start-1]==='\n',atEnd=end===markdown.length,addAfter=(end<markdown.length&&markdown[end-1]==='\n')||(atEnd&&expected.endsWith('\n'));
+   for(const before of (addBefore?[false,true]:[false]))for(const after of (addAfter?[false,true]:[false])){
+    if(!before&&!after)continue;
+    const afterText=after?(atEnd?'\n'.repeat((expected.match(/\n+$/)||[''])[0].length+1):'\n'):'';
+    const candidate=markdown.slice(0,start)+(before?'\n':'')+line+afterText+markdown.slice(end);
+    if(markdownToBB(candidate)===expected)return candidate;
+   }
+  }
+  return markdown;
+ };
  // Boundary sentinels ensure the Markdown syntax lands on its own line,
  // while reusing line breaks that were already present in the BBCode.
- const markdown=result.replace(/[\uE006\uE007\n]+/g,part=>'\n'.repeat(Math.max(1,(part.match(/\n/g)||[]).length))).trim();
- if(markdownToBB(markdown)===normalized.replace(/\r\n?/g,'\n'))return preferStandardMarkdown(markdown);
+ let markdown=result.replace(/[\uE006\uE007\n]+/g,part=>'\n'.repeat(Math.max(1,(part.match(/\n/g)||[]).length))).trim();
+ const expected=normalized.replace(/\r\n?/g,'\n');
+ if(markdownToBB(markdown)!==expected)markdown=restoreHashBoundaryBreaks(markdown,expected);
+ if(markdownToBB(markdown)===expected)return preferStandardMarkdown(markdown);
  editableLayout=true;
  const structured=children(tree).replace(/^[\uE006\uE007]+|[\uE006\uE007]+$/g,'');
- const editable=structured.replace(/[\uE006\uE007\n]+/g,(part,offset)=>'\n'.repeat((part.match(/\n/g)||[]).length+(/[\uE006\uE007]/.test(part)&&offset+part.length<structured.length?1:0)));
- if(markdownToBB(editable)===normalized.replace(/\r\n?/g,'\n'))return preferStandardMarkdown(editable);
+ let editable=structured.replace(/[\uE006\uE007\n]+/g,(part,offset)=>'\n'.repeat((part.match(/\n/g)||[]).length+(/[\uE006\uE007]/.test(part)&&offset+part.length<structured.length?1:0)));
+ if(markdownToBB(editable)!==expected)editable=restoreHashBoundaryBreaks(editable,expected);
+ if(markdownToBB(editable)===expected)return preferStandardMarkdown(editable);
  editableLayout=false;preserveLayout=true;
  return preferStandardMarkdown(children(tree));
 }
@@ -520,17 +554,28 @@ function preferHashHeadings(markdown){
   }
   return depth===0?text.slice(5,-1):null;
  };
- const patterns=[/^:::heading\n([^\n]*)\n:::$/gm,/^\{big\|[^\n]*\}$/gm];
- for(const pattern of patterns){
-  // Work backwards to keep offsets stable after each accepted replacement.
-  for(const match of [...markdown.matchAll(pattern)].reverse()){
-   const body=match[1]===undefined?unwrapBig(match[0]):match[1];
-   if(body===null)continue;
-   const large=match[1]===undefined?null:unwrapBig(body);
-   const replacement=match[1]===undefined?'### '+body:large===null?'## '+body:'# '+large;
-   const candidate=standardMarkdownRewrite(markdown,match.index,match[0].length,replacement,expected);
-   if(candidate!==null)markdown=candidate;
+ const candidates=[...markdown.matchAll(/^:::heading\n([^\n]*)\n:::/gm).map(match=>{
+  const large=unwrapBig(match[1]);return {start:match.index,length:match[0].length,replacement:large===null?'## '+match[1]:'# '+large};
+ })];
+ // Find balanced inline big macros too, including when the BBCode heading was
+ // adjacent to prose and the editable fallback could not put the macro alone.
+ for(let start=markdown.indexOf('{big|');start>=0;start=markdown.indexOf('{big|',start+1)){
+  let depth=0,end=-1;
+  for(let i=start;i<markdown.length;i++){
+   if(markdown[i]==='\\'){i++;continue}
+   if(markdown[i]==='{')depth++;
+   else if(markdown[i]==='}'&&--depth===0){end=i+1;break}
   }
+  if(end<0)continue;
+  const body=unwrapBig(markdown.slice(start,end));if(body!==null&&start>=3&&markdown.slice(start-3,start)==='## '){
+   const headingStart=start-3;
+   candidates.push({start:headingStart,length:end-headingStart,replacement:'# '+body});
+  }
+ }
+ // Work backwards to keep offsets stable after each accepted replacement.
+ for(const candidate of candidates.sort((a,b)=>b.start-a.start)){
+  const rewritten=standardMarkdownRewrite(markdown,candidate.start,candidate.length,candidate.replacement,expected);
+  if(rewritten!==null)markdown=rewritten;
  }
  return markdown;
 }
@@ -540,7 +585,9 @@ function standardMarkdownRewrite(markdown,start,length,replacement,expected){
  // reusing that boundary before retaining an unnecessary visible blank line.
  const prefixes=[before,before.replace(/\n$/,'')],suffixes=[after,after.replace(/^\n/,'')];
  if(/^#{1,6} /.test(replacement)){
+  if(before&& !before.endsWith('\n'))prefixes.push(before+'\n');
   if(before.endsWith('\n'))prefixes.push(before+'\n');
+  if(after&& !after.startsWith('\n'))suffixes.push('\n'+after);
   if(after.startsWith('\n')||after==='')suffixes.push('\n'+after);
  }
  for(const prefix of prefixes){
@@ -587,8 +634,106 @@ function preferStandardMarkdown(markdown){
  return markdown;
 }
 function renderBB(input){return FolioHorizon.render(input)}
-function countWarnings(compiled){let issues=[];const opens={};for(const m of compiled.matchAll(/\[(\/?)((?:[a-z]+))(?:=[^\]\n]*)?\]/gi)){let tag=m[2].toLowerCase();if(!allowedTags.has(tag)){if(['session','list','li','size','table','font','spoiler','youtube','code'].includes(tag))issues.push('Unsupported or unverified tag: '+tag);continue}if(tag==='hr')continue;if(m[1]){if((opens[tag]||0)===0)issues.push('Unmatched [/'+tag+']');else opens[tag]--}else opens[tag]=(opens[tag]||0)+1}Object.keys(opens).filter(tag=>opens[tag]).forEach(tag=>issues.push('Unclosed ['+tag+']'));if(/<\/?(?:div|span|table|p|br)\b/i.test(compiled))issues.push('HTML is not supported in descriptions');return [...new Set(issues)]}
-function refresh(){FolioSyntax.highlight($('sourceHighlight'),source.value,data.mixed);updateLineNumbers();syncHighlightScroll();const bb=getCompiled();$('previewTitle').textContent=$('profileName').value.trim()||'Untitled character';const preview=$('preview');try{FolioPreview.update(preview,preview.closest('.frame'),bb,renderBB,templateSession?templateSession.historyId:'character:'+data.active)}catch(e){preview.textContent='Preview error: '+e.message}const text=source.value;$('stats').textContent=(text.trim()?text.trim().split(/\s+/).length:0)+' words · '+text.length.toLocaleString()+' characters';const problems=[...countWarnings(bb),...colorWarnings(source.value)];$('warningCount').textContent=problems.length?problems.length+' potential issue'+(problems.length===1?'':'s'):'No obvious issues';$('warningCount').title=problems.join('\n')}
+function countWarnings(compiled){
+ const issues=[],stack=[];let literal=false;
+ for(const m of compiled.matchAll(/\[(\/?)([a-z][a-z0-9_-]*|\*)(?:=[^\]\n]*)?\]/gi)){
+  const tag=m[2].toLowerCase(),close=!!m[1];
+  if(literal){if(close&&tag==='noparse'){literal=false;stack.pop()}continue}
+  if(!allowedTags.has(tag)){issues.push('['+tag+'] is not supported by F-List profiles');continue}
+  if(tag==='color'&&!close){const warning=colorWarning(m[0].match(/^\[color=([^\]]*)\]$/i)?.[1]);if(warning)issues.push(warning)}
+  if(tag==='hr'){if(close)issues.push('Unmatched [/hr]');continue}
+  if(close){
+   const index=stack.lastIndexOf(tag);
+   if(index<0)issues.push('Unmatched [/'+tag+']');
+   else{if(index!==stack.length-1)issues.push('Misnested [/'+tag+']: close ['+stack.at(-1)+'] first');stack.splice(index,1)}
+  }else{stack.push(tag);if(tag==='noparse')literal=true}
+ }
+ for(const tag of stack)issues.push('Unclosed ['+tag+']');
+ const parsedText=compiled.replace(/\[noparse\][\s\S]*?(?:\[\/noparse\]|$)/gi,'');
+ if(/<\/?(?:div|span|table|p|br)\b/i.test(parsedText))issues.push('HTML is not supported in descriptions');
+ return [...new Set(issues)];
+}
+function macroWarnings(text){
+ const issues=[];markdownToBB(text,issues);
+ return [...new Set([...issues.filter(message=>!message.includes('block macro')),...blockMacroWarnings(text).map(issue=>issue.message)])];
+}
+function blockMacroWarnings(text){
+ const searchable=warningSource(text,true),stack=[],issues=[];
+ const report=(message,start,end,priority=0)=>issues.push({message,start,end,line:text.slice(0,start).split('\n').length,priority});
+ for(const match of searchable.matchAll(/^[ \t]*(?:>[ \t]*)*(:{2,}[^\n]*)/gm)){
+  const marker=match[1].trim(),start=match.index+match[0].indexOf(match[1]),end=start+marker.length;
+  if(marker===':::'){
+   if(stack.length)stack.pop();
+   else report('Unmatched block macro closing marker: :::; remove this marker or add an opening macro',start,end,2);
+   continue;
+  }
+  if(/^:+$/.test(marker)){
+   report('Malformed block macro closing marker: '+marker+'; use ::: to close the block',start,end);
+   if(stack.length)stack.pop();
+   continue;
+  }
+  const parsed=marker.match(/^:::([a-z]+)(?:[ \t]+(.+))?\s*$/i);
+  const name=parsed?.[1].toLowerCase(),arg=(parsed?.[2]||'').trim();
+  let error='';
+  if(!parsed)error='Malformed block macro: '+marker+'; use :::name to open a block';
+  else if(!macroBlockNames.has(name))error='Unknown block macro: '+marker+'; check the macro name';
+  else if(name==='collapse'&&(!arg||/[\[\]]/.test(arg)))error='Invalid block macro: '+marker+'; collapse requires a title without square brackets';
+  else if(!['collapse','color'].includes(name)&&arg)error='Invalid block macro: '+marker+'; '+name+' does not accept an argument';
+  if(error)report(error,start,end);
+  // Recover the intended nesting for diagnostics, even when compilation leaves
+  // this opener literal. Its closing marker is a consequence, not a new error.
+  stack.push({name,start,end,invalid:!!error});
+ }
+ for(const open of stack)if(!open.invalid)report('Unclosed block macro: :::'+open.name+'; add a closing ::: marker',open.start,open.end,1);
+ return issues;
+}
+// Preserve source offsets while excluding literal examples from diagnostic navigation.
+function warningSource(text,mixed){
+ const blank=value=>value.replace(/[^\n]/g,' ');
+ text=text.replace(/(\[noparse\])([\s\S]*?)(\[\/noparse\]|$)/gi,(_,open,body,close)=>open+blank(body)+close);
+ if(mixed)text=text.replace(/^\s*```[^\n]*\n[\s\S]*?(?:^\s*```[^\n]*(?:\n|$)|(?![\s\S]))/gm,blank).replace(/`[^`\n]+`/g,blank).replace(/\\[{}]/g,blank);
+ return text;
+}
+function locatedWarnings(text,mixed,compiled){
+ const searchable=warningSource(text,mixed),records=[];
+ const add=(message,start,end)=>{const line=text.slice(0,start).split('\n').length;if(!records.some(item=>item.message===message&&item.start===start))records.push({message,start,end,line})};
+ const messages=[...countWarnings(compiled),...colorWarnings(text,mixed),...(mixed?macroWarnings(text).filter(message=>!message.includes('block macro')):[])];
+ if(mixed)records.push(...blockMacroWarnings(text));
+ for(const message of messages){
+  let matches=[];
+  if(message.startsWith('Color ')){
+   const color=message.slice(6,message.indexOf(' is not supported'));
+   const tokens=/\[color(?:=([^\]\n]*))?\]|\{color(?::([^|}\n]*))?\||^\s*:::color(?:[ \t]+([^\n]*))?$/gmi;
+   matches=[...searchable.matchAll(tokens)].filter(m=>(mixed||m[0].startsWith('['))&&((m[1]??m[2]??m[3]??'').trim()||'(missing value)')===color);
+  }else if(/^(?:Invalid|Malformed|Unclosed inline)/.test(message)){
+   const marker=message.slice(message.indexOf(': ')+2).replace(/; exported as literal text$/,'');
+   let index=searchable.indexOf(marker);while(index>=0){matches.push({index,0:marker});index=searchable.indexOf(marker,index+marker.length)}
+  }else if(message.startsWith('HTML '))matches=[...searchable.matchAll(/<\/?(?:div|span|table|p|br)\b[^>]*>/gi)];
+  else{
+   const tag=message.match(/\[(\/?[a-z0-9_*-]+)\]/i)?.[1];
+   if(tag)matches=[...searchable.matchAll(/\[(\/?[a-z][a-z0-9_-]*|\*)(?:=[^\]\n]*)?\]/gi)].filter(m=>m[1].toLowerCase()===tag.toLowerCase());
+  }
+  for(const match of matches)add(message,match.index,match.index+match[0].length);
+ }
+ const priority=issue=>issue.priority??(/^(?:Invalid|Malformed|Unknown|Unclosed inline|Color )/.test(issue.message)?0:1);
+ return records.sort((a,b)=>priority(a)-priority(b)||a.start-b.start);
+}
+function jumpToWarning(problem){
+ source.focus();source.setSelectionRange(problem.start,problem.end);
+ const line=$('sourceLineNumbers').children[problem.line-1];
+ if(line)source.scrollTop=Math.max(0,line.offsetTop-source.clientHeight/2);
+ syncHighlightScroll();updateActiveSyntax();
+ $('warningDetails').open=false;
+}
+function updateWarnings(problems){
+ const count=$('warningCount'),details=$('warningDetails'),list=$('warningList');
+ count.textContent=problems.length?'\u26a0 '+problems.length+' potential issue'+(problems.length===1?'':'s'):'No obvious issues';
+ count.title=problems.length?'Show compiler warnings':'';
+ details.classList.toggle('has-issues',problems.length>0);
+ list.replaceChildren(...problems.map(problem=>{const item=document.createElement('li');if(typeof problem==='string'){item.textContent=problem;return item}const button=document.createElement('button');button.type='button';button.textContent='Line '+problem.line+': '+problem.message;button.addEventListener('click',()=>jumpToWarning(problem));item.appendChild(button);return item}));
+ if(!problems.length)details.open=false;
+}
+function refresh(){diagnosticHover?.hide();const bb=getCompiled(),problems=locatedWarnings(source.value,data.mixed,bb);FolioSyntax.highlight($('sourceHighlight'),source.value,data.mixed,problems);updateLineNumbers();syncHighlightScroll();$('previewTitle').textContent=$('profileName').value.trim()||'Untitled character';const preview=$('preview');try{FolioPreview.update(preview,preview.closest('.frame'),bb,renderBB,templateSession?templateSession.historyId:'character:'+data.active)}catch(e){preview.textContent='Preview error: '+e.message}const text=source.value;$('stats').textContent=(text.trim()?text.trim().split(/\s+/).length:0)+' words · '+text.length.toLocaleString()+' characters';updateWarnings(problems)}
 function syncFromEditor(){active().content=source.value;if(templateSession)updateTemplateStatus();refresh();scheduleSave()}
 function syncName(){active().name=$('profileName').value||(templateSession?'Untitled template':'Untitled character');if(templateSession)updateTemplateStatus();renderDrafts();refresh();scheduleSave()}
 function updateActiveSyntax(){
@@ -668,7 +813,7 @@ function wrapColor(name){if(!colorSafe(name))return;
 }
 colorNames.forEach(name=>{const btn=document.createElement('button');btn.type='button';btn.className='palette-option';btn.title='Apply F-List '+name;
  btn.setAttribute('aria-label','Apply '+name+' text color');
- const swatch=document.createElement('span');swatch.className='color-swatch';swatch.style.setProperty('--swatch',presetColors[name]);
+ const swatch=document.createElement('span');swatch.className='color-swatch';swatch.style.setProperty('--swatch','var(--flist-'+name+')');
  btn.append(swatch,document.createTextNode(name));
  btn.addEventListener('click',()=>{wrapColor(name);palette.hidden=true;$('colorBtn').setAttribute('aria-expanded','false')});palette.append(btn)});
 const colorHint=document.createElement('span');colorHint.className='palette-hint';colorHint.textContent='F-List named presets only';palette.append(colorHint);
@@ -700,7 +845,7 @@ function setEditorTheme(){
  $('editorTheme').value=data.editorTheme;
 }
 $('editorTheme').addEventListener('change',e=>{data.editorTheme=e.target.value;setEditorTheme();persist()});
-$('theme').addEventListener('change',e=>{data.theme=e.target.value;setTheme();persist()});function setTheme(){$('previewPage').className='previewpage'+(data.theme==='default'?'':' '+data.theme);$('theme').value=data.theme;setPreviewFontSize()}
+$('theme').addEventListener('change',e=>{data.theme=e.target.value;setTheme();persist()});function setTheme(){document.documentElement.dataset.flistScheme=data.theme;$('previewPage').className='previewpage'+(data.theme==='default'?'':' '+data.theme);$('theme').value=data.theme;setPreviewFontSize()}
 function parsePreviewFontSize(value){
  if(value==null)return null;
  const text=String(value??'').trim().toLowerCase();
@@ -762,7 +907,8 @@ const guideExamples=[
  ['Basics','Bold and italics','Mix emphasis in a sentence','**Bold**, *italic*, and ***both***.'],
  ['Basics','Underline and strikethrough','Underline uses a Folio extension','++Underlined++ and ~~crossed out~~.'],
  ['Basics','Heading and divider','Break your bio into readable sections','# About me\nA curious traveller.\n\n---\n## Story hooks'],
- ['Basics','Heading levels','One # adds heading + big; two add heading; three add big','# Large heading\n## Standard heading\n### Large text'],
+ ['Basics','Heading levels','One # adds heading + big; two or more # add a regular heading','# Large heading\n## Standard heading\n### Smaller heading'],
+ ['Basics','Big text','Use the inline macro for F-List big text','{big|Large text}'],
  ['Basics','Links','A link with human-friendly text','[Visit my inspiration board](https://example.com)'],
  ['Basics','Image from URL','The target site may restrict external images','![A portrait](https://example.com/portrait.png)'],
  ['Basics','Quotes','Standard Markdown blockquotes','> “Everything has a price.”'],
@@ -1017,5 +1163,9 @@ paneDivider.addEventListener('keydown',e=>{
 $('previewNote').hidden=data.previewNoteDismissed;
 $('dismissPreviewNote').addEventListener('click',()=>{data.previewNoteDismissed=true;$('previewNote').hidden=true;$('theme').focus();persist()});
 applyPaneSplit();
+diagnosticHover=FolioDiagnostics.attach({source,layer:$('sourceHighlight'),
+ getConfig:()=>({mixed:data.mixed,inlineNames:macroInlineNames,blockNames:macroBlockNames,colors:colorNames,resolveColor:resolvedColor}),
+ applyFix:fix=>replaceRange(fix.text,fix.start,fix.end)
+});
 setEditorTheme();setTheme();loadDraft(data.active);updateMode();refreshUndoButtons();
 })();

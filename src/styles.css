@@ -105,3 +105,25 @@
 .mark svg{display:block;width:22px;height:24px}.char-avatar svg{display:block;width:24px;height:24px}
 
 .frame{overflow-anchor:none}
+
+/* Compiler diagnostics remain available by keyboard and on touch screens. */
+#warningDetails{position:relative;max-width:65%}
+#warningCount{cursor:pointer;border-radius:5px;padding:5px 8px}
+#warningDetails.has-issues #warningCount{color:#211505;background:#ffd078;font-weight:750;box-shadow:0 0 0 1px #e8a640}
+#warningCount:focus-visible{outline:2px solid #e8a640;outline-offset:3px}
+#warningDetails:not(.has-issues) #warningCount{list-style:none}
+#warningList{position:absolute;right:0;bottom:100%;z-index:10;width:min(360px,70vw);max-height:240px;overflow:auto;margin:0 0 10px;padding:14px 18px 14px 30px;background:#262333;color:#fff0d2;border:1px solid #e8a640;border-radius:8px;box-shadow:0 8px 24px #0006;line-height:1.6;overflow-wrap:anywhere}
+#warningDetails:not(.has-issues) #warningList{display:none}
+
+#warningList button{display:block;width:100%;text-align:left;border:0;background:transparent;color:inherit;font:inherit;padding:5px 3px;cursor:pointer;white-space:normal;overflow-wrap:anywhere}
+#warningList button:hover,#warningList button:focus-visible{background:#ffffff18;text-decoration:none;border-radius:4px;outline:2px solid #e8a640}
+.editor-shell .syntax-warning{text-decoration-line:underline;text-decoration-style:wavy;text-decoration-color:var(--editor-warning,#e89999);text-decoration-thickness:1.5px;text-underline-offset:3px;text-decoration-skip-ink:none}
+.source-diagnostic{position:fixed;z-index:1000;box-sizing:border-box;width:min(390px,calc(100vw - 16px));max-height:calc(100vh - 16px);overflow:auto;padding:13px 15px;border:1px solid var(--editor-warning,#e8a640);border-radius:8px;background:var(--editor-bg,#191d2b);color:var(--editor-text,#e8e4f1);box-shadow:0 8px 28px #0005;font-size:12px;line-height:1.5;overflow-wrap:anywhere}
+.source-diagnostic[hidden]{display:none}
+.source-diagnostic strong{color:var(--editor-warning,#ffd078)}
+.source-diagnostic p{margin:7px 0}
+.source-diagnostic .diagnostic-help{opacity:.9}
+.source-diagnostic pre{margin:9px 0;padding:8px;background:#80808018;border-radius:4px;white-space:pre-wrap;font:12px/1.5 ui-monospace,Consolas,monospace}
+.source-diagnostic button{border:1px solid var(--editor-warning,#e8a640);border-radius:5px;background:#80808018;color:inherit;padding:5px 9px;margin:2px 0 8px;cursor:pointer}
+.source-diagnostic button:hover,.source-diagnostic button:focus-visible{background:#80808035;outline:2px solid var(--editor-warning,#e8a640);outline-offset:1px}
+.source-diagnostic small{display:block;opacity:.7;font-size:10px}

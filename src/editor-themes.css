@@ -24,6 +24,8 @@
   --editor-literal:#b4bfac;
   --editor-escape:#e8d477;
   --editor-warning:#e89999;
+  --editor-color-shadow-black:-1px -1px 0 #f1edff,0 -1px 0 #f1edff,1px -1px 0 #f1edff,-1px 0 0 #f1edff,1px 0 0 #f1edff,-1px 1px 0 #f1edff,0 1px 0 #f1edff,1px 1px 0 #f1edff;
+  --editor-color-shadow-white:none;
   --editor-scheme:dark;
   --editor-block0:#b7a0e3;
   --editor-block1:#8a85e8;
@@ -66,6 +68,8 @@
   --editor-literal:#b5b9a6;
   --editor-escape:#e8d477;
   --editor-warning:#e89999;
+  --editor-color-shadow-black:-1px -1px 0 #fff,0 -1px 0 #fff,1px -1px 0 #fff,-1px 0 0 #fff,1px 0 0 #fff,-1px 1px 0 #fff,0 1px 0 #fff,1px 1px 0 #fff;
+  --editor-color-shadow-white:none;
   --editor-scheme:dark;
   --editor-block0:#b6a4dc;
   --editor-block1:#918bce;
@@ -108,6 +112,8 @@
   --editor-literal:#b2c39d;
   --editor-escape:#d9cf91;
   --editor-warning:#e89999;
+  --editor-color-shadow-black:-1px -1px 0 #f1f7dd,0 -1px 0 #f1f7dd,1px -1px 0 #f1f7dd,-1px 0 0 #f1f7dd,1px 0 0 #f1f7dd,-1px 1px 0 #f1f7dd,0 1px 0 #f1f7dd,1px 1px 0 #f1f7dd;
+  --editor-color-shadow-white:none;
   --editor-scheme:dark;
   --editor-block0:#d8c280;
   --editor-block1:#b6c47e;
@@ -150,6 +156,8 @@
   --editor-literal:#526141;
   --editor-escape:#7a6319;
   --editor-warning:#a03939;
+  --editor-color-shadow-black:none;
+  --editor-color-shadow-white:-1px -1px 0 #303640,0 -1px 0 #303640,1px -1px 0 #303640,-1px 0 0 #303640,1px 0 0 #303640,-1px 1px 0 #303640,0 1px 0 #303640,1px 1px 0 #303640;
   --editor-scheme:light;
   --editor-block0:#69429c;
   --editor-block1:#494fa0;
@@ -204,4 +212,16 @@
 .editor-shell .syntax-emphasis-bold-italic{color:var(--editor-bold-italic)}
 .editor-shell .syntax-emphasis-underline{color:var(--editor-underline)}
 .editor-shell .syntax-emphasis-strike{color:var(--editor-strike)}
+.editor-shell .syntax-color-value[data-color="red"]{color:var(--flist-red)}
+.editor-shell .syntax-color-value[data-color="orange"]{color:var(--flist-orange)}
+.editor-shell .syntax-color-value[data-color="yellow"]{color:var(--flist-yellow)}
+.editor-shell .syntax-color-value[data-color="green"]{color:var(--flist-green)}
+.editor-shell .syntax-color-value[data-color="cyan"]{color:var(--flist-cyan)}
+.editor-shell .syntax-color-value[data-color="purple"]{color:var(--flist-purple)}
+.editor-shell .syntax-color-value[data-color="blue"]{color:var(--flist-blue)}
+.editor-shell .syntax-color-value[data-color="pink"]{color:var(--flist-pink)}
+.editor-shell .syntax-color-value[data-color="black"]{color:var(--flist-black);text-shadow:var(--editor-color-shadow-black)}
+.editor-shell .syntax-color-value[data-color="brown"]{color:var(--flist-brown)}
+.editor-shell .syntax-color-value[data-color="white"]{color:var(--flist-white);text-shadow:var(--editor-color-shadow-white)}
+.editor-shell .syntax-color-value[data-color="gray"]{color:var(--flist-gray)}
 @media(forced-colors:active){.editor-shell .editor{caret-color:CanvasText}}

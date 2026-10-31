@@ -40,22 +40,22 @@
   verify(saved().drafts.find(d=>d.id===firstId).content===original&&$('confirmBar').hidden,'Built-in click never applies');
   edit($('profileName'),'Built-in copy');click('saveTemplate');
   character('First character');verify(source.value===original,'Saving built-in copy preserves character');
-  template('Reusable');edit(source,'### Applied');click('newDraft');
+  template('Reusable');edit(source,'{big|Applied}');click('newDraft');
   verify($('templateEditorControls').hidden&&source.value===''&&$('confirmBar').hidden,'New character switches editors');
   edit($('profileName'),'Second character');click('mixedMode');edit(source,'Second profile');
   const secondId=saved().active;
-  template('Reusable');verify(source.value==='### Applied','Template work survives new character');
+  template('Reusable');verify(source.value==='{big|Applied}','Template work survives new character');
   verify($('applyTemplate').disabled,'No implicit character target');target(firstId);click('applyTemplate');
   verify($('confirmText').textContent.includes('First character'),'Explicit target differs from last seen character');target(secondId);click('confirmYes');
   verify($('confirmBar').hidden&&saved().drafts.find(d=>d.id===firstId).content===original,'Changing target cancels stale confirmation');
   target(secondId);click('applyTemplate');verify(!$('confirmBar').hidden&&$('confirmText').textContent.includes('Second character'),'Explicit Apply names target');
   verify(saved().drafts.find(d=>d.id===secondId).content==='Second profile','Apply waits for confirmation');click('confirmNo');
-  verify(!$('templateEditorControls').hidden&&source.value==='### Applied','Cancel keeps template editor');
+  verify(!$('templateEditorControls').hidden&&source.value==='{big|Applied}','Cancel keeps template editor');
   click('applyTemplate');character('First character');click('confirmYes');
   verify(source.value===original&&saved().drafts.find(d=>d.id===secondId).content==='Second profile','Switching clears a stale apply confirmation');
   character('Second character');template('Reusable');
   click('applyTemplate');click('confirmYes');
-  verify(source.value==='### Applied'&&$('templateEditorControls').hidden,'Apply targets second character');
+  verify(source.value==='{big|Applied}'&&$('templateEditorControls').hidden,'Apply targets second character');
   verify(saved().customTemplates.find(t=>t.id===reusableId).content==='Unsaved template work','Apply does not implicitly save template');
   verify(saved().drafts.find(d=>d.id===firstId).content===original,'Apply does not affect another character');
   click('undoEdit');verify(source.value==='Second profile','Apply undo belongs to target character');
@@ -64,7 +64,7 @@
   verify(source.value==='[big]Applied[/big]','BBCode character apply');click('undoEdit');verify(source.value===original,'Original character undo retained');
   template('Reusable');click('newTemplate');edit($('profileName'),'Scratch');edit(source,'Scratch content');
   const scratchKey=$('templateChoice').value;
-  choose('custom:'+reusableId);verify(source.value==='### Applied','Switch between templates');
+  choose('custom:'+reusableId);verify(source.value==='{big|Applied}','Switch between templates');
   choose(scratchKey);verify(source.value==='Scratch content'&&$('profileName').value==='Scratch','Unsaved scratch editor retained');
   click('saveTemplate');character('Second character');verify(source.value==='Second profile','Second character work retained');
   template('Reusable');click('saveTemplate');
@@ -73,7 +73,7 @@
   const existing=saved().drafts.map(d=>({id:d.id,content:d.content})),beforeCount=existing.length;
   edit(source,'# Unsaved content');click('newFromTemplate');
   verify(saved().drafts.length===beforeCount+1&&source.value==='# Unsaved content'&&$('templateEditorControls').hidden,'New from template creates Markdown character');
-  verify(saved().customTemplates.find(t=>t.id===reusableId).content==='### Applied','New from template does not implicitly save');
+  verify(saved().customTemplates.find(t=>t.id===reusableId).content==='{big|Applied}','New from template does not implicitly save');
   verify(existing.every(old=>saved().drafts.find(d=>d.id===old.id).content===old.content),'New from template preserves all existing characters');
   template('Reusable');click('bbMode');const bbTemplate=source.value;click('newFromTemplate');
   verify(source.value===bbTemplate&&$('bbMode').classList.contains('active')&&saved().drafts.length===beforeCount+2,'New from template supports BBCode editor');
@@ -126,6 +126,23 @@
   }
   for(const key of ['body','sidebar','toolbar','editor','syntax'])verify(new Set(appearances.map(theme=>theme[key])).size===4,'Four distinct '+key+' palettes');
   document.getElementById('editorTheme').value='folio';document.getElementById('editorTheme').dispatchEvent(new Event('change'));
+  const colorEditor=document.createElement('div');colorEditor.className='editor-shell';
+  const colorLayer=document.createElement('pre');FolioSyntax.highlight(colorLayer,'{color:red|word} {color:black|dark} {color:white|light}',true);colorEditor.append(colorLayer);document.body.append(colorEditor);
+  const colorPreview=document.createElement('div');colorPreview.className='previewpage';
+  const colorDescription=document.createElement('div');colorDescription.className='description';
+  const renderedColor=FolioHorizon.render('[color=red]word[/color]');colorDescription.append(renderedColor);colorPreview.append(colorDescription);document.body.append(colorPreview);
+  const blackColor=colorLayer.querySelector('.syntax-color-value[data-color="black"]'),whiteColor=colorLayer.querySelector('.syntax-color-value[data-color="white"]');
+  for(const theme of ['folio','graphite','forest','paper']){
+   colorEditor.dataset.editorTheme=theme;
+   const blackShadow=getComputedStyle(blackColor).textShadow,whiteShadow=getComputedStyle(whiteColor).textShadow;
+   verify((theme==='paper'?blackShadow==='none'&&whiteShadow!=='none':blackShadow!=='none'&&whiteShadow==='none'),'Black and white color highlights contrast on '+theme);
+  }
+  const selectedAppearance=$('theme').value;
+  for(const appearance of ['flist-blue','flist-dark','flist-light','classic']){
+   $('theme').value=appearance;$('theme').dispatchEvent(new Event('change'));colorPreview.className='previewpage '+appearance;
+   verify(getComputedStyle(colorLayer.querySelector('.syntax-color-value')).color===getComputedStyle(renderedColor.querySelector('.redText')).color,'Editor color macro matches F-List preview palette: '+appearance);
+  }
+  $('theme').value=selectedAppearance;$('theme').dispatchEvent(new Event('change'));colorEditor.remove();colorPreview.remove();
   // Preview spacing must come from BBCode newlines, never decorative margins.
   const probe=document.createElement('div');probe.style.cssText='position:fixed;left:-10000px;top:0;width:400px';
   const description=document.createElement('div');description.className='description';probe.append(description);document.body.append(probe);

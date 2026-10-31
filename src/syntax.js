@@ -33,7 +33,11 @@
       else if (value.startsWith('[')) kind = 'tag';
       else if (/^[ \t]*(?:#|>|[-*+]|\d+\.)/.test(value)) kind = 'marker';
       const marker = kind === 'marker' ? (/^[ \t]*#/.test(value) ? 'heading' : /^[ \t]*>/.test(value) ? 'quote' : 'list') : undefined;
-      tokens.push({text: value, kind, marker});
+      const inlineColor = mixed && value.match(/^\{color:\s*([a-z]+)\s*\|$/i);
+      const bbcodeColor = !mixed && value.match(/^\[color=\s*([a-z]+)\s*\]$/i);
+      const colorMatch = inlineColor || bbcodeColor;
+      const color = colorMatch ? colorMatch[1].toLowerCase() : undefined;
+      tokens.push({text: value, kind, marker, color});
       last = match.index + value.length;
     }
     if (last < text.length) tokens.push({text: text.slice(last), kind: ''});
@@ -71,9 +75,21 @@
     for (const stack of Object.values(stacks)) for (const open of stack) open.token.unmatched = true;
     return tokens;
   }
-  function highlight(element, text, mixed) {
+  function highlight(element, text, mixed, problems) {
     const fragment = document.createDocumentFragment();
     const tokens = tokenize(text, mixed);
+    // Split only the painted spans. Original tokens retain their pairing and
+    // offsets for active-section highlighting and caret navigation.
+    const painted = tokens.flatMap(token => {
+      const overlapping = (problems || []).filter(problem => problem.start < token.end && problem.end > token.start);
+      const boundaries = [...new Set([token.start, token.end, ...overlapping.flatMap(problem => [
+        Math.max(token.start, problem.start), Math.min(token.end, problem.end)
+      ])])].sort((a, b) => a - b);
+      return boundaries.slice(0, -1).map((start, i) => {
+        const end = boundaries[i + 1];
+        return {...token, text: text.slice(start, end), diagnostics: overlapping.filter(problem => problem.start < end && problem.end > start)};
+      });
+    });
     let line = 1;
     const anchor = () => {
       const span = document.createElement('span');
@@ -81,20 +97,36 @@
       fragment.appendChild(span);
     };
     anchor();
-    for (const token of tokens) {
+    for (const token of painted) {
       const pieces = token.text.split('\n');
       for (let i = 0; i < pieces.length; i++) {
         if (i) { fragment.appendChild(document.createTextNode('\n')); anchor(); }
         if (!pieces[i]) continue;
-        if (!token.kind) { fragment.appendChild(document.createTextNode(pieces[i])); continue; }
+        if (!token.kind && !token.diagnostics.length) { fragment.appendChild(document.createTextNode(pieces[i])); continue; }
         const span = document.createElement('span');
-        span.className = 'syntax-' + token.kind;
+        span.className = token.kind ? 'syntax-' + token.kind : '';
         if (token.marker) span.classList.add('syntax-marker-' + token.marker);
         if (token.format) span.classList.add('syntax-emphasis-' + token.format);
         if (token.depth !== undefined) span.classList.add('syntax-depth-' + token.depth % 5);
-        if (token.unmatched) { span.classList.add('syntax-unmatched'); span.title = 'Unmatched delimiter'; }
+        if (token.unmatched && problems === undefined) { span.classList.add('syntax-unmatched'); span.title = 'Unmatched delimiter'; }
+        if (token.diagnostics.length) {
+          span.classList.add('syntax-warning');
+          span.title = [...new Set(token.diagnostics.map(problem => problem.message))].join('\n');
+          span.warningProblems = token.diagnostics;
+        }
         if (token.pair !== undefined) span.dataset.pair = String(token.pair);
-        span.textContent = pieces[i]; fragment.appendChild(span);
+        if (token.color && /^(?:red|orange|yellow|green|cyan|purple|blue|pink|black|brown|white|gray)$/.test(token.color)) {
+          const match = token.kind === 'macro'
+            ? pieces[i].match(/^(\{color:\s*)([a-z]+)(\s*\|)$/i)
+            : pieces[i].match(/^(\[color=\s*)([a-z]+)(\s*\])$/i);
+          if (match && match[2].toLowerCase() === token.color) {
+            span.appendChild(document.createTextNode(match[1]));
+            const word = document.createElement('span');
+            word.className = 'syntax-color-value'; word.dataset.color = token.color; word.textContent = match[2];
+            span.appendChild(word); span.appendChild(document.createTextNode(match[3]));
+          } else span.textContent = pieces[i];
+        } else span.textContent = pieces[i];
+        fragment.appendChild(span);
       }
     }
     // A final empty line must occupy the same height as the textarea's caret line.
@@ -102,6 +134,7 @@
     element.replaceChildren(fragment);
     element.syntaxTokens = tokens;
     element.syntaxText = text;
+    element.syntaxProblems = problems || [];
   }
   function markActive(element, position) {
     const tokens = element.syntaxTokens || [];

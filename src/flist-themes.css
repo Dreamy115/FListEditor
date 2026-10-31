@@ -1,9 +1,25 @@
 /* Palette values from F-List's public stylesheets, checked 2026-10-31.
- * Sources and mapping: docs/preview-themes.md. Scoped to the preview only. */
+ * Sources and mapping: docs/preview-themes.md. Shared by preview and editor. */
+:root {
+  --flist-red:#f00;--flist-blue:#06f;--flist-white:#fff;--flist-black:#000;
+  --flist-yellow:#ff0;--flist-green:#0f0;--flist-pink:#f9c;--flist-gray:#ccc;
+  --flist-orange:#f60;--flist-purple:#93f;--flist-brown:#8a6d3b;--flist-cyan:#0ff;
+}
+:root[data-flist-scheme="flist-blue"] {
+  --flist-red:#f44;--flist-blue:#1e90ff;--flist-white:#fff;--flist-black:#000;
+  --flist-yellow:#ff0;--flist-green:#4f4;--flist-pink:#ffcbdb;--flist-gray:#d3d3d3;
+  --flist-orange:#ffa500;--flist-purple:#e2afff;--flist-brown:#aa840c;--flist-cyan:#0ff;
+}
+:root[data-flist-scheme="flist-dark"] {--flist-black:#888;--flist-purple:#d0f}
+:root[data-flist-scheme="flist-light"] {
+  --flist-black:#000;--flist-white:#aaa;--flist-yellow:#dbb21a;--flist-green:#1fde30;
+  --flist-pink:#ff89bf;--flist-gray:#777;--flist-orange:#f2951a;--flist-purple:#d0f;
+  --flist-brown:#967117;--flist-cyan:#0cc;
+}
 .previewpage:is(.flist-blue,.flist-dark,.flist-light) {
-  --site-red:#f44;--site-blue:#1e90ff;--site-white:#fff;--site-black:#000;
-  --site-yellow:#ff0;--site-green:#4f4;--site-pink:#ffcbdb;--site-gray:#d3d3d3;
-  --site-orange:#ffa500;--site-purple:#e2afff;--site-brown:#aa840c;--site-cyan:#0ff;
+  --site-red:var(--flist-red);--site-blue:var(--flist-blue);--site-white:var(--flist-white);--site-black:var(--flist-black);
+  --site-yellow:var(--flist-yellow);--site-green:var(--flist-green);--site-pink:var(--flist-pink);--site-gray:var(--flist-gray);
+  --site-orange:var(--flist-orange);--site-purple:var(--flist-purple);--site-brown:var(--flist-brown);--site-cyan:var(--flist-cyan);
   --site-text-shadow:0 1px 2px #000;--site-black-shadow:0 1px 2px #777,0 0 2px #9e9e9e;
   background:var(--site-panel);color:var(--site-text);border-color:var(--site-border);
   font-family:Verdana,Helvetica,sans-serif;
@@ -18,14 +34,12 @@
   --site-panel:#3c3636;--site-text:#999;--site-border:#4c4646;
   --site-link:#78c624;--site-hover:#eee;--site-heading:inherit;--site-rule:#0e0808;
   --site-collapse:#4c4646;--site-collapse-text:#999;--site-quote:#2e2828;
-  --site-black:#888;--site-purple:#d0f;--site-black-shadow:0 1px 2px #000;
+  --site-black-shadow:0 1px 2px #000;
 }
 .previewpage.flist-light {
   --site-panel:linear-gradient(to top,#cdd,#eff);--site-text:#333;--site-border:#cdd;
   --site-link:#7b9798;--site-hover:#bcc;--site-heading:inherit;--site-rule:#cdd;
   --site-collapse:#fff;--site-collapse-text:#000;--site-quote:linear-gradient(to top,#cdd,#eff);
-  --site-white:#aaa;--site-yellow:#dbb21a;--site-green:#1fde30;--site-pink:#ff89bf;
-  --site-gray:#777;--site-orange:#f2951a;--site-purple:#d0f;--site-brown:#967117;--site-cyan:#0cc;
   --site-text-shadow:none;--site-black-shadow:none;
   color-scheme:light;
 }

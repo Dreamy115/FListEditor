@@ -53,6 +53,8 @@
  <button class="tool tool-label" data-wrap="heading" title="Large heading (#)">H1</button>
  <button class="tool" data-wrap="big" title="Larger text">A+</button>
  <button class="tool" data-wrap="small" title="Smaller text" style="font-size:11px">A−</button>
+ <button class="tool" data-wrap="sup" title="Superscript">x<sup>n</sup></button>
+ <button class="tool" data-wrap="sub" title="Subscript">x<sub>n</sub></button>
  <span class="sep"></span>
  <button class="tool" data-wrap="center" title="Center alignment">☷</button>
  <button class="tool" data-wrap="quote" title="Block quote (>)">❝</button>
@@ -90,7 +92,7 @@
  <div class="pvcontrols"><div class="preview-setting preview-appearance"><label for="theme">Profile appearance</label><select id="theme" aria-label="Preview theme"><optgroup label="F-List site schemes"><option value="flist-blue">F-List Blue (default)</option><option value="flist-dark">F-List Dark</option><option value="flist-light">F-List Light</option></optgroup><optgroup label="Folio appearances"><option value="default">Midnight lilac</option><option value="classic">Light parchment</option><option value="noir">Obsidian</option></optgroup></select></div><div class="preview-setting preview-text-size"><label for="previewFontSize">Text size</label><input id="previewFontSize" type="text" inputmode="decimal" list="previewFontSizes" value="16" placeholder="Site default" aria-label="Preview text size in pixels" title="Enter 1-200 pixels; leave empty for site default" autocomplete="off"><datalist id="previewFontSizes"><option value="14"></option><option value="16"></option><option value="18"></option><option value="20"></option><option value="24"></option></datalist></div></div>
  <div class="frame"><div id="previewPage" class="previewpage"><div class="char-header"><div class="char-avatar" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="8" r="3.5"/><path d="M5 21v-2a7 7 0 0 1 14 0v2"/></svg></div><div><h3 id="previewTitle">New Character</h3><small>Character description preview</small></div></div><div id="preview" class="description"></div></div></div>
  <div class="previewhelp" id="previewNote"><button type="button" class="preview-note-close" id="dismissPreviewNote" aria-label="Dismiss preview note" title="Dismiss note">&times;</button><strong>✦ A little note:</strong> Switching between Markdown+ and BBCode automatically converts the source. For older or complicated BBCode, keep a backup: unrecognized tags stay as BBCode and spacing can change. Preview uses the Horizon BBCode parser with a browser adapter. Numeric image IDs need profile image metadata and display placeholders here. Only the 12 named F-List colors are exported; legacy hex colors are approximated to the nearest preset. Site themes, image permissions and unsupported tags may look different on your actual profile. Use <b>Copy BBCode</b>, then paste it into F-List's description editor.</div>
- <div class="pvfoot"><span><span class="dot"></span> Local-only editor</span><span id="warningCount">No obvious issues</span></div>
+ <div class="pvfoot"><span><span class="dot"></span> Local-only editor</span><details id="warningDetails"><summary id="warningCount" aria-live="polite">No obvious issues</summary><ul id="warningList" aria-label="Compiler warnings"></ul></details></div>
 </section>
 </div>
 
@@ -98,6 +100,7 @@
 <input type="file" id="fileImport" accept=".txt,.md,.bbcode,.json,text/plain,application/json" hidden />
 <script src="src/horizon-renderer.js"></script>
 <script src="src/syntax.js"></script>
+<script src="src/diagnostics.js"></script>
 <script src="src/preview-state.js"></script>
 <script src="src/app.js"></script>
 </body>

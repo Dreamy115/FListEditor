@@ -13,7 +13,7 @@ vm.runInContext(app.slice(app.indexOf('function wrapInline('), app.indexOf('func
 vm.runInContext(app.slice(app.indexOf('const insertionSpecs='), app.indexOf("document.querySelectorAll('[data-insert]')")), context);
 vm.runInContext(app.slice(app.indexOf('const macroInlineNames='), app.indexOf('function renderBB(')), context);
 function reset(text = '') { source.value = text; source.selectionStart = 0; source.selectionEnd = text.length; }
-for (const [tag, expected] of Object.entries({b:'**Text**',i:'*Text*',u:'++Text++',s:'~~Text~~',big:'### Text',small:'{small|Text}',heading:'# Text',center:':::center\nText\n:::',quote:'> Text'})) {
+for (const [tag, expected] of Object.entries({b:'**Text**',i:'*Text*',u:'++Text++',s:'~~Text~~',big:'{big|Text}',small:'{small|Text}',sup:'{sup|Text}',sub:'{sub|Text}',heading:'# Text',center:':::center\nText\n:::',quote:'> Text'})) {
   data.mixed = true; reset('Text'); context.wrapInline(tag);
   assert.equal(source.value, expected);
   assert.equal(source.value.slice(...selection), 'Text');

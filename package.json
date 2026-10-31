@@ -3,7 +3,7 @@
   "private": true,
   "scripts": {
     "build:renderer": "node scripts/build-renderer.cjs",
-    "test": "node tests/whitespace.cjs && node tests/renderer.cjs && node tests/syntax.cjs && node tests/toolbar.cjs && node tests/templates.cjs && node tests/editor-themes.cjs && node tests/preview-state.cjs"
+    "test": "node tests/whitespace.cjs && node tests/renderer.cjs && node tests/syntax.cjs && node tests/flist-colors.cjs && node tests/toolbar.cjs && node tests/templates.cjs && node tests/editor-themes.cjs && node tests/preview-state.cjs && node tests/warnings.cjs && node tests/diagnostics.cjs"
   },
   "devDependencies": {
     "typescript": "5.9.3",

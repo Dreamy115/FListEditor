@@ -20,5 +20,12 @@ for (const {name,vars} of palettes) {
   }
   for (const kind of ['block','macro','tag']) assert.equal(new Set([0,1,2,3,4].map(i=>vars[kind+i])).size,5);
   assert.ok(parseInt(vars.section.slice(-2),16)/255<=.05, name + ': subtle section tint');
+  if (name === 'paper') {
+    assert.equal(vars['color-shadow-black'], 'none');
+    assert.notEqual(vars['color-shadow-white'], 'none');
+  } else {
+    assert.notEqual(vars['color-shadow-black'], 'none');
+    assert.equal(vars['color-shadow-white'], 'none');
+  }
 }
 console.log('Editor theme palette and contrast checks passed');
