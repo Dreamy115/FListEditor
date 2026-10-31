@@ -89,6 +89,18 @@ function clearConfirmation(){pendingConfirm=null;$('confirmBar').hidden=true;}
 $('confirmYes').addEventListener('click',()=>{const action=pendingConfirm;clearConfirmation();if(action)action()});
 $('confirmNo').addEventListener('click',clearConfirmation);
 function toast(message){const el=$('toast');el.textContent=message;el.classList.add('show');clearTimeout(toastTimer);toastTimer=setTimeout(()=>el.classList.remove('show'),2200)}
+function characterNameKey(name){return name.trim().toLowerCase()}
+function characterNameTaken(name,excludeId){
+ return data.drafts.some(record=>record.id!==excludeId&&characterNameKey(record.name)===characterNameKey(name));
+}
+function uniqueCharacterName(name,excludeId){
+ const base=name.trim().slice(0,100)||'Untitled character';
+ if(!characterNameTaken(base,excludeId))return base;
+ for(let count=2;;count++){
+  const suffix=' ('+count+')',candidate=base.slice(0,100-suffix.length)+suffix;
+  if(!characterNameTaken(candidate,excludeId))return candidate;
+ }
+}
 function cloneName(name,records){
  const names=new Set(records.map(record=>record.name));
  for(let count=1;;count++){const suffix=count===1?' copy':' copy '+count;const candidate=(name||'Untitled').slice(0,100-suffix.length)+suffix;if(!names.has(candidate))return candidate}
@@ -97,7 +109,7 @@ function cloneCharacter(id){
  stashEditor();const original=data.drafts.find(record=>record.id===id);if(!original)return;
  if(data.drafts.length>=80){toast('Maximum 80 characters. Delete one before cloning.');return}
  const mixed=characterEditors.get(id)?.mixed??(typeof original.mixed==='boolean'?original.mixed:templateSession?templateSession.returnContext.mixed:data.mixed);
- const copy={id:makeId(),name:cloneName(original.name,data.drafts),content:original.content,mixed};
+ const copy={id:makeId(),name:uniqueCharacterName(cloneName(original.name,data.drafts)),content:original.content,mixed};
  data.drafts.unshift(copy);loadDraft(copy.id);$('profileName').focus();$('profileName').select();toast('Character cloned');
 }
 function renderDrafts(){
@@ -848,7 +860,13 @@ function updateWarnings(problems){
 document.addEventListener('folio-images-changed',()=>refresh());
 function refresh(){diagnosticHover?.hide();const bb=getCompiled(),problems=locatedWarnings(source.value,data.mixed,bb);FolioSyntax.highlight($('sourceHighlight'),source.value,data.mixed,problems,{preferLiterals:data.preferLiterals!==false});updateLineNumbers();syncHighlightScroll();$('previewTitle').textContent=$('profileName').value.trim()||'Untitled character';const preview=$('preview');try{FolioPreview.update(preview,preview.closest('.frame'),bb,renderBB,templateSession?templateSession.historyId:'character:'+data.active,globalThis.FolioLocalImages?.revision)}catch(e){preview.textContent='Preview error: '+e.message}const text=source.value;$('stats').textContent=(text.trim()?text.trim().split(/\s+/).length:0)+' words · '+text.length.toLocaleString()+' characters';updateWarnings(problems)}
 function syncFromEditor(){active().content=source.value;if(templateSession)updateTemplateStatus();refresh();scheduleSave()}
-function syncName(){active().name=$('profileName').value||(templateSession?'Untitled template':'Untitled character');if(templateSession)updateTemplateStatus();renderDrafts();refresh();scheduleSave()}
+function syncName(){
+ const input=$('profileName'),name=input.value.trim()||(templateSession?'Untitled template':'Untitled character');
+ if(!templateSession&&characterNameTaken(name,data.active)){
+  input.value=active().name;toast('A character with that name already exists. Choose a unique name.');return;
+ }
+ active().name=name;if(templateSession)updateTemplateStatus();renderDrafts();refresh();scheduleSave();
+}
 function updateActiveSyntax(){
  FolioSyntax.markActive($('sourceHighlight'),source.selectionStart);
  const line=source.value.slice(0,source.selectionStart).split('\n').length;
@@ -901,9 +919,13 @@ source.addEventListener('beforeinput',e=>{
   e.preventDefault();(e.inputType==='historyUndo'?undoEdit:redoEdit)();
  }
 });
-$('profileName').addEventListener('input',syncName);
+$('profileName').addEventListener('input',()=>{if(templateSession)syncName()});
+$('profileName').addEventListener('change',()=>{if(!templateSession)syncName()});
+$('profileName').addEventListener('keydown',event=>{
+ if(event.key==='Enter'&&!event.isComposing){event.preventDefault();$('profileName').blur()}
+});
 $('newDraft').addEventListener('click',()=>{
- stashEditor();const d={id:makeId(),name:'Untitled character',content:''};data.drafts.unshift(d);loadDraft(d.id);$('profileName').focus();$('profileName').select();toast('New character draft created');
+ stashEditor();const d={id:makeId(),name:uniqueCharacterName('Untitled character'),content:''};data.drafts.unshift(d);loadDraft(d.id);$('profileName').focus();$('profileName').select();toast('New character draft created');
 });
 $('deleteDraft').addEventListener('click',()=>requestConfirmation('Delete the current draft? This cannot be undone.',()=>{data.drafts=data.drafts.filter(d=>d.id!==data.active);if(!data.drafts.length)data.drafts.push({id:makeId(),name:'New Character',content:''});loadDraft(data.drafts[0].id);toast('Draft deleted')}));
 function applyTemplate(content,name){
@@ -1247,7 +1269,7 @@ $('purgeData').addEventListener('click',()=>requestConfirmation('Permanently del
 }));
 $('importBtn').addEventListener('click',()=>$('fileImport').click());
 $('fileImport').addEventListener('change',async(e)=>{const file=e.target.files[0];e.target.value='';if(!file)return;if(file.size>1500000){toast('File is too large (max 1.5 MB)');return}let str=await file.text(),name=file.name.replace(/\.(folio\.json|bbcode|txt|md|json)$/i,'');if(file.name.toLowerCase().endsWith('.json')){try{const record=JSON.parse(str);if(typeof record.content!=='string')throw Error('No profile content');name=String(record.name||name);str=record.content;if(typeof record.mixed==='boolean'){data.mixed=record.mixed;updateMode()}}catch(error){toast('Not a valid Folio backup');return}}
- const apply=()=>{if(templateSession){rememberSelection();active().name=name.slice(0,100);$('profileName').value=active().name;source.value=str;syncFromEditor();commitEdit('action')}else{active().name=name.slice(0,100);active().content=str;loadDraft(data.active)}toast('Source imported')};if(source.value.trim())requestConfirmation('Replace this draft with the imported file?',apply);else apply()});
+ const apply=()=>{if(templateSession){rememberSelection();active().name=name.slice(0,100);$('profileName').value=active().name;source.value=str;syncFromEditor();commitEdit('action')}else{active().name=uniqueCharacterName(name,data.active);active().content=str;loadDraft(data.active)}toast('Source imported')};if(source.value.trim())requestConfirmation('Replace this draft with the imported file?',apply);else apply()});
 document.addEventListener('keydown',e=>{
  if(e.key==='Enter'&&e.ctrlKey){e.preventDefault();copyCode();return}
  if(document.activeElement!==source)return;
@@ -1375,7 +1397,7 @@ $('templateTarget').addEventListener('change',()=>{clearConfirmation();$('applyT
 $('newFromTemplate').addEventListener('click',()=>{
  if(!templateSession)return;
  const name=('New from '+($('profileName').value.trim()||'template')).slice(0,100);
- const character={id:makeId(),name,content:source.value,mixed:data.mixed};
+ const character={id:makeId(),name:uniqueCharacterName(name),content:source.value,mixed:data.mixed};
  data.drafts.unshift(character);loadDraft(character.id);
  $('profileName').focus();$('profileName').select();toast('New character created from template');
 });
