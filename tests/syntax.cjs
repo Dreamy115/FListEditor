@@ -36,6 +36,20 @@ for (const literal of ['```\n**raw**\n{br}\n```']) {
   assert.equal(tokens[0].kind, 'literal');
 }
 assert.equal(tokenize('\\*literal', true)[0].kind, 'escape');
+for (const source of ['{macro:xyz}', '{font:serif|Text}', '{big|{user:Name}}']) {
+  const layer = document.createElement('pre'); highlight(layer, source, true);
+  assert.ok(layer.querySelector('.syntax-macro-value'));
+  assert.equal(layer.textContent, source + '\n');
+}
+for (const color of ['red','orange','yellow','green','cyan','purple','blue','pink','black','brown','white','gray']) {
+  const layer = document.createElement('pre'); highlight(layer, '{color:'+color+'|Text}', true);
+  assert.ok(layer.querySelector('.syntax-color-value[data-color="'+color+'"]'));
+  assert.equal(layer.querySelector('.syntax-macro-value'), null, 'Color swatches take precedence');
+}
+const valueLayer = document.createElement('pre');
+highlight(valueLayer, '{macro:xyz}', true, [{start:8,end:9,message:'Example warning'}]);
+assert.equal([...valueLayer.querySelectorAll('.syntax-macro-value')].map(span=>span.textContent).join(''), 'xyz');
+assert.equal(valueLayer.textContent, '{macro:xyz}\n');
 console.log('Syntax highlighting checks passed');
 
 assert.equal(tokenize('[Visit](https://example.com)', true)[0].kind, 'link');

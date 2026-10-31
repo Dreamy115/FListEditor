@@ -102,13 +102,20 @@
     // Split only the painted spans. Original tokens retain their pairing and
     // offsets for active-section highlighting and caret navigation.
     const painted = tokens.flatMap(token => {
+      const collapse = token.kind === 'block' && token.text.match(/^([ \t]*:::collapse[ \t]+)(\S[^\n]*?)([ \t]*)$/i);
+      const titleStart = collapse ? token.start + collapse[1].length : token.end;
+      const titleEnd = collapse ? titleStart + collapse[2].length : token.end;
+      // Color values keep their explicit swatches instead of the generic tint.
+      const macroValue = token.kind === 'macro' && !token.color && token.text.match(/^(\{[a-z]+:)([^|}\n]+)[|}]$/i);
+      const valueStart = macroValue ? token.start + macroValue[1].length : token.end;
+      const valueEnd = macroValue ? valueStart + macroValue[2].length : token.end;
       const overlapping = (problems || []).filter(problem => problem.start < token.end && problem.end > token.start);
-      const boundaries = [...new Set([token.start, token.end, ...overlapping.flatMap(problem => [
+      const boundaries = [...new Set([token.start, token.end, titleStart, titleEnd, valueStart, valueEnd, ...overlapping.flatMap(problem => [
         Math.max(token.start, problem.start), Math.min(token.end, problem.end)
       ])])].sort((a, b) => a - b);
       return boundaries.slice(0, -1).map((start, i) => {
         const end = boundaries[i + 1];
-        return {...token, text: text.slice(start, end), diagnostics: overlapping.filter(problem => problem.start < end && problem.end > start)};
+        return {...token, text: text.slice(start, end), collapseTitle: !!collapse && start >= titleStart && end <= titleEnd, macroValue: !!macroValue && start >= valueStart && end <= valueEnd, diagnostics: overlapping.filter(problem => problem.start < end && problem.end > start)};
       });
     });
     let line = 1;
@@ -149,6 +156,14 @@
             word.className = 'syntax-color-value'; word.dataset.color = token.color; word.textContent = match[2];
             span.appendChild(word); span.appendChild(document.createTextNode(match[3]));
           } else span.textContent = pieces[i];
+        } else if (token.collapseTitle) {
+          const title = document.createElement('span');
+          title.className = 'syntax-collapse-title'; title.textContent = pieces[i];
+          span.appendChild(title);
+        } else if (token.macroValue) {
+          const value = document.createElement('span');
+          value.className = 'syntax-macro-value'; value.textContent = pieces[i];
+          span.appendChild(value);
         } else if(markGlyphs)appendEntityGlyphs(span,pieces[i]);
         else span.textContent = pieces[i];
         fragment.appendChild(span);

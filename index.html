@@ -78,7 +78,11 @@
 
  <button class="pill" id="guideBtn" aria-expanded="false" aria-controls="guidePanel">? Examples &amp; macros</button>
  </div>
- <div id="symbolPalette" class="color-palette" hidden role="group" aria-label="Unicode symbols"></div>
+ <div id="symbolPalette" class="color-palette symbol-palette" hidden role="group" aria-label="Unicode symbols">
+ <input id="symbolSearch" type="search" aria-label="Search symbols" placeholder="Search symbols: heart, star, divider…">
+ <div id="symbolOptions" class="symbol-options"></div>
+ <span id="symbolEmpty" class="palette-hint" role="status" hidden>No symbols found.</span>
+ </div>
  <div id="fontPalette" class="color-palette" hidden aria-label="Unicode text fonts"></div>
  <div id="colorPalette" class="color-palette" hidden aria-label="F-List named text colors"></div>
  </div>

@@ -200,6 +200,11 @@
 .editor-shell .syntax-block.syntax-depth-2{color:var(--editor-block2)}
 .editor-shell .syntax-block.syntax-depth-3{color:var(--editor-block3)}
 .editor-shell .syntax-block.syntax-depth-4{color:var(--editor-block4)}
+/* Keep the nesting hue, with a brighter, quieter title than the macro itself. */
+.editor-shell .syntax-collapse-title{color:color-mix(in srgb,currentColor 40%,white)}
+.editor-shell[data-editor-theme="paper"] .syntax-collapse-title{color:color-mix(in srgb,currentColor 55%,var(--editor-text))}
+.editor-shell .syntax-macro-value{color:color-mix(in srgb,currentColor 65%,white)}
+.editor-shell[data-editor-theme="paper"] .syntax-macro-value{color:color-mix(in srgb,currentColor 65%,var(--editor-text))}
 .editor-shell .syntax-macro{color:var(--editor-macro0)}
 .editor-shell .syntax-macro.syntax-depth-1{color:var(--editor-macro1)}
 .editor-shell .syntax-macro.syntax-depth-2{color:var(--editor-macro2)}
