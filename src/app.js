@@ -1061,6 +1061,7 @@ function parsePreviewFontSize(value){
  const size=Number(text.replace(/\s*px$/,''));return Number.isFinite(size)&&size>=1&&size<=200?String(size):null;
 }
 function setPreviewFontSize(){
+ $('previewPage').style.setProperty('--horizon-rem',(data.previewFontSize==='site'?'16':data.previewFontSize)+'px');
  $('preview').style.fontSize=data.previewFontSize==='site'?'':data.previewFontSize+'px';
  $('previewFontSize').value=data.previewFontSize==='site'?'':data.previewFontSize;
  $('previewFontSize').removeAttribute('aria-invalid');
@@ -1069,7 +1070,7 @@ $('previewFontSize').addEventListener('input',e=>{
  const size=parsePreviewFontSize(e.target.value);
  if(!size){e.target.setAttribute('aria-invalid','true');return}
  e.target.removeAttribute('aria-invalid');data.previewFontSize=size;
- $('preview').style.fontSize=size==='site'?'':size+'px';persist();
+ $('preview').style.fontSize=size==='site'?'':size+'px';$('previewPage').style.setProperty('--horizon-rem',(size==='site'?'16':size)+'px');persist();
 });
 $('previewFontSize').addEventListener('change',setPreviewFontSize);
 // All toolbar insertion tools edit the source directly, with no prompt or modal.

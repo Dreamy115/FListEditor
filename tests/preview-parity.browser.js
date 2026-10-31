@@ -3,6 +3,7 @@
   const check = (ok, label) => { if (!ok) failures.push(label); };
   const host = document.createElement('div');
   document.body.append(host);
+  host.style.transition = 'none';
   const palettes = {
     'flist-blue':['#f44','#ffa500','#ff0','#4f4','#0ff','#e2afff','#1e90ff','#ffcbdb','#000','#aa840c','#fff','#d3d3d3'],
     'flist-dark':['#f44','#ffa500','#ff0','#4f4','#0ff','#d0f','#1e90ff','#ffcbdb','#888','#aa840c','#fff','#d3d3d3'],
@@ -71,7 +72,41 @@
         frame.remove();
       }
     }
-    for (const scheme of ['default','classic','noir']) {
+    host.className = 'previewpage horizon-moon-prism';
+    host.innerHTML = '<div class="description"></div>';
+    host.querySelector('.description').append(FolioHorizon.render(horizonProfileFixture));
+    const fortunate = [...host.querySelectorAll('.bbcode-collapse-header')].find(el=>el.textContent === 'Fortunate Souls');
+    fortunate.click();
+    fortunate.nextElementSibling.style.height = '';
+    const css = selector => getComputedStyle(host.querySelector(selector));
+    check(css('.orangeText').color === 'rgb(255, 183, 133)', 'Moon Prism reference orange');
+    check(css('.blueText').color === 'rgb(76, 76, 255)', 'Moon Prism reference blue');
+    check(css('.link-domain').color === 'rgb(90, 97, 184)', 'Moon Prism hostname');
+    check(css('.blackText').color === 'rgb(184, 194, 224)', 'Moon Prism black text');
+    check(host.querySelectorAll('.indentText').length === 6, 'six source indents retained');
+    for (const size of [16,20,24]) {
+      host.style.setProperty('--horizon-rem',size+'px');
+      check(css('.description').fontSize === size+'px', 'Horizon body scales '+size);
+      check(Math.abs(parseFloat(css('h2').fontSize)-size*1.17)<.02, 'Horizon heading scales '+size);
+      check(css('.card-body').paddingLeft === size+'px', 'Horizon card scales '+size);
+      if (window.horizonReferenceCSS) {
+        const frame = document.createElement('iframe');
+        frame.style.cssText = 'border:0;width:'+host.getBoundingClientRect().width+'px';
+        document.body.append(frame);
+        const reference = frame.contentDocument;
+        reference.open();
+        reference.write('<style>'+horizonReferenceCSS['moon-prism']+'</style><div class="modal-content">'+host.innerHTML+'</div>');
+        reference.close();
+        reference.documentElement.style.fontSize = size+'px';
+        for (const selector of ['.description','h2','.grayText :is(i,em)','.card-body','.bbcode-collapse-header','.link-domain','.orangeText','.blueText','.blackText']) {
+          const actual = css(selector), expected = frame.contentWindow.getComputedStyle(reference.querySelector(selector));
+          for (const p of ['fontSize','lineHeight','color','fontStyle']) check(actual[p] === expected[p], 'source fixture '+size+' '+selector+' '+p+': '+actual[p]+' vs '+expected[p]);
+        }
+        frame.remove();
+      }
+    }
+    host.style.removeProperty('--horizon-rem');
+    for (const scheme of ['default','classic','noir','horizon-moon-prism']) {
       document.documentElement.dataset.flistScheme = scheme;
       host.className = 'previewpage' + (scheme === 'default' ? '' : ' '+scheme);
       host.innerHTML = '<div class="char-header">Header</div><div class="description"></div>';
@@ -81,12 +116,34 @@
       check(css('h2').fontSize === '18.72px' && css('h2').marginBottom === '8px', scheme+' Horizon heading');
       check(css('blockquote').borderLeftWidth === '0px' && css('blockquote').marginBottom === '16px', scheme+' Horizon quote');
       check(css('.bbcode-collapse-header').paddingLeft === '20px', scheme+' Horizon title padding');
+      check(css('hr').marginTop === '5px' && css('hr').marginBottom === '5px', scheme+' compact Horizon separators');
       check(css('.bbcode-collapse-body').marginLeft === '8px' && css('.card-body').paddingLeft === '16px', scheme+' Horizon body inset');
       check(css('.bbcode-collapse-header').backgroundImage === 'none', scheme+' no site gradient');
       const background = css('.bbcode-collapse').backgroundColor;
       host.querySelector('.bbcode-collapse-header').click();
       check(css('.bbcode-collapse').backgroundColor === background, scheme+' stable open card background');
       check(css('.character-avatar.icon').width === '50px', scheme+' Horizon icon');
+      check(css('.bbcode').hyphens === 'manual', scheme+' no added hyphenation');
+      if (window.horizonReferenceCSS) {
+        const frame = document.createElement('iframe'); document.body.append(frame);
+        const reference = frame.contentDocument;
+        const themeName = {default:'default',classic:'light',noir:'dark','horizon-moon-prism':'moon-prism'}[scheme];
+        reference.open();
+        reference.write('<style>' + horizonReferenceCSS[themeName] + '</style><div class="modal-content"><div class="description">' + host.querySelector('.description').innerHTML + '</div></div>');
+        reference.close();
+        const compare = (selector, properties) => {
+          const actual = css(selector), expected = frame.contentWindow.getComputedStyle(reference.querySelector(selector));
+          properties.forEach(p=>check(actual[p] === expected[p], scheme+' Horizon reference '+selector+' '+p+': '+actual[p]+' vs '+expected[p]));
+        };
+        compare('.description',['color','fontSize','lineHeight']);
+        compare('h2',['color','fontSize','fontWeight','lineHeight','marginTop','marginBottom']);
+        compare('.bbcode-collapse',['backgroundColor','borderTopColor','borderRadius','display']);
+        compare('.bbcode-collapse-header',['backgroundColor','paddingTop','paddingBottom','paddingLeft','fontSize','lineHeight','borderBottomColor']);
+        compare('.card-body',['paddingTop','paddingLeft','color']);
+        compare('blockquote',['borderTopWidth','marginTop','marginBottom','fontStyle']);
+        compare('hr',['marginTop','marginBottom','borderTopWidth','opacity']);
+        frame.remove();
+      }
     }
   } catch (error) { failures.push(error.stack); }
   const result = document.createElement('pre');

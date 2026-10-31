@@ -29,3 +29,10 @@ The non-site profile appearances adapt Horizon character-viewer styling from
 same pinned revision, together with Bootstrap 5 card/reboot/type metrics.
 Horizon Default, Light, and Dark map to the saved Folio appearance IDs `default`,
 `classic`, and `noir`. The F-List site schemes use separate legacy-site rules.
+
+Screenshot calibration additionally checks against the locally installed Horizon
+2.4.5 compiled Default, Light, Dark and Moon Prism themes. The optional browser
+reference check reads these CSS files without changing the application. Moon
+Prism is an additional preview appearance, not an alias for Horizon Default.
+Font Awesome Free 7.2.0 icon shapes are attributed in
+`src/assets/horizon/LICENSE.txt` (SVG icons: CC BY 4.0).

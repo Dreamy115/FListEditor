@@ -19,12 +19,18 @@ if browser is None:
 subprocess.run([sys.executable, str(root / "build.py")], check=True)
 page = (root / "dist/Folio-Profile-Studio.html").read_text(encoding="utf-8")
 script = "<script>" + (root / "tests/preview-parity.browser.js").read_text(encoding="utf-8") + "</script>"
+profile_fixture = (root / 'tests/fixtures/horizon-profile.bbcode').read_text(encoding='utf-8')
+script = '<script>window.horizonProfileFixture=' + json.dumps(profile_fixture).replace('</', '<\\/') + ';</script>' + script
 if '--site-reference' in sys.argv:
     def fetch(name):
         return name, urllib.request.urlopen('https://static.f-list.net/css/' + name, timeout=20).read().decode()
     with ThreadPoolExecutor() as pool:
         reference = dict(pool.map(fetch, ['common/default-0.0.10.css', 'default.css', 'dark.css', 'light.css']))
     script = '<script>window.siteReferenceCSS=' + json.dumps(reference).replace('</', '<\\/') + ';</script>' + script
+if '--horizon-reference' in sys.argv:
+    theme_dir = Path(os.environ.get('PROGRAMFILES', 'C:/Program Files')) / 'Horizon/resources/app.asar.unpacked/themes'
+    reference = {name: (theme_dir / (name + '.css')).read_text(encoding='utf-8') for name in ('default','light','dark','moon-prism')}
+    script = '<script>window.horizonReferenceCSS=' + json.dumps(reference).replace('</', '<\\/') + ';</script>' + script
 with tempfile.TemporaryDirectory(prefix="folio-preview-check-") as folder:
     target = Path(folder) / "check.html"
     target.write_text(page.replace("</body>", script + "</body>"), encoding="utf-8")
@@ -43,8 +49,8 @@ with tempfile.TemporaryDirectory(prefix="folio-preview-check-") as folder:
         print(f"Preview CSS parity passed at {width}px")
     if '--gallery' in sys.argv:
         gallery = (root / 'tests/preview-gallery.browser.js').read_text(encoding='utf-8')
-        for scheme in ('flist-blue', 'flist-dark', 'flist-light', 'default', 'classic', 'noir'):
-            target.write_text(page.replace('</body>', '<script>window.previewGalleryTheme=' + json.dumps(scheme) + ';' + gallery + '</script></body>'), encoding='utf-8')
+        for scheme in ('flist-blue', 'flist-dark', 'flist-light', 'default', 'classic', 'noir', 'horizon-moon-prism'):
+            target.write_text(page.replace('</body>', '<script>window.horizonProfileFixture=' + json.dumps(profile_fixture).replace('</', '<\\/') + ';window.previewGalleryTheme=' + json.dumps(scheme) + ';' + gallery + '</script></body>'), encoding='utf-8')
             output = root / 'dist' / ('preview-' + scheme + '.png')
             subprocess.run([str(browser), '--headless', '--disable-gpu', '--hide-scrollbars',
                             '--no-first-run', '--no-default-browser-check', '--window-size=1000,900',

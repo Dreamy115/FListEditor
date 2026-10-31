@@ -39,36 +39,37 @@
  * Keep these scoped: the legacy F-List schemes have different DOM metrics. */
 .previewpage:not(:is(.flist-blue,.flist-dark,.flist-light)) {
   --horizon-panel:#282851;--horizon-text:#dfdfef;--horizon-card:#282851;
-  --horizon-border:#ffffff2d;--horizon-cap:#ffffff08;--horizon-link:#bebedf;
-  background:var(--horizon-panel);color:var(--horizon-text);border:1px solid var(--horizon-border);
-  border-radius:.5rem;padding:1rem;box-shadow:none;
-  font-family:system-ui,-apple-system,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif;
+  --horizon-border:rgba(255,255,255,.175);--horizon-cap:rgba(223,223,239,.03);--horizon-link:#bebedf;--horizon-muted:#5d5dae;
+  background:var(--horizon-panel);color:var(--horizon-text);border:0;
+  border-radius:0;padding:16px;box-shadow:none;
+  font-family:system-ui,-apple-system,'Segoe UI',Roboto,'Helvetica Neue',Arial,'Noto Sans','Liberation Sans',sans-serif;
 }
 .previewpage.classic {
-  --horizon-panel:#f2f2f2;--horizon-text:#212529;--horizon-card:#f8f9fa;
-  --horizon-border:#0000002d;--horizon-cap:#00000008;--horizon-link:#333;
+  --horizon-panel:#f2f2f2;--horizon-text:#191919;--horizon-card:#e5e5e5;
+  --horizon-muted:#7f7f7f;--horizon-border:rgba(0,0,0,.175);--horizon-cap:rgba(25,25,25,.03);--horizon-link:#333;
   color-scheme:light;
 }
 .previewpage.noir {
   --horizon-panel:#333;--horizon-text:#ccc;--horizon-card:#1a1a1a;
-  --horizon-link:#b3b3b3;
+  --horizon-link:#b3b3b3;--horizon-muted:#666;--horizon-cap:rgba(204,204,204,.03);
 }
 .previewpage:not(:is(.flist-blue,.flist-dark,.flist-light)) .char-header {display:none}
-.previewpage:not(:is(.flist-blue,.flist-dark,.flist-light)) .description {font-size:16px;line-height:1.5}
-.previewpage:not(:is(.flist-blue,.flist-dark,.flist-light)) .description .bbcode {overflow-wrap:break-word;hyphens:auto}
-.previewpage:not(:is(.flist-blue,.flist-dark,.flist-light)) .description .bbcode h2 {font-size:1.17rem;font-weight:700;line-height:1.2;color:inherit;letter-spacing:normal;margin:0 0 .5rem}
+.previewpage:not(:is(.flist-blue,.flist-dark,.flist-light)) .description {font-size:var(--horizon-rem,16px);line-height:1.5}
+.previewpage:not(:is(.flist-blue,.flist-dark,.flist-light)) .description .bbcode {overflow-wrap:break-word;hyphens:manual}
+.previewpage:not(:is(.flist-blue,.flist-dark,.flist-light)) .description .bbcode h2 {font-size:calc(var(--horizon-rem,16px)*1.17);font-weight:700;line-height:1.2;color:inherit;letter-spacing:normal;margin:0 0 calc(var(--horizon-rem,16px)*.5)}
 .previewpage:not(:is(.flist-blue,.flist-dark,.flist-light)) .description strong {font-weight:bolder}
 .previewpage:not(:is(.flist-blue,.flist-dark,.flist-light)) .description a {color:var(--horizon-link);text-underline-offset:auto}
 .previewpage:not(:is(.flist-blue,.flist-dark,.flist-light)) .description a:hover {text-decoration:none}
-.previewpage:not(:is(.flist-blue,.flist-dark,.flist-light)) .description blockquote {padding:0;margin:0 0 1rem;border:0;background:transparent;color:inherit;font-style:normal;box-shadow:none}
-.previewpage:not(:is(.flist-blue,.flist-dark,.flist-light)) .description hr {margin:1rem 0;border:0;border-top:1px solid currentColor;color:inherit;opacity:.25;background:none}
-.previewpage:not(:is(.flist-blue,.flist-dark,.flist-light)) .description .bbcode-collapse {border:1px solid var(--horizon-border);border-radius:.7em;background:var(--horizon-card);color:inherit;margin:0;overflow:hidden}
-.previewpage:not(:is(.flist-blue,.flist-dark,.flist-light)) .description .bbcode-collapse-header {width:100%;min-height:0;padding:.4em 1.25rem;background:var(--horizon-cap);color:inherit;border-bottom:1px solid var(--horizon-border);font-size:inherit;line-height:inherit;border-radius:calc(.7em - 1px) calc(.7em - 1px) 0 0}
+.previewpage:not(:is(.flist-blue,.flist-dark,.flist-light)) .description blockquote {padding:0;margin:0 0 var(--horizon-rem,16px);border:0;background:transparent;color:inherit;font-style:normal;box-shadow:none}
+.previewpage:not(:is(.flist-blue,.flist-dark,.flist-light)) .description hr {margin:5px 0;border:0;border-top:1px solid currentColor;color:inherit;opacity:.25;background:none}
+.previewpage:not(:is(.flist-blue,.flist-dark,.flist-light)) .description .bbcode-collapse {display:flex;flex-direction:column;position:relative;background-clip:border-box;border:1px solid var(--horizon-border);border-radius:.7em;background:var(--horizon-card);color:inherit;margin:0;overflow:hidden}
+.previewpage:not(:is(.flist-blue,.flist-dark,.flist-light)) .description .bbcode-collapse-header {width:100%;min-height:0;padding:.4em calc(var(--horizon-rem,16px)*1.25);background:var(--horizon-cap);color:inherit;border-bottom:1px solid var(--horizon-border);font-size:inherit;line-height:inherit;border-radius:calc(.7em - 1px) calc(.7em - 1px) 0 0}
 .previewpage:not(:is(.flist-blue,.flist-dark,.flist-light)) .description .collapsed > .bbcode-collapse-header {border-radius:calc(.7em - 1px)}
 .previewpage:not(:is(.flist-blue,.flist-dark,.flist-light)) .description .bbcode-collapse-header:before {content:none}
-.previewpage:not(:is(.flist-blue,.flist-dark,.flist-light)) .description .bbcode-collapse-header > .fas {display:inline-block;width:.55em;height:.55em;border:solid currentColor;border-width:0 .15em .15em 0;transform:translateY(-.15em) rotate(45deg);vertical-align:middle}
-.previewpage:not(:is(.flist-blue,.flist-dark,.flist-light)) .description .bbcode-collapse-header > .fa-chevron-up {transform:translateY(.15em) rotate(225deg)}
-.previewpage:not(:is(.flist-blue,.flist-dark,.flist-light)) .description .card-body {padding:1rem}
+.previewpage:not(:is(.flist-blue,.flist-dark,.flist-light)) .description .bbcode-collapse-header > .fas {display:inline-block;width:.875em;height:1em;border:0;transform:none;background:currentColor;vertical-align:-.125em;mask:url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%20448%20512%22%3E%3C%21--%21%20Font%20Awesome%20Free%207.2.0%20by%20%40fontawesome%20-%20https%3A%2F%2Ffontawesome.com%20License%20-%20https%3A%2F%2Ffontawesome.com%2Flicense%2Ffree%20%28Icons%3A%20CC%20BY%204.0%2C%20Fonts%3A%20SIL%20OFL%201.1%2C%20Code%3A%20MIT%20License%29%20Copyright%202026%20Fonticons%2C%20Inc.%20--%3E%3Cpath%20fill%3D%22currentColor%22%20d%3D%22M201.4%20406.6c12.5%2012.5%2032.8%2012.5%2045.3%200l192-192c12.5-12.5%2012.5-32.8%200-45.3s-32.8-12.5-45.3%200L224%20338.7%2054.6%20169.4c-12.5-12.5-32.8-12.5-45.3%200s-12.5%2032.8%200%2045.3l192%20192z%22%2F%3E%3C%2Fsvg%3E") center/contain no-repeat}
+.previewpage:not(:is(.flist-blue,.flist-dark,.flist-light)) .description .bbcode-collapse-header > .fa-chevron-up {mask-image:url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%20448%20512%22%3E%3C%21--%21%20Font%20Awesome%20Free%207.2.0%20by%20%40fontawesome%20-%20https%3A%2F%2Ffontawesome.com%20License%20-%20https%3A%2F%2Ffontawesome.com%2Flicense%2Ffree%20%28Icons%3A%20CC%20BY%204.0%2C%20Fonts%3A%20SIL%20OFL%201.1%2C%20Code%3A%20MIT%20License%29%20Copyright%202026%20Fonticons%2C%20Inc.%20--%3E%3Cpath%20fill%3D%22currentColor%22%20d%3D%22M201.4%20105.4c12.5-12.5%2032.8-12.5%2045.3%200l192%20192c12.5%2012.5%2012.5%2032.8%200%2045.3s-32.8%2012.5-45.3%200L224%20173.3%2054.6%20342.6c-12.5%2012.5-32.8%2012.5-45.3%200s-12.5-32.8%200-45.3l192-192z%22%2F%3E%3C%2Fsvg%3E")}
+
+.previewpage:not(:is(.flist-blue,.flist-dark,.flist-light)) .description .card-body {padding:var(--horizon-rem,16px)}
 .previewpage:not(:is(.flist-blue,.flist-dark,.flist-light)) .description .indentText {padding-left:0}
 @media(min-width:768px){.previewpage:not(:is(.flist-blue,.flist-dark,.flist-light)) .description .indentText {padding-left:1%}}
 @media(min-width:992px){.previewpage:not(:is(.flist-blue,.flist-dark,.flist-light)) .description .indentText {padding-left:2%}}
@@ -90,8 +91,8 @@
 .previewpage:not(:is(.flist-blue,.flist-dark,.flist-light,.classic,.noir)) .description .blackText {color:#797992}
 
 .previewpage:not(:is(.flist-blue,.flist-dark,.flist-light)) .description .row > .col-12 {flex:0 0 auto;width:100%}
-.previewpage:not(:is(.flist-blue,.flist-dark,.flist-light)) .description .link-domain {color:#808080;text-shadow:none}
-.previewpage:not(:is(.flist-blue,.flist-dark,.flist-light)) .description .profile-url-link:before {content:'';display:inline-block;width:1em;height:1em;margin-right:2px;vertical-align:-.1em;background:currentColor;mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='none' stroke='black' stroke-width='3' stroke-linecap='round' d='m10 7 3-3a5 5 0 0 1 7 7l-4 4a5 5 0 0 1-7 0m5 2-3 3a5 5 0 0 1-7-7l4-4a5 5 0 0 1 7 0'/%3E%3C/svg%3E") center/contain no-repeat}
+.previewpage:not(:is(.flist-blue,.flist-dark,.flist-light)) .description .link-domain {color:var(--horizon-muted);text-shadow:none}
+.previewpage:not(:is(.flist-blue,.flist-dark,.flist-light)) .description .profile-url-link:before {content:"";display:inline-block;width:1.25em;height:1em;margin-right:2px;vertical-align:-.125em;background:currentColor;mask:url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%20576%20512%22%3E%3C%21--%21%20Font%20Awesome%20Free%207.2.0%20by%20%40fontawesome%20-%20https%3A%2F%2Ffontawesome.com%20License%20-%20https%3A%2F%2Ffontawesome.com%2Flicense%2Ffree%20%28Icons%3A%20CC%20BY%204.0%2C%20Fonts%3A%20SIL%20OFL%201.1%2C%20Code%3A%20MIT%20License%29%20Copyright%202026%20Fonticons%2C%20Inc.%20--%3E%3Cpath%20fill%3D%22currentColor%22%20d%3D%22M419.5%2096c-16.6%200-32.7%204.5-46.8%2012.7-15.8-16-34.2-29.4-54.5-39.5%2028.2-24%2064.1-37.2%20101.3-37.2%2086.4%200%20156.5%2070%20156.5%20156.5%200%2041.5-16.5%2081.3-45.8%20110.6l-71.1%2071.1c-29.3%2029.3-69.1%2045.8-110.6%2045.8-86.4%200-156.5-70-156.5-156.5%200-1.5%200-3%20.1-4.5%20.5-17.7%2015.2-31.6%2032.9-31.1s31.6%2015.2%2031.1%2032.9c0%20.9%200%201.8%200%202.6%200%2051.1%2041.4%2092.5%2092.5%2092.5%2024.5%200%2048-9.7%2065.4-27.1l71.1-71.1c17.3-17.3%2027.1-40.9%2027.1-65.4%200-51.1-41.4-92.5-92.5-92.5zM275.2%20173.3c-1.9-.8-3.8-1.9-5.5-3.1-12.6-6.5-27-10.2-42.1-10.2-24.5%200-48%209.7-65.4%2027.1L91.1%20258.2c-17.3%2017.3-27.1%2040.9-27.1%2065.4%200%2051.1%2041.4%2092.5%2092.5%2092.5%2016.5%200%2032.6-4.4%2046.7-12.6%2015.8%2016%2034.2%2029.4%2054.6%2039.5-28.2%2023.9-64%2037.2-101.3%2037.2-86.4%200-156.5-70-156.5-156.5%200-41.5%2016.5-81.3%2045.8-110.6l71.1-71.1c29.3-29.3%2069.1-45.8%20110.6-45.8%2086.6%200%20156.5%2070.6%20156.5%20156.9%200%201.3%200%202.6%200%203.9-.4%2017.7-15.1%2031.6-32.8%2031.2s-31.6-15.1-31.2-32.8c0-.8%200-1.5%200-2.3%200-33.7-18-63.3-44.8-79.6z%22%2F%3E%3C%2Fsvg%3E") center/contain no-repeat}
 @media(min-width:768px){
   .previewpage:not(:is(.flist-blue,.flist-dark,.flist-light)) .description .row > .col-md-4 {width:33.333333%}
   .previewpage:not(:is(.flist-blue,.flist-dark,.flist-light)) .description .row > .col-md-6 {width:50%}
@@ -102,3 +103,20 @@
   .previewpage:not(:is(.flist-blue,.flist-dark,.flist-light)) .description .row > .col-lg-4 {width:33.333333%}
   .previewpage:not(:is(.flist-blue,.flist-dark,.flist-light)) .description .row > .col-lg-6 {width:50%}
 }
+
+/* Moon Prism is the Horizon appearance shown in the supplied reference. */
+.previewpage.horizon-moon-prism {--horizon-panel:#2c3059;--horizon-card:#2c3059;--horizon-text:#e0e1ef;--horizon-link:#c0c3e0;--horizon-muted:#5a61b8;--horizon-border:rgba(248,249,255,.175);--horizon-cap:rgba(224,225,239,.03)}
+.previewpage.horizon-moon-prism .description .redText {color:#ff8585}
+.previewpage.horizon-moon-prism .description .blueText {color:#4c4cff}
+.previewpage.horizon-moon-prism .description .greenText {color:#85ff9a}
+.previewpage.horizon-moon-prism .description .yellowText {color:#ffd785}
+.previewpage.horizon-moon-prism .description .cyanText {color:#85ffff}
+.previewpage.horizon-moon-prism .description .purpleText {color:#a685ff}
+.previewpage.horizon-moon-prism .description .brownText {color:#ffb785}
+.previewpage.horizon-moon-prism .description .pinkText {color:#ff85c7}
+.previewpage.horizon-moon-prism .description .grayText {color:#c8d5e8}
+.previewpage.horizon-moon-prism .description .orangeText {color:#ffb785}
+.previewpage.horizon-moon-prism .description .whiteText {color:#f8f9ff}
+.previewpage.horizon-moon-prism .description .blackText {color:#b8c2e0}
+
+.previewpage:not(:is(.flist-blue,.flist-dark,.flist-light)) .description .bbcode-collapse-body {margin-left:calc(var(--horizon-rem,16px)*.5)}

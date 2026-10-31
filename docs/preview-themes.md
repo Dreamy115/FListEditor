@@ -86,3 +86,30 @@ The chain sprite is bundled from
 https://static.f-list.net/images/common_icons2.png under the same F-List asset
 attribution above. Horizon appearances show their own chain glyph and muted
 hostname, including on bare URLs, following upstream `bbcode/UrlTagView.vue`.
+
+## Horizon screenshot calibration
+
+The supplied reference matches **Horizon Moon Prism**, rather than Horizon
+Default. That appearance is now selectable separately (`horizon-moon-prism`),
+with colors from the locally installed Horizon 2.4.5 compiled `moon-prism.css`.
+Default, Light and Dark retain their own palettes. Moon Prism uses panel
+`#2c3059`, orange `#ffb785`, blue `#4c4cff`, black `#b8c2e0` and hostname
+`#5a61b8`. Choose this appearance when comparing with the supplied screenshot.
+
+The installed CSS also supplies independent comparison fixtures for Horizon
+card flex layout, translucent header backgrounds and borders, Light card/body
+colors, headings and quotes. `--horizon-reference` on the browser check reads
+only the installed compiled theme CSS from `C:/Program Files/Horizon/resources/
+app.asar.unpacked/themes`; it does not change or depend on Horizon settings.
+This option requires that installation. The normal browser check stays portable.
+
+A focused excerpt of the supplied profile is kept in
+`tests/fixtures/horizon-profile.bbcode`, including the exact Fortunate Souls
+section and its six indent wrappers. It is tested at 16, 20 and 24px. The
+Horizon heading and card spacing scale with the selected text size rather than
+remaining tied to the editor page's 16px root. Automatic hyphenation is disabled.
+The profile surface has no decorative outer border and adds 16px of preview padding on all sides.
+
+The chevron and link SVG shapes are Font Awesome Free 7.2.0 icons, attributed
+to Fonticons, Inc., under CC BY 4.0. Source assets and their license are in
+`src/assets/horizon`; the CSS embeds the SVG shapes for offline use.
