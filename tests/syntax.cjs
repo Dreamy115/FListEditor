@@ -110,3 +110,26 @@ assert.equal(deepLayer.textContent, deep + '\n');
 assert.ok(tokenize('[b][i]Crossed[/b][/i]', false).some(t => t.unmatched));
 assert.ok(tokenize('{big|Unclosed', true).some(t => t.unmatched));
 assert.ok(!tokenize('```\n{big|[b]\n```', true).some(t => t.unmatched));
+for (const input of ['> > Nested', '>>Nested', '  >  >\t> Deep', '> Outer\n> > Inner\n> Outer again']) {
+  const tokens = tokenize(input, true);
+  assert.equal(tokens.map(token => token.text).join(''), input);
+  const markers = tokens.filter(token => token.marker === 'quote');
+  assert.equal(markers.length, (input.match(/>/g) || []).length);
+  const layer = document.createElement('pre');
+  highlight(layer, input, true);
+  assert.equal(layer.querySelectorAll('.syntax-marker-quote').length, markers.length);
+  assert.equal(layer.textContent, input+'\n');
+}
+const quoted = '> > # {color:cyan|**Title**}\n> > :::color purple\n> > text\n> > :::';
+const quotedLayer = document.createElement('pre');
+highlight(quotedLayer,quoted,true);
+assert.equal(quotedLayer.querySelectorAll('.syntax-marker-quote').length,8);
+assert.ok(quotedLayer.querySelector('.syntax-marker-heading'));
+assert.ok(quotedLayer.querySelector('.syntax-emphasis-bold'));
+assert.ok(quotedLayer.querySelector('.syntax-color-value[data-color="purple"]'));
+assert.equal(quotedLayer.textContent,quoted+'\n');
+for (const literal of ['`> > literal`', '[noparse]> > literal[/noparse]', '```\n> > literal\n```', '\\> > literal', 'text > > comparison']) {
+  assert.ok(!tokenize(literal,true).some(token=>token.marker==='quote'),literal);
+}
+assert.ok(!tokenize('> > plain BBCode',false).some(token=>token.marker==='quote'));
+console.log('Nested quote highlighting checks passed');

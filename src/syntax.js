@@ -3,13 +3,22 @@
   // Highlight source without parsing it into editable HTML or changing whitespace.
   function lex(text, mixed) {
     const pattern = mixed
-      ? /```[^\n]*(?:\n[\s\S]*?(?:\n[ \t]*```[^\n]*|(?![\s\S])))?|\[noparse\][\s\S]*?(?:\[\/noparse\]|(?![\s\S]))|\{noparse\|[^}\n]*\}|`[^`\n]*`|\\[^\n]|\\$|^[ \t]*:::[^\n]*|^[ \t]*#{1,6}[ \t]+|^[ \t]*(?:-{3,}|\*{3,}|_{3,})[ \t]*$|^[ \t]*(?:>[ \t]?|[-*+][ \t]+|\d+\.[ \t]+)|!?\[[^\]\n]*\]\(https?:\/\/[^\s)]+\)|\[\/?[a-z]+(?:=[^\]\n]*)?\]|\{[a-z]+(?::[^|}\n]*)?(?:\||\})|\}|\*{1,3}[^*\n]+\*{1,3}|__[^_\n]+__|_[^_\n]+_|~~[^~\n]+~~|\+\+[^+\n]+\+\+/gim
+      ? /```[^\n]*(?:\n[\s\S]*?(?:\n[ \t]*```[^\n]*|(?![\s\S])))?|\[noparse\][\s\S]*?(?:\[\/noparse\]|(?![\s\S]))|\{noparse\|[^}\n]*\}|`[^`\n]*`|\\[^\n]|\\$|^[ \t]*>[^\n]*|^[ \t]*:::[^\n]*|^[ \t]*#{1,6}[ \t]+|^[ \t]*(?:-{3,}|\*{3,}|_{3,})[ \t]*$|^[ \t]*(?:>[ \t]?|[-*+][ \t]+|\d+\.[ \t]+)|!?\[[^\]\n]*\]\(https?:\/\/[^\s)]+\)|\[\/?[a-z]+(?:=[^\]\n]*)?\]|\{[a-z]+(?::[^|}\n]*)?(?:\||\})|\}|\*{1,3}[^*\n]+\*{1,3}|__[^_\n]+__|_[^_\n]+_|~~[^~\n]+~~|\+\+[^+\n]+\+\+/gim
       : /\[noparse\][\s\S]*?(?:\[\/noparse\]|(?![\s\S]))|\[\/?[a-z]+(?:=[^\]\n]*)?\]/gi;
     const tokens = [];
     let last = 0;
     for (const match of text.matchAll(pattern)) {
       if (match.index > last) tokens.push({text: text.slice(last, match.index), kind: ''});
       const value = match[0];
+      // Quote contents are Markdown too. Re-tokenize after one quote prefix so
+      // nested markers and headings/macros inside quotes keep their own styles.
+      const quote = mixed && value.match(/^([ \t]*>[ \t]?)([^\n]*)$/);
+      if (quote) {
+        tokens.push({text: quote[1], kind: 'marker', marker: 'quote'});
+        tokens.push(...lex(quote[2], mixed));
+        last = match.index + value.length;
+        continue;
+      }
       // Emphasis is a container: its delimiters/body keep their base color,
       // while nested macros, tags, links, and literal text keep their own tokens.
       const emphasis = mixed && value.match(/^(\*{1,3}|__|_|~~|\+\+)([\s\S]+)\1$/);
