@@ -21,12 +21,12 @@ for (const [source,kind] of [['{sup|2}', 'macro'], ['{sub|2}', 'macro'], ['[sup]
   assert.ok(tokenize(source, true).some(token => token.kind === kind && token.text.startsWith(kind === 'macro' ? '{' : '[')));
 }
 for (const color of ['red','orange','yellow','green','cyan','purple','blue','pink','black','brown','white','gray']) {
-  for (const [source,mixed] of [['{color:'+color+'|}',true], ['[color='+color+']',false]]) {
+  for (const [source,mixed] of [['{color:'+color+'|}',true], ['[color='+color+']',false], [':::color '+color,true], ['  :::COLOR\t'+color.toUpperCase()+'  ',true]]) {
     const layer = document.createElement('pre'); highlight(layer, source, mixed);
     const value = layer.querySelector('.syntax-color-value[data-color="'+color+'"]');
     assert.ok(value, color+' color-name highlight');
-    assert.equal(value.textContent, color);
-    assert.equal(value.parentElement.classList.contains(mixed?'syntax-macro':'syntax-tag'), true);
+    assert.equal(value.textContent.toLowerCase(), color);
+    assert.equal(value.parentElement.classList.contains(source.trim().startsWith(':::')?'syntax-block':mixed?'syntax-macro':'syntax-tag'), true);
     assert.equal(layer.textContent, source+'\n');
   }
 }

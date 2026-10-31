@@ -34,8 +34,9 @@
       else if (/^[ \t]*(?:#|>|[-*+]|\d+\.)/.test(value)) kind = 'marker';
       const marker = kind === 'marker' ? (/^[ \t]*#/.test(value) ? 'heading' : /^[ \t]*>/.test(value) ? 'quote' : 'list') : undefined;
       const inlineColor = mixed && value.match(/^\{color:\s*([a-z]+)\s*\|$/i);
+      const blockColor = mixed && value.match(/^[ \t]*:::color[ \t]+([a-z]+)[ \t]*$/i);
       const bbcodeColor = !mixed && value.match(/^\[color=\s*([a-z]+)\s*\]$/i);
-      const colorMatch = inlineColor || bbcodeColor;
+      const colorMatch = inlineColor || blockColor || bbcodeColor;
       const color = colorMatch ? colorMatch[1].toLowerCase() : undefined;
       tokens.push({text: value, kind, marker, color});
       last = match.index + value.length;
@@ -118,6 +119,8 @@
         if (token.color && /^(?:red|orange|yellow|green|cyan|purple|blue|pink|black|brown|white|gray)$/.test(token.color)) {
           const match = token.kind === 'macro'
             ? pieces[i].match(/^(\{color:\s*)([a-z]+)(\s*\|)$/i)
+            : token.kind === 'block'
+            ? pieces[i].match(/^([ \t]*:::color[ \t]+)([a-z]+)([ \t]*)$/i)
             : pieces[i].match(/^(\[color=\s*)([a-z]+)(\s*\])$/i);
           if (match && match[2].toLowerCase() === token.color) {
             span.appendChild(document.createTextNode(match[1]));
