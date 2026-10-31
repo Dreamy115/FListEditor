@@ -133,3 +133,14 @@ for (const literal of ['`> > literal`', '[noparse]> > literal[/noparse]', '```\n
 }
 assert.ok(!tokenize('> > plain BBCode',false).some(token=>token.marker==='quote'));
 console.log('Nested quote highlighting checks passed');
+
+const glyphLayer=document.createElement('pre');
+const glyphSource='Plain \u25c6 **\u2014** {color:purple|\u2605} `\u25c6` [\u25c6](https://example.com)';
+highlight(glyphLayer,glyphSource,true,[],{preferLiterals:true});
+assert.equal(glyphLayer.textContent,glyphSource+'\n');
+assert.deepEqual([...glyphLayer.querySelectorAll('.syntax-entity-glyph')].map(span=>span.textContent),['\u25c6','\u2014','\u2605']);
+highlight(glyphLayer,glyphSource,true,[],{preferLiterals:false});
+assert.equal(glyphLayer.querySelectorAll('.syntax-entity-glyph').length,0);
+highlight(glyphLayer,glyphSource,false,[],{preferLiterals:true});
+assert.equal(glyphLayer.querySelectorAll('.syntax-entity-glyph').length,0);
+console.log('Literal entity glyph outline and source preservation checks passed');

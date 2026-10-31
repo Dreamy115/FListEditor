@@ -131,3 +131,5 @@
 .data-actions{display:grid;gap:6px;margin-bottom:14px}.data-actions .btn{width:100%;padding:7px 10px;font-size:11px}
 
 .script-tool{gap:6px}.script-icon{display:inline-block;font-size:15px;line-height:1}.script-icon sup,.script-icon sub{display:inline-block;font-size:10px;line-height:0;vertical-align:baseline;position:relative}.script-icon sup{top:-.55em}.script-icon sub{top:.3em}.script-label{font-size:10px}
+
+.literal-preference{display:inline-flex;align-items:center;gap:6px;white-space:nowrap;font-size:11px;color:var(--muted)}.literal-preference input{accent-color:var(--accent)}.sourcebar{flex-wrap:wrap}

@@ -93,6 +93,22 @@ outside the styled run remains outside. Font choices that change no characters
 cannot be recovered from exported text. Recognizable multiline runs use font
 blocks; literal code does not become active font macros.
 
+HTML5 named and numeric Unicode references work in Markdown+: `&mdash;` exports
+an em dash, while `&#x25C6;` or `&#9670;` exports a diamond. Decompilation prefers
+font macros and readable Unicode literals rather than escaping every symbol.
+Entity-looking literal text is escaped when necessary to preserve a round trip.
+Code keeps references unchanged; see [conversion rules](docs/conversion-maps.md).
+The **Prefer literals** checkbox above the source editor converts the current
+Markdown+ source immediately: checked uses Unicode characters, unchecked uses
+hexadecimal references. It preserves compiled output, macro syntax, links, and
+literal code. Conversion participates in undo/redo. The choice is saved locally,
+included in full-app backups, and used when switching back from BBCode. Entity
+codes have a distinct warm red highlight, with a darker
+shade in the Paper theme. In literal mode, convertible Unicode glyphs have a subtle
+warm red outline so you can see what toggling to codes will change. Literal code
+and syntax are excluded.
+
+
 ## Backups and local data
 
 The bottom-left footer provides **Export all data**, **Import all data**, and
@@ -108,7 +124,7 @@ between browser origins. Unsaved template edits should be saved first.
 
 ## Package provenance
 
-Run `node tests/whitespace.cjs` to check conversion. Run `npm ci` then `npm test` for conversion and renderer DOM checks. Regenerate the checked-in renderer with `npm run build:renderer` after editing its adapter or vendored sources; ordinary `python build.py` builds need no npm installation.
+Run `node tests/whitespace.cjs` to check conversion. Refresh the bundled offline HTML5 entity table with `python scripts/build-entities.py` when needed. Run `npm ci` then `npm test` for conversion and renderer DOM checks. Regenerate the checked-in renderer with `npm run build:renderer` after editing its adapter or vendored sources; ordinary `python build.py` builds need no npm installation.
 
 On Windows with Microsoft Edge installed, run `python tests/check_template_editor.py` for the full template editing lifecycle at desktop, tablet, and mobile widths.
 

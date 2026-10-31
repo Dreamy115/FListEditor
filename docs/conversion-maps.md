@@ -105,3 +105,42 @@ runs, such as the ordinary `x` inside small-cap text, without changing exported
 characters. Surrounding plain text, different styles, and literal code stay
 separate. Multiline runs of one recognizable font use `:::font` blocks. A font
 choice that leaves all characters unchanged cannot be inferred from BBCode.
+
+## HTML character references
+
+Markdown+ accepts the full HTML5 named-reference set, plus hexadecimal and decimal
+numeric references. Names are case-sensitive and require a semicolon. Examples:
+
+| Markdown reference | Exported text |
+| --- | --- |
+| `&mdash;` | An em dash |
+| `&eacute;` | An accented lowercase e |
+| `&copy;` | A copyright symbol |
+| `&#x25C6;` or `&#9670;` | A diamond |
+| `&Aopf;` | A double-struck capital A |
+| `&NotEqualTilde;` | The defined two-character mathematical sequence |
+
+Decompilation prefers font macros for recognized styled letters, ordinary Unicode
+literals for readable text and symbols, and Markdown escapes for syntax. It uses
+HTML escapes when needed for round-trip preservation: literal `&mdash;` in BBCode
+becomes `&#x26;mdash;` in Markdown+ so recompiling preserves the entity spelling
+rather than turning it into a dash. It does not remember which reference spelling
+produced a character.
+
+References work in prose and formatting macro bodies. Decoding happens once after
+syntax parsing: encoded braces, brackets or emphasis markers do not become active
+formatting. Backticks, fenced code and `{noparse|...}` preserve references literally.
+Unknown names, invalid numeric code points, numeric control references and malformed
+references remain unchanged. The named-reference table is bundled for offline use;
+refresh it with `python scripts/build-entities.py` using Python's standard-library
+HTML5 entity data.
+
+### Source display preference
+
+**Prefer literals** above the editor converts the active Markdown+ source in place.
+Checking it decodes references where the compiled output can be preserved;
+unchecking encodes non-ASCII prose as hexadecimal references. Literal code, macro
+headers and link syntax remain intact. References required to protect syntax may
+remain in literal mode. Source conversion is undoable. The checkbox is disabled
+in BBCode mode, and its saved preference is applied when returning to Markdown+.
+Named and numeric references use a dedicated warm red syntax highlight; literal code keeps its normal code highlighting.

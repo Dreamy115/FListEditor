@@ -9,7 +9,7 @@ function luminance(hex) {
     .map(v => v<=0.04045 ? v/12.92 : ((v+0.055)/1.055)**2.4);
   return rgb.reduce((sum,v,i)=>sum+v*[0.2126,0.7152,0.0722][i],0);
 }
-const foregrounds = ['text','number','active-number','marker','structural','bold','italic','bold-italic','underline','strike','link','literal','escape',
+const foregrounds = ['text','number','active-number','marker','structural','bold','italic','bold-italic','underline','strike','link','literal','escape','entity',
   ...['block','macro','tag'].flatMap(kind=>[0,1,2,3,4].map(depth=>kind+depth))];
 assert.deepEqual(palettes.map(p=>p.name), ['folio','graphite','forest','paper']);
 for (const {name,vars} of palettes) {

@@ -3,7 +3,7 @@
   // Highlight source without parsing it into editable HTML or changing whitespace.
   function lex(text, mixed) {
     const pattern = mixed
-      ? /```[^\n]*(?:\n[\s\S]*?(?:\n[ \t]*```[^\n]*|(?![\s\S])))?|\{noparse\|[^}\n]*\}|`[^`\n]*`|\\[^\n]|\\$|^[ \t]*>[^\n]*|^[ \t]*:::[^\n]*|^[ \t]*#{1,6}[ \t]+|^[ \t]*(?:-{3,}|\*{3,}|_{3,})[ \t]*$|^[ \t]*(?:>[ \t]?|[-*+][ \t]+|\d+\.[ \t]+)|!?\[[^\]\n]*\]\(https?:\/\/[^\s)]+\)|\[\/?[a-z]+(?:=[^\]\n]*)?\]|\{[a-z]+(?::[^|}\n]*)?(?:\||\})|\}|\*{1,3}[^*\n]+\*{1,3}|__[^_\n]+__|_[^_\n]+_|~~[^~\n]+~~|\+\+[^+\n]+\+\+/gim
+      ? /```[^\n]*(?:\n[\s\S]*?(?:\n[ \t]*```[^\n]*|(?![\s\S])))?|\{noparse\|[^}\n]*\}|`[^`\n]*`|\\[^\n]|\\$|^[ \t]*>[^\n]*|^[ \t]*:::[^\n]*|^[ \t]*#{1,6}[ \t]+|^[ \t]*(?:-{3,}|\*{3,}|_{3,})[ \t]*$|^[ \t]*(?:>[ \t]?|[-*+][ \t]+|\d+\.[ \t]+)|!?\[[^\]\n]*\]\(https?:\/\/[^\s)]+\)|\[\/?[a-z]+(?:=[^\]\n]*)?\]|&(?:#(?:x[0-9a-f]+|[0-9]+)|[a-z][a-z0-9]+);|\{[a-z]+(?::[^|}\n]*)?(?:\||\})|\}|\*{1,3}[^*\n]+\*{1,3}|__[^_\n]+__|_[^_\n]+_|~~[^~\n]+~~|\+\+[^+\n]+\+\+/gim
       : /\[noparse\][\s\S]*?(?:\[\/noparse\]|(?![\s\S]))|\[\/?[a-z]+(?:=[^\]\n]*)?\]/gi;
     const tokens = [];
     let last = 0;
@@ -35,6 +35,7 @@
       }
       let kind = 'emphasis';
       if (/^(?:```|`|\[noparse\]|\{noparse\|)/i.test(value)) kind = 'literal';
+      else if (value.startsWith('&')) kind = 'entity';
       else if (value.startsWith('\\')) kind = 'escape';
       else if (/^[ \t]*:::/.test(value)) kind = 'block';
       else if (value.startsWith('{') || value === '}') kind = 'macro';
@@ -85,7 +86,17 @@
     for (const stack of Object.values(stacks)) for (const open of stack) open.token.unmatched = true;
     return tokens;
   }
-  function highlight(element, text, mixed, problems) {
+  function isEntityTextToken(token){return ['', 'entity', 'emphasis'].includes(token.kind)}
+  function appendEntityGlyphs(parent,text){
+    let last=0;
+    for(const match of text.matchAll(/[^\x00-\x7f]/gu)){
+      parent.appendChild(document.createTextNode(text.slice(last,match.index)));
+      const glyph=document.createElement('span');glyph.className='syntax-entity-glyph';glyph.textContent=match[0];
+      parent.appendChild(glyph);last=match.index+match[0].length;
+    }
+    parent.appendChild(document.createTextNode(text.slice(last)));
+  }
+  function highlight(element, text, mixed, problems, options={}) {
     const fragment = document.createDocumentFragment();
     const tokens = tokenize(text, mixed);
     // Split only the painted spans. Original tokens retain their pairing and
@@ -112,7 +123,8 @@
       for (let i = 0; i < pieces.length; i++) {
         if (i) { fragment.appendChild(document.createTextNode('\n')); anchor(); }
         if (!pieces[i]) continue;
-        if (!token.kind && !token.diagnostics.length) { fragment.appendChild(document.createTextNode(pieces[i])); continue; }
+        const markGlyphs=mixed&&options.preferLiterals&&isEntityTextToken(token)&&/[^\x00-\x7f]/u.test(pieces[i]);
+        if (!markGlyphs && !token.kind && !token.diagnostics.length) { fragment.appendChild(document.createTextNode(pieces[i])); continue; }
         const span = document.createElement('span');
         span.className = token.kind ? 'syntax-' + token.kind : '';
         if (token.marker) span.classList.add('syntax-marker-' + token.marker);
@@ -137,7 +149,8 @@
             word.className = 'syntax-color-value'; word.dataset.color = token.color; word.textContent = match[2];
             span.appendChild(word); span.appendChild(document.createTextNode(match[3]));
           } else span.textContent = pieces[i];
-        } else span.textContent = pieces[i];
+        } else if(markGlyphs)appendEntityGlyphs(span,pieces[i]);
+        else span.textContent = pieces[i];
         fragment.appendChild(span);
       }
     }
@@ -189,5 +202,5 @@
     band.style.height = Math.max(lineHeight, bottom - top) + 'px';
   }
 
-  globalThis.FolioSyntax = {tokenize, highlight, markActive, paintActive};
+  globalThis.FolioSyntax = {tokenize, highlight, markActive, paintActive, isEntityTextToken};
 })();

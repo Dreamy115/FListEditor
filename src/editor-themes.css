@@ -1,5 +1,6 @@
 /* Editor-only palettes. Folio retains the current default; no profile colors change. */
 .editor-shell{
+  --editor-entity:#ff9b85;
   --editor-bg:#10131c;
   --editor-gutter:#131722;
   --editor-text:#dddff1;
@@ -44,6 +45,7 @@
   --editor-tag4:#91cada;
 }
 .editor-shell[data-editor-theme="graphite"]{
+  --editor-entity:#ff9b85;
   --editor-bg:#18191b;
   --editor-gutter:#202124;
   --editor-text:#e4e6ea;
@@ -88,6 +90,7 @@
   --editor-tag4:#a1c9d4;
 }
 .editor-shell[data-editor-theme="forest"]{
+  --editor-entity:#ff9b85;
   --editor-bg:#101b17;
   --editor-gutter:#15251e;
   --editor-text:#dce7de;
@@ -132,6 +135,7 @@
   --editor-tag4:#b0bfe9;
 }
 .editor-shell[data-editor-theme="paper"]{
+  --editor-entity:#a13d29;
   --editor-bg:#faf7f0;
   --editor-gutter:#f0ece3;
   --editor-text:#303640;
@@ -225,3 +229,9 @@
 .editor-shell .syntax-color-value[data-color="white"]{color:var(--flist-white);text-shadow:var(--editor-color-shadow-white)}
 .editor-shell .syntax-color-value[data-color="gray"]{color:var(--flist-gray)}
 @media(forced-colors:active){.editor-shell .editor{caret-color:CanvasText}}
+
+/* Warm red distinguishes character references from macro/depth palettes. */
+.editor-shell .syntax-entity{color:var(--editor-entity)}
+
+.editor-shell .syntax-entity-glyph{border-radius:3px;box-shadow:0 0 0 1px color-mix(in srgb,var(--editor-entity) 35%,transparent)}
+@media(forced-colors:active){.editor-shell .syntax-entity-glyph{outline:1px solid GrayText}}

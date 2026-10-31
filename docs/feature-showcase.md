@@ -378,3 +378,23 @@ backup, confirm Purge data and verify characters/templates are cleared and
 settings reset. Import the saved full-app backup to restore them. Undo history,
 cursor positions, unsaved template edits and preview expansion state are not
 included in a full-app backup.
+
+## 12. HTML Unicode references
+
+Named references: &mdash; &copy; &eacute; &NotEqualTilde;
+Named styled letter: &Aopf;
+Hexadecimal diamond: &#x25C6;
+Decimal diamond: &#9670;
+Star and arrow: &#x2605; &#x2192;
+Supplementary-plane symbol: &#x1F600;
+Formatted symbol: {color:purple|**&#x25C6;**}
+Literal reference text: `&#x25C6;`.
+
+Switch to BBCode to inspect the actual Unicode characters, then back to Markdown+
+to check readable Unicode symbols and recovered font macros. The literal example must remain literal.
+
+Toggle **Prefer literals** above the source editor. The references in this section
+should switch to readable Unicode; uncheck it to show hexadecimal codes. Preview
+and compiled BBCode should stay identical. Undo the source conversion. Code
+examples and macro syntax must remain intact. Check entity highlighting against
+each app appearance, including Paper, and reload to verify preference persistence.
