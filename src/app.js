@@ -1270,8 +1270,31 @@ $('purgeData').addEventListener('click',()=>requestConfirmation('Permanently del
  toast('All local app data purged');
 }));
 $('importBtn').addEventListener('click',()=>$('fileImport').click());
-$('fileImport').addEventListener('change',async(e)=>{const file=e.target.files[0];e.target.value='';if(!file)return;if(file.size>1500000){toast('File is too large (max 1.5 MB)');return}let str=await file.text(),name=file.name.replace(/\.(folio\.json|bbcode|txt|md|json)$/i,'');if(file.name.toLowerCase().endsWith('.json')){try{const record=JSON.parse(str);if(typeof record.content!=='string')throw Error('No profile content');name=String(record.name||name);str=record.content;if(typeof record.mixed==='boolean'){data.mixed=record.mixed;updateMode()}}catch(error){toast('Not a valid Folio backup');return}}
- const apply=()=>{if(templateSession){rememberSelection();active().name=name.slice(0,100);$('profileName').value=active().name;source.value=str;syncFromEditor();commitEdit('action')}else{active().name=uniqueCharacterName(name,data.active);active().content=str;loadDraft(data.active)}toast('Source imported')};if(source.value.trim())requestConfirmation('Replace this draft with the imported file?',apply);else apply()});
+$('fileImport').addEventListener('change',async(e)=>{
+ const file=e.target.files[0];e.target.value='';if(!file)return;
+ if(file.size>1500000){toast('File is too large (max 1.5 MB)');return}
+ let str;try{str=await file.text()}catch(error){toast('Could not read the imported file');return}
+ let name=file.name.replace(/\.(folio\.json|bbcode|txt|md|json)$/i,''),mixed;
+ const filename=file.name.toLowerCase();
+ if(filename.endsWith('.md'))mixed=true;
+ else if(filename.endsWith('.bbcode'))mixed=false;
+ else if(filename.endsWith('.json')){
+  try{
+   const record=JSON.parse(str);if(!record||typeof record.content!=='string')throw Error('No profile content');
+   name=String(record.name||name);str=record.content;
+   if(typeof record.mixed==='boolean')mixed=record.mixed;
+  }catch(error){toast('Not a valid Folio backup');return}
+ }
+ const apply=()=>{
+  rememberSelection();
+  active().name=templateSession?name.slice(0,100):uniqueCharacterName(name,data.active);
+  $('profileName').value=active().name;source.value=str;active().content=str;
+  if(typeof mixed==='boolean')data.mixed=mixed;
+  updateMode();syncFromEditor();renderDrafts();commitEdit('action');
+  toast('Source imported');
+ };
+ if(source.value.trim())requestConfirmation('Replace this draft with the imported file?',apply);else apply();
+});
 document.addEventListener('keydown',e=>{
  if(e.key==='Enter'&&e.ctrlKey){e.preventDefault();copyCode();return}
  if(document.activeElement!==source)return;
