@@ -39,16 +39,16 @@
     });
     frame.scrollTop = state.top; frame.scrollLeft = state.left;
   }
-  function update(preview, frame, code, render, key) {
+  function update(preview, frame, code, render, key, revision) {
     let entry = previews.get(preview);
     if (!entry) { entry = {views: new Map()}; previews.set(preview, entry); }
     if (entry.key !== undefined) entry.views.set(entry.key, capture(preview, frame));
-    if (entry.key === key && entry.code === code) return;
+    if (entry.key === key && entry.code === code && entry.revision === revision) return;
     const rendered = render(code);
     preview.firstElementChild?.cleanup?.();
     preview.replaceChildren(rendered);
     restore(preview, frame, entry.views.get(key));
-    entry.key = key; entry.code = code;
+    entry.key = key; entry.code = code; entry.revision = revision;
   }
   globalThis.FolioPreview = {update};
 })();

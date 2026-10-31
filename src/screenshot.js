@@ -73,6 +73,9 @@
     copy.removeAttribute('aria-hidden');
     Object.assign(copy.style, {position:'static', left:'auto', top:'auto', width:'100%', maxWidth:'none', minHeight:'100vh', margin:'0', border:'0', borderRadius:'0', paddingInline:'clamp(12px, calc((100vw - 1000px) / 2), 160px)'});
     copy.querySelectorAll('script').forEach(node => node.remove());
+    copy.querySelectorAll('[data-local-inline-id]').forEach(node => {
+      for (const name of ['data-local-inline-id', 'role', 'tabindex', 'aria-label', 'title']) node.removeAttribute(name);
+    });
     [copy, ...copy.querySelectorAll('*')].forEach(node => {
       for (const attr of [...node.attributes]) if (/^on/i.test(attr.name)) node.removeAttribute(attr.name);
       if (node.hasAttribute('src')) node.setAttribute('src', new URL(node.getAttribute('src'), document.baseURI).href);

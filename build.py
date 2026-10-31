@@ -28,7 +28,7 @@ page = page.replace('<link rel="stylesheet" href="src/editor-themes.css">', '<st
 app_css = (root / "src/app-themes.css").read_text(encoding="utf-8")
 page = page.replace('<link rel="stylesheet" href="src/app-themes.css">', '<style>' + app_css + '</style>', 1)
 output = root / "dist/Folio-Profile-Studio.html"
-for script_path in ("vendor/html2canvas/html2canvas.min.js", "src/screenshot.js"):
+for script_path in ("vendor/html2canvas/html2canvas.min.js", "src/screenshot.js", "src/local-images.js"):
     script = (root / script_path).read_text(encoding="utf-8")
     page = page.replace('<script src="' + script_path + '"></script>', '<script>' + script + '</script>', 1)
 output.parent.mkdir(exist_ok=True)

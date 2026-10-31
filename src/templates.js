@@ -190,7 +190,7 @@ Describe one incident in a short paragraph. Include a concrete consequence and o
 
 **Constraints:** Costs, weaknesses, and things they cannot do.
 
-**Unverified:** A rumour or suspicion for other characters to investigate.
+**Unverified:** A rumour or suspicion for other characters to invesBtigate.
 :::
 :::collapse OUT OF FILE / Player notes
 **Story direction:** Preferred themes, tone, and possible relationships.

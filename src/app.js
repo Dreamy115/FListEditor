@@ -810,7 +810,8 @@ function updateWarnings(problems){
  list.replaceChildren(...problems.map(problem=>{const item=document.createElement('li');if(typeof problem==='string'){item.textContent=problem;return item}const button=document.createElement('button');button.type='button';button.textContent='Line '+problem.line+': '+problem.message;button.addEventListener('click',()=>jumpToWarning(problem));item.appendChild(button);return item}));
  if(!problems.length)details.open=false;
 }
-function refresh(){diagnosticHover?.hide();const bb=getCompiled(),problems=locatedWarnings(source.value,data.mixed,bb);FolioSyntax.highlight($('sourceHighlight'),source.value,data.mixed,problems,{preferLiterals:data.preferLiterals!==false});updateLineNumbers();syncHighlightScroll();$('previewTitle').textContent=$('profileName').value.trim()||'Untitled character';const preview=$('preview');try{FolioPreview.update(preview,preview.closest('.frame'),bb,renderBB,templateSession?templateSession.historyId:'character:'+data.active)}catch(e){preview.textContent='Preview error: '+e.message}const text=source.value;$('stats').textContent=(text.trim()?text.trim().split(/\s+/).length:0)+' words · '+text.length.toLocaleString()+' characters';updateWarnings(problems)}
+document.addEventListener('folio-images-changed',()=>refresh());
+function refresh(){diagnosticHover?.hide();const bb=getCompiled(),problems=locatedWarnings(source.value,data.mixed,bb);FolioSyntax.highlight($('sourceHighlight'),source.value,data.mixed,problems,{preferLiterals:data.preferLiterals!==false});updateLineNumbers();syncHighlightScroll();$('previewTitle').textContent=$('profileName').value.trim()||'Untitled character';const preview=$('preview');try{FolioPreview.update(preview,preview.closest('.frame'),bb,renderBB,templateSession?templateSession.historyId:'character:'+data.active,globalThis.FolioLocalImages?.revision)}catch(e){preview.textContent='Preview error: '+e.message}const text=source.value;$('stats').textContent=(text.trim()?text.trim().split(/\s+/).length:0)+' words · '+text.length.toLocaleString()+' characters';updateWarnings(problems)}
 function syncFromEditor(){active().content=source.value;if(templateSession)updateTemplateStatus();refresh();scheduleSave()}
 function syncName(){active().name=$('profileName').value||(templateSession?'Untitled template':'Untitled character');if(templateSession)updateTemplateStatus();renderDrafts();refresh();scheduleSave()}
 function updateActiveSyntax(){
@@ -1168,12 +1169,13 @@ $('appDataImport').addEventListener('change',async event=>{
   replaceAppData(next);toast('All app data imported');
  });
 });
-$('purgeData').addEventListener('click',()=>requestConfirmation('Permanently delete ALL locally saved characters, templates and settings, including unsaved edits? Export all data first to keep a backup.',()=>{
+$('purgeData').addEventListener('click',()=>requestConfirmation('Permanently delete ALL locally saved characters, templates, settings and image attachments, including unsaved edits? Export all data first to keep a backup.',()=>{
  try{localStorage.removeItem(STORAGE)}catch(error){toast('Could not delete local data');return}
  const draft={id:makeId(),name:'New Character',content:''};
  replaceAppData({customTemplates:[],drafts:[draft],active:draft.id,theme:'flist-blue',editorTheme:'folio',previewFontSize:'site',splitRatio:.524,previewNoteDismissed:false,preferLiterals:true,mixed:true});
  clearTimeout(saveTimer);
  try{localStorage.removeItem(STORAGE);$('saveStatus').textContent='Local data purged'}catch(error){toast('Could not delete local data');return}
+ globalThis.FolioLocalImages?.clear().catch(()=>toast('Profile data purged, but image attachments could not be removed.'));
  toast('All local app data purged');
 }));
 $('importBtn').addEventListener('click',()=>$('fileImport').click());
