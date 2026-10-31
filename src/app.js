@@ -1218,7 +1218,6 @@ for(const [id,format,type] of [['exportHtml','html','text/html;charset=utf-8']])
 const slug=()=> (active().name||'character').trim().replace(/[^a-z0-9_-]+/gi,'_').replace(/^_+|_+$/g,'').slice(0,60)||'character';
 $('downloadCode').addEventListener('click',()=>{download(getCompiled(),slug()+'.bbcode');toast('BBCode exported')});
 $('downloadMarkdown').addEventListener('click',()=>{download(data.mixed?source.value:convertEntityPreference(bbcodeToMarkdown(source.value,true),data.preferLiterals!==false),slug()+'.md','text/markdown;charset=utf-8');toast('Markdown source exported')});
-$('backupBtn').addEventListener('click',()=>{download(JSON.stringify({format:'folio-profile',version:1,name:active().name,content:active().content,mixed:data.mixed},null,2),slug()+'.folio.json','application/json');toast('Editable backup exported')});
 // Full-app backups contain the complete persisted state, separate from profile backups.
 function validateAppBackup(record){
  if(!record||record.format!=='folio-app'||record.version!==1)throw Error('Unsupported app backup');

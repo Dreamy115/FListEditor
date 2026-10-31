@@ -239,7 +239,7 @@ These are manual checks; importing source cannot exercise application controls a
 3. History: type, format, and switch modes; use Undo/Redo and Ctrl+Z, Ctrl+Y, or Ctrl+Shift+Z. Verify each action restores the expected source and mode.
 4. Conversion: switch Markdown+ to BBCode and back. Compare rendered content, significant whitespace, nested blocks, literal text, numeric image labels, and list numbers. Equivalent source spelling may change.
 5. Export: compare Copy BBCode with Export .bbcode. Export .md from both modes; exporting from BBCode should leave the current draft and mode unchanged. Import the downloaded Markdown into a disposable character.
-6. Backup: export a backup, edit the disposable draft, and import the backup. Verify its name, source, and mode are restored. Reload to check local draft persistence.
+6. Import: import an existing single-profile backup into a disposable draft. Verify its name, source, and mode are restored. Reload to check local draft persistence.
 7. Characters: create and rename a disposable character, switch between characters, and verify independent source, mode, cursor, and session undo history. Clone a character and edit the clone; verify the original stays unchanged. Exercise deletion with the disposable copy.
 8. Templates: open a built-in template, then a custom template. Create New blank, save, rename, and resume through My templates or Manage templates. Create a template from a character. Verify saving the template does not modify that character.
 9. Template application: apply displayed unsaved template edits to a disposable target and confirm replacement, including an empty target and targets in both source modes. Verify applying does not implicitly save the template. Use New from this template and verify it creates a separate character. Clone both a built-in and custom template and verify independent copies.
@@ -370,8 +370,8 @@ External image warning: activate this specimen in Markdown+.
 Use disposable local data for these checks. Save template edits first. Export all
 data using the footer, change characters/templates and appearance settings, then
 import the full-app JSON and confirm replacement. Verify all saved characters,
-templates and settings return. The action-bar Backup is a single-profile backup
-and is not a full-app import file.
+templates and settings return. Existing single-profile backups can be loaded with the action-bar Import
+and are not full-app import files.
 
 Cancel Purge data first and verify nothing changes. After retaining a full-app
 backup, confirm Purge data and verify characters/templates are cleared and

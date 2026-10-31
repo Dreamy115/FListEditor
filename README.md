@@ -125,8 +125,8 @@ does not include unsaved template edits or session-only undo/cursor/preview stat
 Import validates the full-app format and asks before replacing the current data.
 Purge asks before deleting local app data and resetting settings.
 
-The action-bar **Backup** and **Import** controls operate on one profile; they
-are separate from full-app backups. Export all data before purging or moving
+The action-bar **Import** control loads one profile from source files or existing
+single-profile backups; it is separate from full-app backups. Export all data before purging or moving
 between browser origins. Unsaved template edits should be saved first.
 
 ## Package provenance
