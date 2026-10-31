@@ -101,9 +101,9 @@ Describe the character's appearance and observed behaviours.
 - **Witness:** {user:Character Name}
 :::`
 };
-let data={drafts:[{id:makeId(),name:'New Character',content:intro}],active:null,theme:'flist-blue',previewFontSize:'16',mixed:true};
+let data={drafts:[{id:makeId(),name:'New Character',content:intro}],active:null,theme:'flist-blue',previewFontSize:'16',splitRatio:.524,previewNoteDismissed:false,mixed:true};
 data.active=data.drafts[0].id;
-try{const loaded=JSON.parse(localStorage.getItem(STORAGE));if(loaded&&Array.isArray(loaded.drafts)&&loaded.drafts.length){const valid=loaded.drafts.filter(d=>typeof d.id==='string'&&typeof d.name==='string'&&typeof d.content==='string').slice(0,80);if(valid.length){data={drafts:valid,active:valid.some(d=>d.id===loaded.active)?loaded.active:valid[0].id,theme:Array.from($('theme').options).some(option=>option.value===loaded.theme)?loaded.theme:'flist-blue',previewFontSize:parsePreviewFontSize(loaded.previewFontSize)||'16',mixed:loaded.mixed!==false}}}}catch(e){}
+try{const loaded=JSON.parse(localStorage.getItem(STORAGE));if(loaded&&Array.isArray(loaded.drafts)&&loaded.drafts.length){const valid=loaded.drafts.filter(d=>typeof d.id==='string'&&typeof d.name==='string'&&typeof d.content==='string').slice(0,80);if(valid.length){data={drafts:valid,active:valid.some(d=>d.id===loaded.active)?loaded.active:valid[0].id,theme:Array.from($('theme').options).some(option=>option.value===loaded.theme)?loaded.theme:'flist-blue',previewFontSize:parsePreviewFontSize(loaded.previewFontSize)||'16',splitRatio:typeof loaded.splitRatio==='number'&&Number.isFinite(loaded.splitRatio)?Math.max(.25,Math.min(.75,loaded.splitRatio)):.524,previewNoteDismissed:loaded.previewNoteDismissed===true,mixed:loaded.mixed!==false}}}}catch(e){}
 let saveTimer=null,toastTimer=null;
 // Undo is managed explicitly because setRangeText() and textarea.value edits do not
 // consistently enter the browser's native undo stack across browsers.
@@ -460,16 +460,45 @@ function preferHashHeadings(markdown){
 }
 function renderBB(input){return FolioHorizon.render(input)}
 function countWarnings(compiled){let issues=[];const opens={};for(const m of compiled.matchAll(/\[(\/?)((?:[a-z]+))(?:=[^\]\n]*)?\]/gi)){let tag=m[2].toLowerCase();if(!allowedTags.has(tag)){if(['session','list','li','size','table','font','spoiler','youtube','code'].includes(tag))issues.push('Unsupported or unverified tag: '+tag);continue}if(tag==='hr')continue;if(m[1]){if((opens[tag]||0)===0)issues.push('Unmatched [/'+tag+']');else opens[tag]--}else opens[tag]=(opens[tag]||0)+1}Object.keys(opens).filter(tag=>opens[tag]).forEach(tag=>issues.push('Unclosed ['+tag+']'));if(/<\/?(?:div|span|table|p|br)\b/i.test(compiled))issues.push('HTML is not supported in descriptions');return [...new Set(issues)]}
-function refresh(){FolioSyntax.highlight($('sourceHighlight'),source.value,data.mixed);syncHighlightScroll();const bb=getCompiled();$('previewTitle').textContent=$('profileName').value.trim()||'Untitled character';const preview=$('preview');preview.replaceChildren();try{preview.appendChild(renderBB(bb))}catch(e){preview.textContent='Preview error: '+e.message}const text=source.value;$('stats').textContent=(text.trim()?text.trim().split(/\s+/).length:0)+' words · '+text.length.toLocaleString()+' characters';const problems=[...countWarnings(bb),...colorWarnings(source.value)];$('warningCount').textContent=problems.length?problems.length+' potential issue'+(problems.length===1?'':'s'):'No obvious issues';$('warningCount').title=problems.join('\n')}
+function refresh(){FolioSyntax.highlight($('sourceHighlight'),source.value,data.mixed);updateLineNumbers();syncHighlightScroll();const bb=getCompiled();$('previewTitle').textContent=$('profileName').value.trim()||'Untitled character';const preview=$('preview');preview.replaceChildren();try{preview.appendChild(renderBB(bb))}catch(e){preview.textContent='Preview error: '+e.message}const text=source.value;$('stats').textContent=(text.trim()?text.trim().split(/\s+/).length:0)+' words · '+text.length.toLocaleString()+' characters';const problems=[...countWarnings(bb),...colorWarnings(source.value)];$('warningCount').textContent=problems.length?problems.length+' potential issue'+(problems.length===1?'':'s'):'No obvious issues';$('warningCount').title=problems.join('\n')}
 function syncFromEditor(){active().content=source.value;refresh();scheduleSave()}
 function syncName(){active().name=$('profileName').value||'Untitled character';renderDrafts();refresh();scheduleSave()}
+function updateActiveSyntax(){
+ FolioSyntax.markActive($('sourceHighlight'),source.selectionStart);
+ const line=source.value.slice(0,source.selectionStart).split('\n').length;
+ for(const number of $('sourceLineNumbers').children)number.classList.toggle('active',Number(number.dataset.line)===line);
+}
+function updateLineNumbers(){
+ const layer=$('sourceHighlight'),numbers=$('sourceLineNumbers');
+ const anchors=layer.querySelectorAll('.source-line-anchor');
+ source.parentElement.style.setProperty('--gutter-width',Math.max(3,String(anchors.length).length+1)+'ch');
+ layer.style.width=(source.clientWidth+2)+'px';
+ const fragment=document.createDocumentFragment();
+ for(const anchor of anchors){
+  const number=document.createElement('span');number.className='source-line-number';
+  number.textContent=anchor.dataset.line;number.dataset.line=anchor.dataset.line;
+  number.style.top=anchor.offsetTop+'px';fragment.appendChild(number);
+ }
+ numbers.replaceChildren(fragment);numbers.style.top='0px';
+ // Match the glyph baseline, including the editor's fractional line-height.
+ if(anchors.length&&numbers.firstChild){
+  const range=document.createRange();range.selectNodeContents(numbers.firstChild);
+  const delta=range.getBoundingClientRect().top-anchors[0].getBoundingClientRect().top;
+  numbers.style.top=-delta+'px';
+ }
+ updateActiveSyntax();
+}
 function syncHighlightScroll(){
  const layer=$('sourceHighlight');
  layer.style.width=(source.clientWidth+2)+'px';
  layer.scrollTop=source.scrollTop;layer.scrollLeft=source.scrollLeft;
+ $('sourceLineNumbers').style.transform='translateY('+(-source.scrollTop)+'px)';
 }
 source.addEventListener('scroll',syncHighlightScroll);
-new ResizeObserver(syncHighlightScroll).observe(source);
+source.addEventListener('select',updateActiveSyntax);
+source.addEventListener('keyup',updateActiveSyntax);
+source.addEventListener('click',updateActiveSyntax);
+new ResizeObserver(()=>{updateLineNumbers();syncHighlightScroll()}).observe(source);
 source.addEventListener('input',e=>{syncFromEditor();commitEdit('typing',e.inputType||'input')});
 // Some browsers dispatch historyUndo/historyRedo beforeinput rather than keydown.
 source.addEventListener('beforeinput',e=>{
@@ -645,7 +674,6 @@ function renderGuide(){
 $('guideSearch').addEventListener('input',renderGuide);
 function toggleGuide(force){const show=typeof force==='boolean'?force:guidePanel.hidden;guidePanel.hidden=!show;$('guideBtn').setAttribute('aria-expanded',String(show));if(show)renderGuide()}
 $('guideBtn').addEventListener('click',()=>toggleGuide());$('closeGuide').addEventListener('click',()=>toggleGuide(false));
-$('openSite').addEventListener('click',()=>window.open('https://www.f-list.net/','_blank','noopener,noreferrer'));
 async function copyCode(){const code=getCompiled();try{await navigator.clipboard.writeText(code);toast('BBCode copied. Paste into F-List!')}catch(e){const box=document.createElement('textarea');box.value=code;box.style.cssText='position:fixed;opacity:0;top:0';document.body.append(box);box.select();try{document.execCommand('copy');toast('BBCode copied')}catch(error){toast('Use Export .bbcode to save your code')}box.remove()}}
 $('copyCode').addEventListener('click',copyCode);
 function download(text,file,type='text/plain;charset=utf-8'){const link=document.createElement('a');link.href=URL.createObjectURL(new Blob([text],{type}));link.download=file;document.body.append(link);link.click();setTimeout(()=>URL.revokeObjectURL(link.href),2000);link.remove()}
@@ -668,5 +696,42 @@ document.addEventListener('keydown',e=>{
  if(e.key==='Tab'){e.preventDefault();replaceRange('  ')}
 });
 source.addEventListener('dragover',e=>{if(e.dataTransfer?.types.includes('Files'))e.preventDefault()});
+const paneDivider=$('paneDivider');
+function applyPaneSplit(){
+ const app=document.querySelector('.app');
+ app.style.setProperty('--editor-share',data.splitRatio+'fr');
+ app.style.setProperty('--preview-share',(1-data.splitRatio)+'fr');
+ paneDivider.setAttribute('aria-valuenow',String(Math.round(data.splitRatio*100)));
+ paneDivider.setAttribute('aria-valuetext',Math.round(data.splitRatio*100)+'% source');
+}
+function movePaneDivider(clientX){
+ const editor=$('sourcePane').getBoundingClientRect(),preview=$('previewPane').getBoundingClientRect();
+ const width=preview.right-editor.left-paneDivider.offsetWidth;
+ if(width>0){data.splitRatio=Math.max(.25,Math.min(.75,(clientX-editor.left-paneDivider.offsetWidth/2)/width));applyPaneSplit()}
+}
+paneDivider.addEventListener('pointerdown',e=>{
+ if(e.button!==0)return;
+ e.preventDefault();paneDivider.focus();paneDivider.setPointerCapture(e.pointerId);
+ document.body.classList.add('resizing-panes');movePaneDivider(e.clientX);
+});
+paneDivider.addEventListener('pointermove',e=>{if(paneDivider.hasPointerCapture(e.pointerId))movePaneDivider(e.clientX)});
+function finishPaneResize(){document.body.classList.remove('resizing-panes');persist()}
+for(const event of ['pointerup','pointercancel'])paneDivider.addEventListener(event,e=>{
+ if(paneDivider.hasPointerCapture(e.pointerId))paneDivider.releasePointerCapture(e.pointerId);
+ finishPaneResize();
+});
+paneDivider.addEventListener('lostpointercapture',finishPaneResize);
+paneDivider.addEventListener('dblclick',()=>{data.splitRatio=.524;applyPaneSplit();persist()});
+paneDivider.addEventListener('keydown',e=>{
+ const steps={ArrowLeft:-.02,ArrowRight:.02};
+ if(e.key in steps)data.splitRatio=Math.max(.25,Math.min(.75,data.splitRatio+steps[e.key]*(e.shiftKey?5:1)));
+ else if(e.key==='Home')data.splitRatio=.25;
+ else if(e.key==='End')data.splitRatio=.75;
+ else return;
+ e.preventDefault();applyPaneSplit();persist();
+});
+$('previewNote').hidden=data.previewNoteDismissed;
+$('dismissPreviewNote').addEventListener('click',()=>{data.previewNoteDismissed=true;$('previewNote').hidden=true;$('theme').focus();persist()});
+applyPaneSplit();
 setTheme();loadDraft(data.active);updateMode();refreshUndoButtons();
 })();

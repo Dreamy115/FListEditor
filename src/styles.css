@@ -24,11 +24,38 @@
 #previewFontSize{width:88px;border:1px solid #3d4056;background:#232636;color:#d5d6e6;border-radius:7px;padding:6px 8px;font-size:11px}#previewFontSize[aria-invalid="true"]{border-color:#e15261}
 
 /* The textarea remains the editor; a noninteractive layer supplies token colors. */
-.editor-shell{position:relative;flex:1;min-height:0;display:flex;background:#131621;border-radius:11px}
+.editor-shell{position:relative;flex:1;min-height:0;display:flex;background:#10131c;border-radius:11px}
 .editor-shell .editor,.editor-highlights{font-family:ui-monospace,SFMono-Regular,Consolas,"Liberation Mono",monospace;font-size:13.5px;line-height:1.73;letter-spacing:normal;font-variant-ligatures:none;tab-size:2;white-space:pre-wrap;overflow-wrap:break-word;word-break:normal;padding:19px 18px;border:1px solid transparent;margin:0;text-align:left}
 .editor-highlights{position:absolute;inset:0;overflow:hidden;pointer-events:none;color:#dddff1;border-radius:11px;user-select:none}
 .editor-shell .editor{position:relative;z-index:1;flex:1;min-width:0;background:transparent;color:transparent;caret-color:#f1edff;border-color:#393c50;-webkit-text-fill-color:transparent}
 .editor-shell .editor::placeholder{color:#787d97;-webkit-text-fill-color:#787d97}
 .editor-shell .editor::selection{background:#8b75dc66;color:transparent}
-.syntax-tag{color:#8acdf5}.syntax-macro{color:#c4a4ff}.syntax-marker{color:#edc980}.syntax-emphasis{color:#f0b7ce}.syntax-link{color:#80dccb}.syntax-literal{color:#a5bb9a}.syntax-escape{color:#edc980}
+.syntax-tag{color:#9bdcff}.syntax-macro{color:#d2b3ff}.syntax-marker{color:#ffe09c}.syntax-emphasis{color:#ffc3dc}.syntax-link{color:#80dccb}.syntax-literal{color:#bfd3af}.syntax-escape{color:#ffe09c}
 @media(forced-colors:active){.editor-highlights{display:none}.editor-shell .editor{color:CanvasText;-webkit-text-fill-color:CanvasText;caret-color:CanvasText}}
+
+.editor-shell{--gutter-width:3ch}
+.editor-shell .editor,.editor-highlights{padding-left:calc(var(--gutter-width) + 18px)}
+.source-gutter{position:absolute;inset:1px auto 1px 1px;width:var(--gutter-width);overflow:hidden;z-index:2;pointer-events:none;user-select:none;background:#131722;border-radius:10px 0 0 10px;border-right:1px solid #303448;font:13.5px/1.73 ui-monospace,SFMono-Regular,Consolas,"Liberation Mono",monospace}
+#sourceLineNumbers{position:absolute;inset:0 0 auto 0}
+.source-line-number{position:absolute;right:7px;color:#a0a9c8;text-align:right}
+.source-line-number.active{color:#ddd4ff}
+.syntax-block{color:#77f0dd}.syntax-macro{color:#d2b3ff}
+.syntax-block.syntax-depth-1{color:#a6e9bb}.syntax-block.syntax-depth-2{color:#73c5f0}.syntax-block.syntax-depth-3{color:#e7d690}.syntax-block.syntax-depth-4{color:#97dddb}
+.syntax-macro.syntax-depth-1{color:#efa5cf}.syntax-macro.syntax-depth-2{color:#b8b4ff}.syntax-macro.syntax-depth-3{color:#f2c5a0}.syntax-macro.syntax-depth-4{color:#d4a6e8}
+.syntax-tag.syntax-depth-1{color:#a8d99b}.syntax-tag.syntax-depth-2{color:#e6cc8e}.syntax-tag.syntax-depth-3{color:#d6b2ef}.syntax-tag.syntax-depth-4{color:#85d3ce}
+.syntax-active{background:#b6a0ff40;outline:1px solid #dccfff;border-radius:2px}
+.syntax-unmatched{text-decoration:underline dotted #e89999;text-underline-offset:3px}
+
+/* Adjustable split, with a keyboard-accessible drag handle. */
+.app{--sidebar-width:224px;grid-template-columns:var(--sidebar-width) minmax(0,var(--editor-share,1fr)) 8px minmax(0,var(--preview-share,.91fr))}
+.pane-divider{position:relative;cursor:col-resize;touch-action:none;background:#191d2b;outline-offset:-2px;z-index:3}
+.pane-divider:before{content:"";position:absolute;top:0;bottom:0;width:2px;left:3px;background:#535b78;transition:background .15s}
+.pane-divider:hover:before,.pane-divider:focus-visible:before,.resizing-panes .pane-divider:before{background:#c3b0ff}
+.resizing-panes,.resizing-panes *{cursor:col-resize!important;user-select:none!important}
+.previewhelp{position:relative;padding-right:38px;color:#c1c0d5}
+.previewhelp[hidden]{display:none}
+.preview-note-close{position:absolute;right:7px;top:5px;width:25px;height:25px;background:transparent;border:0;border-radius:5px;color:#d8d1ed;font-size:21px;line-height:1}
+.preview-note-close:hover{background:#ffffff18;color:#fff}
+@media(max-width:1200px){.app{--sidebar-width:180px}}
+@media(min-width:661px) and (max-width:940px){.app{display:grid;grid-template-columns:minmax(0,var(--editor-share,1fr)) 8px minmax(0,var(--preview-share,.91fr))}.sidebar{grid-column:1/-1}.workspace,.previewarea{width:auto}}
+@media(max-width:660px){.pane-divider{display:none}}

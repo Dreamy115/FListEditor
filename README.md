@@ -38,6 +38,8 @@ Create an empty remote repository and follow its instructions for adding the rem
 - Nested formatting, inline macros, collapsible sections, templates, and examples.
 - Multiline emphasis decompiles to `:::i`, `:::b`, `:::u`, or `:::s` blocks, preserving internal line breaks without raw BBCode wrappers.
 - Source syntax highlighting distinguishes Markdown, macros, BBCode tags, and literal text while retaining native textarea editing and undo/redo.
+- Source line numbers follow wrapped lines and scrolling. Block (`:::`) and inline (`{}`) macros use different palettes; nesting colors, active delimiter pairs, and dotted unmatched markers help navigate deeply nested formatting.
+- Drag the divider between source and preview to resize the panes. Focus it and use arrow keys (Shift for larger steps), Home/End for limits, or double-click to reset. The split is saved locally; narrow screens stack the panes. The preview note can be dismissed, and its dismissal is also saved locally.
 - Headings compile as `# Title` ? `[heading][big]Title[/big][/heading]`, `## Title` ? `[heading]Title[/heading]`, and `### Title` ? `[big]Title[/big]`. `{heading|Title}` and multiline `:::heading` blocks retain ordinary heading tags. Levels 4?6 also retain ordinary heading tags. Dividers (`---`) absorb adjacent source newlines like block markers; add a blank line for a visible break. Use `{img:12345|image label}` to preserve a numeric image's label during conversion.
 - Toolbar actions and keyboard formatting shortcuts insert Markdown/macros in Markdown+ mode and native tags in BBCode mode. Actions and mode changes participate in undo/redo.
 - Profile colors use the 12 F-List presets: red, orange, yellow, green, cyan, purple, blue, pink, black, brown, white, gray.

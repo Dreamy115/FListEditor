@@ -43,3 +43,26 @@ const nested = tokenize('*Text {color:cyan|Name} [b]bold[/b] `literal`*', true);
 for (const kind of ['emphasis', 'macro', 'tag', 'literal']) assert.ok(nested.some(t => t.kind === kind));
 assert.equal(tokenize('*Italic*', true)[0].kind, 'emphasis');
 assert.equal(tokenize('- List item', true)[0].kind, 'marker');
+
+const deep = ':::center\n:::color cyan\n*{color:cyan|{big|[b][i]Nested[/i][/b]}}*\n:::\n:::';
+const deepTokens = tokenize(deep, true);
+assert.equal(deepTokens.map(t => t.text).join(''), deep);
+assert.equal(deepTokens.find(t => t.text === ':::center').kind, 'block');
+for (const kind of ['block', 'macro', 'tag']) {
+  const containers = deepTokens.filter(t => t.kind === kind);
+  assert.ok(containers.some(t => t.depth === 1), kind);
+  assert.ok(containers.every(t => t.pair !== undefined && !t.unmatched), kind);
+  for (const token of containers) {
+    const partner = containers.find(other => other.start === token.partner);
+    assert.equal(partner.depth, token.depth);
+    assert.equal(partner.pair, token.pair);
+  }
+}
+const deepLayer = document.createElement('pre');
+highlight(deepLayer, deep, true);
+assert.equal(deepLayer.querySelectorAll('.source-line-anchor').length, deep.split('\n').length);
+context.FolioSyntax.markActive(deepLayer, deep.indexOf('{big|') + 2);
+assert.equal([...deepLayer.querySelectorAll('.syntax-active')].map(s => s.textContent).join(''), '{big|}');
+assert.ok(tokenize('[b][i]Crossed[/b][/i]', false).some(t => t.unmatched));
+assert.ok(tokenize('{big|Unclosed', true).some(t => t.unmatched));
+assert.ok(!tokenize('```\n{big|[b]\n```', true).some(t => t.unmatched));

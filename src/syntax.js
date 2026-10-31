@@ -1,7 +1,7 @@
 (() => {
   'use strict';
   // Highlight source without parsing it into editable HTML or changing whitespace.
-  function tokenize(text, mixed) {
+  function lex(text, mixed) {
     const pattern = mixed
       ? /```[^\n]*(?:\n[\s\S]*?(?:\n[ \t]*```[^\n]*|(?![\s\S])))?|\[noparse\][\s\S]*?(?:\[\/noparse\]|(?![\s\S]))|\{noparse\|[^}\n]*\}|`[^`\n]*`|\\[^\n]|\\$|^[ \t]*:::[^\n]*|^[ \t]*#{1,6}[ \t]+|^[ \t]*(?:-{3,}|\*{3,}|_{3,})[ \t]*$|^[ \t]*(?:>[ \t]?|[-*+][ \t]+|\d+\.[ \t]+)|!?\[[^\]\n]*\]\(https?:\/\/[^\s)]+\)|\[\/?[a-z]+(?:=[^\]\n]*)?\]|\{[a-z]+(?::[^|}\n]*)?(?:\||\})|\}|\*{1,3}[^*\n]+\*{1,3}|__[^_\n]+__|_[^_\n]+_|~~[^~\n]+~~|\+\+[^+\n]+\+\+/gim
       : /\[noparse\][\s\S]*?(?:\[\/noparse\]|(?![\s\S]))|\[\/?[a-z]+(?:=[^\]\n]*)?\]/gi;
@@ -16,7 +16,7 @@
       if (emphasis) {
         const mark = emphasis[1];
         tokens.push({text: mark, kind: 'emphasis'});
-        for (const token of tokenize(emphasis[2], mixed)) {
+        for (const token of lex(emphasis[2], mixed)) {
           tokens.push({text: token.text, kind: token.kind || 'emphasis'});
         }
         tokens.push({text: mark, kind: 'emphasis'});
@@ -26,7 +26,8 @@
       let kind = 'emphasis';
       if (/^(?:```|`|\[noparse\]|\{noparse\|)/i.test(value)) kind = 'literal';
       else if (value.startsWith('\\')) kind = 'escape';
-      else if (/^[ \t]*:::/.test(value) || value.startsWith('{') || value === '}') kind = 'macro';
+      else if (/^[ \t]*:::/.test(value)) kind = 'block';
+      else if (value.startsWith('{') || value === '}') kind = 'macro';
       else if (/^!?\[.*\]\(https?:/i.test(value)) kind = 'link';
       else if (value.startsWith('[')) kind = 'tag';
       else if (/^[ \t]*(?:#|>|[-*+]|\d+\.)/.test(value)) kind = 'marker';
@@ -36,18 +37,72 @@
     if (last < text.length) tokens.push({text: text.slice(last), kind: ''});
     return tokens;
   }
+  function tokenize(text, mixed) {
+    const tokens = lex(text, mixed), stacks = {block: [], macro: [], tag: []};
+    let offset = 0;
+    for (const token of tokens) {
+      token.start = offset; offset += token.text.length; token.end = offset;
+      const stack = stacks[token.kind];
+      if (!stack) continue;
+      let name = '', closing = false, single = false;
+      if (token.kind === 'block') {
+        const match = token.text.trim().replace(/\\$/, '').trim().match(/^:::([a-z]+)?(?:\s|$)/i);
+        if (!match) continue;
+        name = (match[1] || '').toLowerCase(); closing = !name;
+      } else if (token.kind === 'macro') {
+        closing = token.text === '}'; single = !closing && token.text.endsWith('}');
+      } else {
+        const match = token.text.match(/^\[(\/?)([a-z]+)/i);
+        if (!match) continue;
+        name = match[2].toLowerCase(); closing = !!match[1]; single = name === 'hr';
+      }
+      token.depth = stack.length;
+      if (single) continue;
+      if (closing) {
+        const open = stack.at(-1);
+        if (!open || (token.kind === 'tag' && open.name !== name)) { token.unmatched = true; continue; }
+        stack.pop(); token.depth = open.token.depth;
+        token.pair = open.token.pair = open.token.start;
+        token.partner = open.token.start; open.token.partner = token.start;
+      } else stack.push({name, token});
+    }
+    for (const stack of Object.values(stacks)) for (const open of stack) open.token.unmatched = true;
+    return tokens;
+  }
   function highlight(element, text, mixed) {
     const fragment = document.createDocumentFragment();
-    for (const token of tokenize(text, mixed)) {
-      if (!token.kind) { fragment.appendChild(document.createTextNode(token.text)); continue; }
+    const tokens = tokenize(text, mixed);
+    let line = 1;
+    const anchor = () => {
       const span = document.createElement('span');
-      span.className = 'syntax-' + token.kind;
-      span.textContent = token.text;
+      span.className = 'source-line-anchor'; span.dataset.line = String(line++);
       fragment.appendChild(span);
+    };
+    anchor();
+    for (const token of tokens) {
+      const pieces = token.text.split('\n');
+      for (let i = 0; i < pieces.length; i++) {
+        if (i) { fragment.appendChild(document.createTextNode('\n')); anchor(); }
+        if (!pieces[i]) continue;
+        if (!token.kind) { fragment.appendChild(document.createTextNode(pieces[i])); continue; }
+        const span = document.createElement('span');
+        span.className = 'syntax-' + token.kind;
+        if (token.depth !== undefined) span.classList.add('syntax-depth-' + token.depth % 5);
+        if (token.unmatched) { span.classList.add('syntax-unmatched'); span.title = 'Unmatched delimiter'; }
+        if (token.pair !== undefined) span.dataset.pair = String(token.pair);
+        span.textContent = pieces[i]; fragment.appendChild(span);
+      }
     }
     // A final empty line must occupy the same height as the textarea's caret line.
     fragment.appendChild(document.createTextNode('\n'));
     element.replaceChildren(fragment);
+    element.syntaxTokens = tokens;
   }
-  globalThis.FolioSyntax = {tokenize, highlight};
+  function markActive(element, position) {
+    const tokens = element.syntaxTokens || [];
+    const token = tokens.find(t => t.pair !== undefined && position >= t.start && position <= t.end)
+      || tokens.filter(t => t.partner > t.start && position > t.end && position < t.partner).at(-1);
+    for (const span of element.querySelectorAll('[data-pair]')) span.classList.toggle('syntax-active', !!token && span.dataset.pair === String(token.pair));
+  }
+  globalThis.FolioSyntax = {tokenize, highlight, markActive};
 })();
