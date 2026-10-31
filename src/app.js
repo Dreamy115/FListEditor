@@ -151,13 +151,23 @@ function commitEdit(kind='action',inputType=''){
  refreshUndoButtons();
 }
 function restoreEdit(state){
+ const scrollTop=source.scrollTop,scrollLeft=source.scrollLeft;
+ const selectionStart=source.selectionStart,selectionEnd=source.selectionEnd,direction=source.selectionDirection;
  data.mixed=state.mixed;source.value=state.content;
  active().content=state.content;
  if(templateSession)updateTemplateStatus();
  updateMode();
- source.focus();
- source.setSelectionRange(Math.min(state.start,source.value.length),Math.min(state.end,source.value.length));
- source.scrollTop=state.scroll;
+ source.focus({preventScroll:true});
+ source.setSelectionRange(Math.min(selectionStart,source.value.length),Math.min(selectionEnd,source.value.length),direction);
+ updateActiveSyntax();
+ const start=source.selectionStart,end=source.selectionEnd;
+ const restoreScroll=()=>{source.scrollTop=scrollTop;source.scrollLeft=scrollLeft;syncHighlightScroll()};
+ restoreScroll();
+ // Browsers may reveal the restored selection after assigning textarea.value.
+ // Keep the current viewport even when that caret is far outside it.
+ requestAnimationFrame(()=>{
+  if(source.value===state.content&&source.selectionStart===start&&source.selectionEnd===end)restoreScroll();
+ });
  scheduleSave();refreshUndoButtons();
 }
 function undoEdit(){const h=currentHistory();if(!h.index)return;h.index--;h.lastKind=null;restoreEdit(h.states[h.index])}
