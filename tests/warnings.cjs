@@ -133,9 +133,10 @@ console.log('Root-cause diagnostics and editor squiggle checks passed');
 for (const closing of ['::','::::']) {
   const input=':::center\n:::right\ntext\n'+closing+'\n:::';
   const diagnostics=locate(input);
-  assert.equal(diagnostics.length,1);
-  assert.equal(diagnostics[0].line,4);
-  assert.match(diagnostics[0].message,/Malformed block macro closing marker/);
+  assert.equal(diagnostics.length,2);
+  const malformed=diagnostics.find(issue=>issue.message.includes('Malformed block macro closing marker'));
+  assert.equal(malformed.line,4);
+  assert.ok(diagnostics.some(issue=>issue.message.startsWith('Nested text alignment:')));
 }
 
 for(const input of ['![Portrait](https://example.com/image.png)', '{img:https://example.com/image.png}', '{image:https://example.com/image.png}']){
@@ -163,3 +164,51 @@ console.log('Nested font macro warning checks passed');
 for(const input of [':::font bold\n{font:italic|Nested}\n:::',':::font bold\n:::font italic\nNested\n:::\n:::'])assert.ok(locate(input).some(issue=>issue.message.startsWith('Nested font macros')),input);
 assert.deepEqual(locate(':::font bold\nfirst\nsecond\n:::'),[]);
 assert.ok(locate(':::font invalid\nText\n:::').some(issue=>issue.message.includes('supported font')));
+
+const alignmentIssues=(text,mixed=true)=>Array.from(context.locatedWarnings(text,mixed,mixed?context.markdownToBB(text):text)).filter(issue=>issue.message.startsWith('Nested text alignment:'));
+for(const outer of ['left','right','center','justify'])for(const inner of ['left','right','center','justify']){
+ for(const [text,mixed,marker] of [
+  [`{${outer}|before {${inner}|nested}}`,true,`{${inner}|`],
+  [`:::${outer}\n:::b\n:::${inner}\nnested\n:::\n:::\n:::`,true,`:::${inner}`],
+  [`:::${outer}\n{${inner}|nested}\n:::`,true,`{${inner}|`],
+  [`[${outer}][b][${inner}]nested[/${inner}][/b][/${outer}]`,false,`[${inner}]`]
+ ]){
+  const issues=alignmentIssues(text,mixed);
+  if(!mixed){assert.deepEqual(issues,[],text);assert.deepEqual(warnings(text),[],text);continue}
+  assert.equal(issues.length,1,text);
+  assert.ok(issues[0].message.includes(inner+' inside '+outer),text);
+  assert.equal(text.slice(issues[0].start,issues[0].end),marker);
+  assert.equal(issues[0].line,text.slice(0,issues[0].start).split('\n').length);
+ }
+}
+for(const text of ['{center|first}{right|second}',':::center\nfirst\n:::\n:::right\nsecond\n:::','`{center|{right|example}}`','```\n:::center\n:::right\n```','{center|{noparse|{right|example}}}','[center][right]literal[/right][/center]'])assert.deepEqual(alignmentIssues(text),[],text);
+assert.deepEqual(alignmentIssues('[noparse][center][right]literal[/right][/center][/noparse]',false),[]);
+assert.deepEqual(alignmentIssues('[center]first[/center][right]second[/right]',false),[]);
+assert.deepEqual(warnings('[center][right]nested[/right][/center]'),[]);
+assert.ok(macroWarnings('{center|{right|nested}}').some(message=>message.startsWith('Nested text alignment:')));
+console.log('Nested alignment warnings and source locations passed');
+for(const name of ['left','right','center','justify']){
+ const text=':::center\n:::'+name+' !\ntext\n:::\n:::';
+ assert.deepEqual(locate(text),[],text);
+ assert.equal(context.markdownToBB(text),'[center]['+name+']text[/'+name+'][/center]');
+ assert.deepEqual(macroWarnings(text),[]);
+}
+assert.match(alignmentIssues(':::center\n:::right\ntext\n:::\n:::')[0].message,/innermost alignment takes precedence/);
+assert.match(alignmentIssues(':::center\n:::right\ntext\n:::\n:::')[0].message,/:::right !/);
+assert.equal(alignmentIssues(':::center\n:::right !\n{left|text}\n:::\n:::').length,1,'Suppression applies only to the marked opener');
+assert.equal(alignmentIssues(':::center !\n:::right\ntext\n:::\n:::').length,1,'Outer bang does not suppress inner warnings');
+assert.ok(locate(':::center\n:::right !!\ntext\n:::\n:::').some(issue=>issue.message.startsWith('Invalid block macro')));
+for(const outer of ['left','right','center','justify'])for(const inner of ['left','right','center','justify']){
+ for(const code of [
+  `[${outer}]outer[${inner}]inner[/${inner}][/${outer}]`,
+  `before[${outer}][b][${inner}]inner[/${inner}][/b][/${outer}]after`,
+  `[${outer}][${inner}]inner[left]deep[/left][/${inner}][/${outer}]`
+ ]){
+  const markdown=context.bbcodeToMarkdown(code);
+  assert.ok(markdown.includes(':::'+inner+' !')||markdown.includes('{'+inner+':!|'),markdown);
+  assert.deepEqual(alignmentIssues(markdown),[],markdown);
+  assert.equal(context.markdownToBB(markdown),code,'Suppression preserves BBCode output');
+ }
+}
+assert.ok(!context.bbcodeToMarkdown('[right]text[/right]').includes('!'),'Top-level alignment needs no suppression');
+assert.deepEqual(alignmentIssues('{center|{right:!|intentional}}'),[]);

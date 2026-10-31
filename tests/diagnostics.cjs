@@ -8,6 +8,8 @@ vm.runInContext(fs.readFileSync('src/diagnostics.js','utf8'), context);
 const {guidance, attach} = context.FolioDiagnostics;
 const config = {mixed:true,inlineNames:new Set(['b','i','color','link','user']),blockNames:new Set(['center','collapse','color','right']),colors:['red','purple','green'],resolveColor:value=>value==='#ff0000'?'red':null};
 const advice = (text,message) => guidance({start:0,end:text.length,line:1,message},text,config);
+assert.match(advice('{right|','Nested text alignment: right inside center').help,/innermost alignment takes precedence/);
+assert.equal(advice('{right|','Nested text alignment: right inside center').fix,null);
 assert.equal(advice(':::centre','Unknown block macro: :::centre').fix.text,':::center');
 assert.equal(advice('::','Malformed block macro closing marker: ::').fix.text,':::');
 assert.equal(advice(':::center bad','Invalid block macro: :::center bad').fix.text,':::center');

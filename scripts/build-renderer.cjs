@@ -21,9 +21,10 @@ parser.addTag(new BBCodeTextTag('img', (p, parent, param, content) => {
   const local = /^\\d+$/.test(param) && globalThis.FolioLocalImages?.get(param);
   if (local) {
     const image = document.createElement('img');
-    image.src = local.url; image.alt = content || 'Local preview for F-List image #' + param;
+    image.src = local.url; image.alt = content || local.alias || 'Local preview for F-List image #' + param;
     image.className = 'inline-image local-inline-image';
     image.dataset.localInlineId = param;
+    image.dataset.inlineAlias = content;
     image.title = 'Edit preview mapping for F-List image #' + param + '. Local preview only; final inlines may look different.';
     image.setAttribute('role', 'button'); image.tabIndex = 0;
     image.setAttribute('aria-label', 'Edit image mapping for F-List image ' + param);
@@ -37,6 +38,7 @@ parser.addTag(new BBCodeTextTag('img', (p, parent, param, content) => {
   else { el.className = 'placeholder-image'; el.textContent = 'F-List image #' + param + (content ? ' · ' + content : '') + ' (metadata unavailable)'; }
   if (/^\\d+$/.test(param)) {
     el.dataset.localInlineId = param; el.tabIndex = 0; el.setAttribute('role', 'button');
+    el.dataset.inlineAlias = content;
     el.title = 'Attach a preview image to F-List image #' + param;
     el.setAttribute('aria-label', 'Add image mapping for F-List image ' + param);
   }

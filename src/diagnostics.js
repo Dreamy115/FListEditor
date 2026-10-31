@@ -33,6 +33,9 @@
           : fragment.startsWith('{') ? '{color:' + suggestion + '|' : ':::color ' + suggestion;
         fix('Use ' + suggestion, replacement);
       }
+    } else if (message.startsWith('Nested text alignment:')) {
+      result.help = 'The innermost alignment takes precedence over its enclosing alignment. In Markdown+, add a bang (!) to the inner block opener, such as :::right !, to suppress this warning when the nesting is intentional.';
+      result.example = config.mixed ? ':::center\nCentered text\n:::right !\nRight-aligned text\n:::\n:::' : '[center]Centered text[right]Right-aligned text[/right][/center]';
     } else if (message.startsWith('Nested font macros')) {
       result.help = 'Use one font per text span. Move the inner font macro outside the outer one, or remove one of the font wrappers.';
       result.example = '{font:smallcaps|First} {font:bold|Second}';
