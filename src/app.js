@@ -101,9 +101,17 @@ Describe the character's appearance and observed behaviours.
 - **Witness:** {user:Character Name}
 :::`
 };
-let data={drafts:[{id:makeId(),name:'New Character',content:intro}],active:null,theme:'flist-blue',previewFontSize:'16',splitRatio:.524,previewNoteDismissed:false,mixed:true};
+function validateCustomTemplates(records){
+ if(!Array.isArray(records))return [];
+ const seen=new Set();
+ return records.filter(record=>{
+  if(!record||typeof record.id!=='string'||!record.id||seen.has(record.id)||typeof record.name!=='string'||!record.name.trim()||typeof record.content!=='string'||record.content.length>1500000)return false;
+  seen.add(record.id);return true;
+ }).slice(0,100).map(record=>({id:record.id,name:record.name.trim().slice(0,100),content:record.content}));
+}
+let data={customTemplates:[],drafts:[{id:makeId(),name:'New Character',content:intro}],active:null,theme:'flist-blue',previewFontSize:'16',splitRatio:.524,previewNoteDismissed:false,mixed:true};
 data.active=data.drafts[0].id;
-try{const loaded=JSON.parse(localStorage.getItem(STORAGE));if(loaded&&Array.isArray(loaded.drafts)&&loaded.drafts.length){const valid=loaded.drafts.filter(d=>typeof d.id==='string'&&typeof d.name==='string'&&typeof d.content==='string').slice(0,80);if(valid.length){data={drafts:valid,active:valid.some(d=>d.id===loaded.active)?loaded.active:valid[0].id,theme:Array.from($('theme').options).some(option=>option.value===loaded.theme)?loaded.theme:'flist-blue',previewFontSize:parsePreviewFontSize(loaded.previewFontSize)||'16',splitRatio:typeof loaded.splitRatio==='number'&&Number.isFinite(loaded.splitRatio)?Math.max(.25,Math.min(.75,loaded.splitRatio)):.524,previewNoteDismissed:loaded.previewNoteDismissed===true,mixed:loaded.mixed!==false}}}}catch(e){}
+try{const loaded=JSON.parse(localStorage.getItem(STORAGE));if(loaded&&Array.isArray(loaded.drafts)&&loaded.drafts.length){const valid=loaded.drafts.filter(d=>typeof d.id==='string'&&typeof d.name==='string'&&typeof d.content==='string').slice(0,80);if(valid.length){data={customTemplates:validateCustomTemplates(loaded.customTemplates),drafts:valid,active:valid.some(d=>d.id===loaded.active)?loaded.active:valid[0].id,theme:Array.from($('theme').options).some(option=>option.value===loaded.theme)?loaded.theme:'flist-blue',previewFontSize:parsePreviewFontSize(loaded.previewFontSize)||'16',splitRatio:typeof loaded.splitRatio==='number'&&Number.isFinite(loaded.splitRatio)?Math.max(.25,Math.min(.75,loaded.splitRatio)):.524,previewNoteDismissed:loaded.previewNoteDismissed===true,mixed:loaded.mixed!==false}}}}catch(e){}
 let saveTimer=null,toastTimer=null;
 // Undo is managed explicitly because setRangeText() and textarea.value edits do not
 // consistently enter the browser's native undo stack across browsers.
@@ -153,7 +161,7 @@ function redoEdit(){const h=currentHistory();if(h.index>=h.states.length-1)retur
 $('undoEdit').addEventListener('click',undoEdit);
 $('redoEdit').addEventListener('click',redoEdit);
 const active=()=>data.drafts.find(d=>d.id===data.active)||data.drafts[0];
-function persist(){try{localStorage.setItem(STORAGE,JSON.stringify(data));$('saveStatus').textContent='● Saved locally'}catch(e){$('saveStatus').textContent='⚠ Storage unavailable'}}
+function persist(){try{localStorage.setItem(STORAGE,JSON.stringify(data));$('saveStatus').textContent='● Saved locally';return true}catch(e){$('saveStatus').textContent='⚠ Storage unavailable';return false}}
 function scheduleSave(){ $('saveStatus').textContent='◌ Saving…';clearTimeout(saveTimer);saveTimer=setTimeout(persist,260) }
 let pendingConfirm=null;
 function requestConfirmation(message,callback){pendingConfirm=callback;$('confirmText').textContent=message;$('confirmBar').hidden=false;}
@@ -234,7 +242,7 @@ function inlineMarkdown(text,protectedParts=[]){
  // Support nested inline macros, e.g. {color:purple|**bright**}.
  let output='';
  for(let i=0;i<text.length;){
-  if(text[i]==='\\' && i+1<text.length && /[{}*_~+`\[\]\\]/.test(text[i+1])){output+=protect(text[i+1]);i+=2;continue}
+  if(text[i]==='\\' && i+1<text.length && /[{}*_~+`\[\]\\#>\-]/.test(text[i+1])){output+=protect(text[i+1]);i+=2;continue}
   if(text[i]!=='{'){output+=text[i++];continue}
   let depth=1,j=i+1;for(;j<text.length&&depth;j++){if(text[j]==='{'&&text[j-1]!=='\\')depth++;else if(text[j]==='}'&&text[j-1]!=='\\')depth--}
   if(depth){output+=text[i++];continue}
@@ -251,6 +259,7 @@ function inlineMarkdown(text,protectedParts=[]){
   output+=compiled===null?text.slice(i,j):protect(compiled);i=j;
  }
  text=output;
+ text=text.replace(/<(https?:\/\/[^<>\s]+)>/gi,(match,url)=>safeUrl(url)?protect('[url]'+url+'[/url]'):match);
  // Protect links and images, and ensure only valid http(s) URLs are exported.
  text=text.replace(/!?\[([^\]\n]*)\]\((https?:\/\/[^\s)]+)\)/gi,(match,label,url)=>{
   if(!safeUrl(url))return match;
@@ -307,7 +316,12 @@ function markdownToBB(input){
    out.push(level===1?'[heading][big]'+content+'[/big][/heading]':level===3?'[big]'+content+'[/big]':'[heading]'+content+'[/heading]');continue;
   }
   if(/^\s*(?:-{3,}|\*{3,}|_{3,})\s*$/.test(line)){out.close('[hr]');continue}
-  const quote=line.match(/^\s*>\s?(.*)$/);if(quote){out.push('[quote]'+inlineMarkdown(quote[1])+'[/quote]');continue}
+  const quote=line.match(/^[ \t]*>[ \t]?(.*)$/);
+  if(quote){
+   const body=[quote[1]];
+   while(index+1<lines.length){const next=lines[index+1].match(/^[ \t]*>[ \t]?(.*)$/);if(!next)break;body.push(next[1]);index++}
+   out.push('[quote]'+markdownToBB(body.join('\n'))+'[/quote]');continue;
+  }
   const bullet=line.match(/^(\s*)[-*+]\s+(.+)$/);if(bullet){out.push(bullet[1]+'• '+inlineMarkdown(bullet[2]));continue}
   // Numbered lists are already readable as plain text on F-List.
   out.push(inlineMarkdown(line));
@@ -395,12 +409,14 @@ function bbcodeToMarkdown(input,escapePlain=true){
    const name=colorSafe(node.param);if(!name)return content;
    return inline?'{color:'+name+'|'+content+'}':block('color',name,content);
   }
+  if(tag==='quote'&&!editableLayout)return boundaries(content.split('\n').map(line=>'> '+line).join('\n'));
   if(blockTags.has(tag)){
    if(tag==='collapse'&&(!node.param||/[\[\]\n]/.test(node.param)))return raw(node);
    return block(tag,tag==='collapse'?node.param:'',content);
   }
   if(tag==='url'){
-   if(!node.param||!safeUrl(node.param))return raw(node);
+   if(!node.param)return safeUrl(plain)&&!/[<>\s]/.test(plain)?'<'+plain+'>':raw(node);
+   if(!safeUrl(node.param))return raw(node);
    if(inline&&!/[\[\]]/.test(content))return '['+content+']('+node.param+')';
    if(inline&&!/[{}]/.test(content))return '{link:'+node.param+'|'+content+'}';
    return raw(node);
@@ -408,12 +424,14 @@ function bbcodeToMarkdown(input,escapePlain=true){
   if(['user','icon','eicon'].includes(tag))return /^[^{}\[\]\n]+$/.test(plain)?'{'+tag+':'+plain+'}':raw(node);
   if(tag==='img'){
    if(node.param&&/^\d+$/.test(node.param)&&!/[{}\r\n]/.test(plain))return '{img:'+node.param+(plain?'|'+plain:'')+'}';
-   if(!node.param&&safeUrl(plain.trim()))return '{img:'+plain.trim()+'}';
+   if(!node.param&&safeUrl(plain)&&!/[\s)]/.test(plain))return '![]('+plain+')';
+   if(!node.param&&plain===plain.trim()&&safeUrl(plain))return '{img:'+plain+'}';
    return raw(node);
   }
   if(tag==='noparse'){
+   if(plain&&!/[`\r\n]/.test(plain))return '`'+plain+'`';
    if(!/[{}\n]/.test(plain))return '{noparse|'+plain+'}';
-   if(!/```|\[\/noparse\]/i.test(plain))return boundaries('```\n'+plain.replace(/^\n+|\n+$/g,'')+'\n```');
+   if(!/```|\[\/noparse\]/i.test(plain))return boundaries('```\n'+plain+'\n```');
    return raw(node);
   }
   return raw(node);
@@ -422,13 +440,13 @@ function bbcodeToMarkdown(input,escapePlain=true){
  // Boundary sentinels ensure the Markdown syntax lands on its own line,
  // while reusing line breaks that were already present in the BBCode.
  const markdown=result.replace(/[\uE006\uE007\n]+/g,part=>'\n'.repeat(Math.max(1,(part.match(/\n/g)||[]).length))).trim();
- if(markdownToBB(markdown)===normalized.replace(/\r\n?/g,'\n'))return preferHashHeadings(markdown);
+ if(markdownToBB(markdown)===normalized.replace(/\r\n?/g,'\n'))return preferStandardMarkdown(markdown);
  editableLayout=true;
  const editable=children(tree).replace(/^[\uE006\uE007]+|[\uE006\uE007]+$/g,'')
   .replace(/[\uE006\uE007\n]+/g,part=>'\n'.repeat((part.match(/\n/g)||[]).length+(/[\uE006\uE007]/.test(part)?1:0)));
- if(markdownToBB(editable)===normalized.replace(/\r\n?/g,'\n'))return preferHashHeadings(editable);
+ if(markdownToBB(editable)===normalized.replace(/\r\n?/g,'\n'))return preferStandardMarkdown(editable);
  editableLayout=false;preserveLayout=true;
- return preferHashHeadings(children(tree));
+ return preferStandardMarkdown(children(tree));
 }
 // Choose heading notation locally, so one tightly packed heading does not
 // force every other heading in the profile back to explicit macros.
@@ -452,8 +470,47 @@ function preferHashHeadings(markdown){
    if(body===null)continue;
    const large=match[1]===undefined?null:unwrapBig(body);
    const replacement=match[1]===undefined?'### '+body:large===null?'## '+body:'# '+large;
-   const candidate=markdown.slice(0,match.index)+replacement+markdown.slice(match.index+match[0].length);
-   if(markdownToBB(candidate)===expected)markdown=candidate;
+   const candidate=standardMarkdownRewrite(markdown,match.index,match[0].length,replacement,expected);
+   if(candidate!==null)markdown=candidate;
+  }
+ }
+ return markdown;
+}
+function standardMarkdownRewrite(markdown,start,length,replacement,expected){
+ const before=markdown.slice(0,start),after=markdown.slice(start+length);
+ // Macro boundaries absorb a source newline; Markdown prose does not. Try
+ // reusing that boundary before retaining an unnecessary visible blank line.
+ for(const prefix of [before,before.replace(/\n$/,'')]){
+  for(const suffix of [after,after.replace(/^\n/,'')]){
+   const candidate=prefix+replacement+suffix;
+   if(markdownToBB(candidate)===expected)return candidate;
+  }
+ }
+ return null;
+}
+// Prefer standard notation locally; a packed quote must not force unrelated
+// quotes back to macros. Validate every rewrite against significant whitespace.
+function preferStandardMarkdown(markdown){
+ markdown=preferHashHeadings(markdown);
+ const expected=markdownToBB(markdown);
+ let changed=true;
+ while(changed){
+  changed=false;
+  const lines=markdown.split('\n');let offset=0;
+  for(let index=0;index<lines.length;index++){
+   const line=lines[index],start=offset;offset+=line.length+1;
+   if(line!==':::quote')continue;
+   let depth=1,end=index+1;
+   for(;end<lines.length;end++){
+    if(lines[end]===':::'){if(!--depth)break}
+    else if(/^:::[a-z]+(?:\s|$)/i.test(lines[end]))depth++;
+   }
+   if(depth)continue;
+   const original=lines.slice(index,end+1).join('\n');
+   const content=preferStandardMarkdown(lines.slice(index+1,end).join('\n'));
+   const body=content.split('\n').map(text=>'> '+text).join('\n');
+   const candidate=standardMarkdownRewrite(markdown,start,original.length,body,expected);
+   if(candidate!==null){markdown=candidate;changed=true;break}
   }
  }
  return markdown;
@@ -492,6 +549,7 @@ function syncHighlightScroll(){
  const layer=$('sourceHighlight');
  layer.style.width=(source.clientWidth+2)+'px';
  layer.scrollTop=source.scrollTop;layer.scrollLeft=source.scrollLeft;
+ FolioSyntax.paintActive(layer);
  $('sourceLineNumbers').style.transform='translateY('+(-source.scrollTop)+'px)';
 }
 source.addEventListener('scroll',syncHighlightScroll);
@@ -509,7 +567,16 @@ source.addEventListener('beforeinput',e=>{
 $('profileName').addEventListener('input',syncName);
 $('newDraft').addEventListener('click',()=>{let d={id:makeId(),name:'Untitled character',content:''};data.drafts.unshift(d);loadDraft(d.id);$('profileName').focus();$('profileName').select();toast('New character draft created')});
 $('deleteDraft').addEventListener('click',()=>requestConfirmation('Delete the current draft? This cannot be undone.',()=>{data.drafts=data.drafts.filter(d=>d.id!==data.active);if(!data.drafts.length)data.drafts.push({id:makeId(),name:'New Character',content:''});loadDraft(data.drafts[0].id);toast('Draft deleted')}));
-document.querySelectorAll('[data-template]').forEach(btn=>btn.addEventListener('click',()=>{const type=btn.dataset.template;const apply=()=>{rememberSelection();source.value=data.mixed?templates[type]:markdownToBB(templates[type]);source.focus();syncFromEditor();commitEdit('action');toast('Markdown-first template applied')};if(source.value.trim())requestConfirmation('Replace this draft with the '+type+' template?',apply);else apply()}));
+function applyTemplate(content,name){
+ rememberSelection();source.value=data.mixed?content:markdownToBB(content);
+ source.focus();syncFromEditor();commitEdit('action');toast(name+' template applied');
+}
+function requestApplyTemplate(content,name){
+ const apply=()=>applyTemplate(content,name);
+ if(source.value.trim())requestConfirmation('Replace this draft with the '+name+' template?',apply);else apply();
+}
+document.querySelectorAll('[data-template]').forEach(btn=>btn.addEventListener('click',()=>requestApplyTemplate(templates[btn.dataset.template],btn.querySelector('strong').textContent)));
+
 document.querySelectorAll('[data-wrap]').forEach(btn=>btn.addEventListener('click',()=>wrapInline(btn.dataset.wrap)));
 document.querySelectorAll('[data-action]').forEach(btn=>btn.addEventListener('click',()=>{switch(btn.dataset.action){case 'hr':case 'divider':addLine(data.mixed?'---':'[hr]');break;case 'details':addLine(data.mixed?'**Field:** Details':'[b]Field:[/b] Details');break}}));
 const palette=$('colorPalette');
@@ -696,6 +763,88 @@ document.addEventListener('keydown',e=>{
  if(e.key==='Tab'){e.preventDefault();replaceRange('  ')}
 });
 source.addEventListener('dragover',e=>{if(e.dataTransfer?.types.includes('Files'))e.preventDefault()});
+const templateManager=$('templateManager');
+let editingTemplateId=null,templateSnapshot='',templatePending=null,templateChoiceValue='';
+function templateFormSnapshot(){return JSON.stringify([$('templateName').value,$('templateContent').value])}
+function templateDirty(){return templateFormSnapshot()!==templateSnapshot}
+function clearTemplateConfirm(){templatePending=null;$('templateConfirm').hidden=true}
+function confirmTemplateAction(message,action){
+ templatePending=action;$('templateConfirmText').textContent=message;$('templateConfirm').hidden=false;
+ $('templateConfirmYes').focus();
+}
+function guardTemplateChanges(action){
+ if(templateDirty())confirmTemplateAction('Discard unsaved template changes?',action);else action();
+}
+function renderCustomTemplates(){
+ const list=$('customTemplateList');list.replaceChildren();
+ if(!data.customTemplates.length){const empty=document.createElement('small');empty.className='inline-tip';empty.textContent='No custom templates yet.';list.append(empty)}
+ for(const record of data.customTemplates){
+  const row=document.createElement('div');row.className='custom-template-row';
+  const apply=document.createElement('button');apply.className='custom-template-apply';apply.textContent=record.name;apply.title='Apply '+record.name;
+  apply.addEventListener('click',()=>requestApplyTemplate(record.content,record.name));
+  const edit=document.createElement('button');edit.className='custom-template-edit';edit.textContent='Edit';edit.setAttribute('aria-label','Edit '+record.name);
+  edit.addEventListener('click',()=>openTemplateManager(record.id));row.append(apply,edit);list.append(row);
+ }
+ const choice=$('templateChoice');choice.replaceChildren();
+ const blank=document.createElement('option');blank.value='';blank.textContent='New template';choice.append(blank);
+ for(const [label,records] of [['My templates',data.customTemplates.map(t=>({value:'custom:'+t.id,name:t.name}))],['Built-in templates',Object.keys(templates).map(id=>({value:'builtin:'+id,name:document.querySelector('[data-template="'+id+'"]').querySelector('strong').textContent}))]]){
+  const group=document.createElement('optgroup');group.label=label;
+  for(const record of records){const option=document.createElement('option');option.value=record.value;option.textContent=record.name;group.append(option)}
+  choice.append(group);
+ }
+ choice.value=templateChoiceValue;
+}
+function loadTemplateForm(value){
+ clearTemplateConfirm();templateChoiceValue=value;editingTemplateId=null;
+ let name='',content='';
+ if(value.startsWith('custom:')){const record=data.customTemplates.find(t=>t.id===value.slice(7));if(record){editingTemplateId=record.id;name=record.name;content=record.content}}
+ else if(value.startsWith('builtin:')){const id=value.slice(8);content=templates[id]||'';name=document.querySelector('[data-template="'+id+'"]').querySelector('strong').textContent+' copy'}
+ $('templateName').value=name;$('templateContent').value=content;$('templateChoice').value=value;
+ $('deleteTemplate').disabled=!editingTemplateId;$('templateStatus').textContent='';templateSnapshot=templateFormSnapshot();
+}
+function openTemplateManager(id){
+ const value=id?'custom:'+id:templateChoiceValue;
+ const open=()=>{loadTemplateForm(value);templateManager.showModal();$('templateName').focus()};
+ if(templateDirty()&&templateSnapshot) {templateManager.showModal();guardTemplateChanges(open)}else open();
+}
+function saveCustomTemplate(){
+ const name=$('templateName').value.trim().slice(0,100),content=$('templateContent').value;
+ if(!name){$('templateStatus').textContent='Enter a template name.';$('templateName').focus();return null}
+ if(content.length>1500000){$('templateStatus').textContent='Template is too large (max 1.5 MB).';return null}
+ if(!editingTemplateId&&data.customTemplates.length>=100){$('templateStatus').textContent='Maximum 100 custom templates. Delete one first.';return null}
+ let record=data.customTemplates.find(t=>t.id===editingTemplateId);
+ if(record){record.name=name;record.content=content}else{record={id:makeId(),name,content};data.customTemplates.push(record)}
+ editingTemplateId=record.id;templateChoiceValue='custom:'+record.id;renderCustomTemplates();
+ $('templateName').value=name;templateSnapshot=templateFormSnapshot();$('deleteTemplate').disabled=false;
+ $('templateStatus').textContent=persist()?'Template saved.':'Saved for this session only; browser storage is unavailable.';
+ return record;
+}
+for(const id of ['manageTemplates','openTemplateManager'])$(id).addEventListener('click',()=>openTemplateManager());
+$('closeTemplateManager').addEventListener('click',()=>guardTemplateChanges(()=>{loadTemplateForm(templateChoiceValue);templateManager.close()}));
+templateManager.addEventListener('cancel',e=>{e.preventDefault();guardTemplateChanges(()=>{loadTemplateForm(templateChoiceValue);templateManager.close()})});
+$('templateChoice').addEventListener('change',e=>{const value=e.target.value;e.target.value=templateChoiceValue;guardTemplateChanges(()=>loadTemplateForm(value))});
+$('newTemplate').addEventListener('click',()=>guardTemplateChanges(()=>loadTemplateForm('')));
+$('templateFromDraft').addEventListener('click',()=>guardTemplateChanges(()=>{
+ loadTemplateForm('');$('templateName').value=($('profileName').value.trim()||'Character')+' template';
+ $('templateContent').value=data.mixed?source.value:bbcodeToMarkdown(source.value,true);
+ $('templateStatus').textContent='Draft copied. Save to add it to My templates.';
+}));
+for(const id of ['templateName','templateContent'])$(id).addEventListener('input',()=>{$('templateStatus').textContent=templateDirty()?'Unsaved changes':''});
+$('saveTemplate').addEventListener('click',()=>{clearTemplateConfirm();saveCustomTemplate()});
+$('saveApplyTemplate').addEventListener('click',()=>{
+ clearTemplateConfirm();const record=saveCustomTemplate();if(!record)return;
+ const apply=()=>{templateManager.close();applyTemplate(record.content,record.name)};
+ if(source.value.trim())confirmTemplateAction('Replace this draft with '+record.name+'?',apply);else apply();
+});
+$('deleteTemplate').addEventListener('click',()=>{
+ const id=editingTemplateId;if(!id)return;
+ confirmTemplateAction('Delete this custom template'+(templateDirty()?' and its unsaved changes':'')+'?',()=>{
+  data.customTemplates=data.customTemplates.filter(t=>t.id!==id);templateChoiceValue='';renderCustomTemplates();loadTemplateForm('');persist();
+ });
+});
+$('templateConfirmYes').addEventListener('click',()=>{const action=templatePending;clearTemplateConfirm();if(action)action()});
+$('templateConfirmNo').addEventListener('click',()=>{clearTemplateConfirm();$('templateName').focus()});
+renderCustomTemplates();loadTemplateForm('');
 const paneDivider=$('paneDivider');
 function applyPaneSplit(){
  const app=document.querySelector('.app');

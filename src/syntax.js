@@ -87,7 +87,6 @@
         if (!token.kind) { fragment.appendChild(document.createTextNode(pieces[i])); continue; }
         const span = document.createElement('span');
         span.className = 'syntax-' + token.kind;
-        if (token.depth !== undefined) span.classList.add('syntax-depth-' + token.depth % 5);
         if (token.unmatched) { span.classList.add('syntax-unmatched'); span.title = 'Unmatched delimiter'; }
         if (token.pair !== undefined) span.dataset.pair = String(token.pair);
         span.textContent = pieces[i]; fragment.appendChild(span);
@@ -97,12 +96,48 @@
     fragment.appendChild(document.createTextNode('\n'));
     element.replaceChildren(fragment);
     element.syntaxTokens = tokens;
+    element.syntaxText = text;
   }
   function markActive(element, position) {
     const tokens = element.syntaxTokens || [];
-    const token = tokens.find(t => t.pair !== undefined && position >= t.start && position <= t.end)
-      || tokens.filter(t => t.partner > t.start && position > t.end && position < t.partner).at(-1);
-    for (const span of element.querySelectorAll('[data-pair]')) span.classList.toggle('syntax-active', !!token && span.dataset.pair === String(token.pair));
+    const byStart = new Map(tokens.map(token => [token.start, token]));
+    const sections = tokens.filter(t => t.partner > t.start).map(open => ({
+      start: open.start, end: byStart.get(open.partner).end
+    }));
+    const active = sections.filter(section => position >= section.start && position < section.end).at(-1);
+    element.activeSyntaxRange = active || null;
+    for (const span of element.querySelectorAll('[data-pair]')) {
+      span.classList.toggle('syntax-active-delimiter', !!active && span.dataset.pair === String(active.start));
+    }
+    paintActive(element);
   }
-  globalThis.FolioSyntax = {tokenize, highlight, markActive};
+  function paintActive(element) {
+    const viewport = document.getElementById('sourceSectionTint');
+    if (!viewport) return;
+    const active = element.activeSyntaxRange;
+    viewport.hidden = !active;
+    if (!active) return;
+    const text = element.syntaxText || '';
+    const firstLine = text.slice(0, active.start).split('\n').length - 1;
+    const lastLine = text.slice(0, Math.max(active.start, active.end - 1)).split('\n').length - 1;
+    const anchors = element.querySelectorAll('.source-line-anchor');
+    const first = anchors[firstLine], next = anchors[lastLine + 1];
+    if (!first) { viewport.hidden = true; return; }
+    const lineHeight = parseFloat(getComputedStyle(element).lineHeight);
+    const correction = (lineHeight - first.getBoundingClientRect().height) / 2;
+    const top = first.offsetTop - correction;
+    let bottom;
+    if (next) bottom = next.offsetTop - correction;
+    else {
+      const range = document.createRange(); range.selectNodeContents(element);
+      const rects = [...range.getClientRects()].filter(rect => rect.height > 0);
+      const glyphBottom = Math.max(...rects.map(rect => rect.bottom));
+      bottom = glyphBottom - element.getBoundingClientRect().top + element.scrollTop + correction;
+    }
+    const band = viewport.firstElementChild;
+    band.style.top = (top - element.scrollTop - 1) + 'px';
+    band.style.height = Math.max(lineHeight, bottom - top) + 'px';
+  }
+
+  globalThis.FolioSyntax = {tokenize, highlight, markActive, paintActive};
 })();

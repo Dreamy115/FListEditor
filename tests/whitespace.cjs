@@ -95,3 +95,35 @@ for (const tag of ['i', 'b', 'u', 's']) {
   const padded = `[${tag}]\na\n\nb\n[/${tag}]`;
   assert.equal(compile(context.bbcodeToMarkdown(padded)), padded);
 }
+
+const vanillaCases = [
+ ['[quote]Text[/quote]', '> Text'],
+ ['[quote]a\nb[/quote]', '> a\n> b'],
+ ['[quote]a\n\nb[/quote]', '> a\n> \n> b'],
+ ['[quote][b]Bold[/b][/quote]', '> **Bold**'],
+ ['[img]https://example.com/portrait.png[/img]', '![](https://example.com/portrait.png)'],
+ ['[url=https://example.com]Visit[/url]', '[Visit](https://example.com)'],
+ ['[url]https://example.com[/url]', '<https://example.com>'],
+ ['[noparse]literal {color:cyan|text}[/noparse]', '`literal {color:cyan|text}`'],
+ ['[b]Bold[/b]', '**Bold**'], ['[i]Italic[/i]', '*Italic*'], ['[s]Strike[/s]', '~~Strike~~'],
+ ['[hr]', '---']
+];
+for (const [bbcode, markdown] of vanillaCases) {
+  assert.equal(context.bbcodeToMarkdown(bbcode), markdown);
+  assert.equal(compile(markdown), bbcode);
+}
+const quoteCases = [
+ '[quote]Outer\n[quote]Inner[/quote][/quote]',
+ '[quote]\na\n[/quote]', '[quote]a[/quote]\n[quote]b[/quote]',
+ 'Before[quote]Packed[/quote]After\n[quote]Standalone[/quote]',
+ '[center][quote]a\nb[/quote][/center]',
+ '[quote][heading]Title[/heading]Text[/quote]'
+];
+for (const bbcode of quoteCases) assert.equal(compile(context.bbcodeToMarkdown(bbcode)), bbcode);
+assert.match(context.bbcodeToMarkdown(quoteCases[3]), /^> Standalone$/m);
+assert.equal(compile('> Outer\n> > Inner'), '[quote]Outer\n[quote]Inner[/quote][/quote]');
+assert.equal(context.preferStandardMarkdown('```\n:::quote\nLiteral\n:::\n```'), '```\n:::quote\nLiteral\n:::\n```');
+for(const literal of ['# Literal heading', '> Literal quote', '- Literal bullet']) {
+ const bbcode='[quote]'+literal+'[/quote]';
+ assert.equal(compile(context.bbcodeToMarkdown(bbcode)),bbcode);
+}

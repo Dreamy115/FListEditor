@@ -23,6 +23,9 @@
   <button class="template" data-template="narrative"><span class="emoji">✧</span><span><strong>Narrative</strong><small>Atmospheric introduction</small></span></button>
   <button class="template" data-template="compact"><span class="emoji">☷</span><span><strong>Minimalist</strong><small>Clean and skimmable</small></span></button>
   <button class="template" data-template="archive"><span class="emoji">⌁</span><span><strong>Classified file</strong><small>Stylized dossier</small></span></button>
+  <div class="caps custom-template-heading">My templates</div>
+  <div id="customTemplateList" class="custom-template-list"></div>
+  <button class="btn manage-templates" id="manageTemplates">Manage templates</button>
  </div>
  <div class="side-bottom"><div><b>●</b> Private by design</div><div>Drafts saved in this browser.</div><div style="margin-top:12px"><a href="https://www.f-list.net/" target="_blank" rel="noopener noreferrer">Open F-List ↗</a></div></div>
 </aside>
@@ -51,6 +54,7 @@
  <button class="tool" data-insert="image" title="Insert image">▧</button>
  </div>
  <div class="toolbar-row secondrow">
+ <button class="pill" id="openTemplateManager">My templates</button>
  <button class="pill" data-insert="collapse">▸ Collapsible section</button>
  <button class="pill" data-insert="user">@ Character link</button>
  <button class="pill" data-insert="eicon">✿ Eicon</button>
@@ -66,7 +70,7 @@
  <div id="confirmBar" class="confirmbar" hidden><span id="confirmText"></span><button type="button" class="btn primary" id="confirmYes">Confirm</button><button type="button" class="btn" id="confirmNo">Cancel</button></div>
 <section id="guidePanel" class="guide-panel" hidden aria-label="Formatting guide"><div class="guide-head"><div><strong>Formatting &amp; macro cookbook</strong><p>Block macro markers (:::) and dividers (---) absorb the adjacent source newline. Add a blank line beside a marker for a visible break. Ordinary prose newlines remain visible. All templates are Markdown-first. Insert examples, nest macros, and export regular F-List BBCode. Only 12 named F-List colors are supported; legacy hex values are mapped to the nearest preset. Switching modes converts the source in both directions.</p></div><button type="button" class="guide-close" id="closeGuide" aria-label="Close guide">×</button></div><div class="guide-tools"><input id="guideSearch" type="search" aria-label="Search formatting examples" placeholder="Search examples, tags, macros…"><div id="guideTabs" class="guide-tabs"></div></div><div id="guideExamples" class="guide-examples"></div></section>
 <div class="sourcebar"><div><strong>Profile description</strong><div><span id="modeHint">Markdown and custom macros. Switch to BBCode to compile; switch back to decompile.</span></div></div><div class="seg"><button id="mixedMode" class="active" title="Switch to Markdown+ and decompile the current BBCode">Markdown+</button><button id="bbMode" title="Switch to BBCode and compile the current Markdown+">BBCode</button></div></div>
- <div class="editorwrap"><div class="editor-shell"><div id="sourceGutter" class="source-gutter" aria-hidden="true"><div id="sourceLineNumbers"></div></div><pre id="sourceHighlight" class="editor-highlights" aria-hidden="true"></pre><textarea class="editor" id="source" spellcheck="true" aria-label="Profile description source" placeholder="Start writing your character's story…"></textarea></div></div>
+ <div class="editorwrap"><div class="editor-shell"><div id="sourceGutter" class="source-gutter" aria-hidden="true"><div id="sourceLineNumbers"></div></div><div id="sourceSectionTint" class="source-section-tint" aria-hidden="true" hidden><div class="source-section-band"></div></div><pre id="sourceHighlight" class="editor-highlights" aria-hidden="true"></pre><textarea class="editor" id="source" spellcheck="true" aria-label="Profile description source" placeholder="Start writing your character's story…"></textarea></div></div>
  <div class="statusbar"><span id="stats">0 words · 0 characters</span><span id="saveStatus">● Saved locally</span></div>
  <div class="actionbar"><button class="btn primary" id="copyCode">▤ &nbsp;Copy BBCode</button><button class="btn" id="downloadCode">↓ Export .bbcode</button><button class="btn" id="downloadMarkdown" title="Export editable Markdown+ source">↓ Export .md</button><div class="grow"></div><button class="btn quiet" id="importBtn">↑ Import</button><button class="btn quiet" id="backupBtn">⇩ Backup</button></div>
 </section>
@@ -79,6 +83,16 @@
  <div class="pvfoot"><span><span class="dot"></span> Local-only editor</span><span id="warningCount">No obvious issues</span></div>
 </section>
 </div>
+<dialog id="templateManager" class="template-manager" aria-labelledby="templateManagerTitle">
+ <div class="template-manager-head"><h2 id="templateManagerTitle">My templates</h2><button type="button" class="btn quiet" id="closeTemplateManager" aria-label="Close template manager">Close</button></div>
+ <p class="inline-tip">Templates use Markdown+ and are saved in this browser. Edit a built-in to save your own copy.</p>
+ <label for="templateChoice">Choose a template</label><select id="templateChoice"></select>
+ <div class="template-manager-tools"><button type="button" class="btn" id="newTemplate">New blank</button><button type="button" class="btn" id="templateFromDraft">From current draft</button></div>
+ <label for="templateName">Template name</label><input id="templateName" maxlength="100" placeholder="My character template">
+ <label for="templateContent">Markdown+ source</label><textarea id="templateContent" spellcheck="true" placeholder="Write a reusable profile here…"></textarea>
+ <div id="templateConfirm" class="template-confirm" hidden><span id="templateConfirmText"></span><button type="button" class="btn primary" id="templateConfirmYes">Continue</button><button type="button" class="btn" id="templateConfirmNo">Cancel</button></div>
+ <div class="template-manager-tools"><button type="button" class="btn primary" id="saveTemplate">Save template</button><button type="button" class="btn" id="saveApplyTemplate">Save &amp; apply</button><button type="button" class="btn quiet" id="deleteTemplate" disabled>Delete template</button><span id="templateStatus" role="status"></span></div>
+</dialog>
 <div id="toast" class="toast" role="status" aria-live="polite"></div>
 <input type="file" id="fileImport" accept=".txt,.md,.bbcode,.json,text/plain,application/json" hidden />
 <script src="src/horizon-renderer.js"></script>
