@@ -133,3 +133,5 @@
 .script-tool{gap:6px}.script-icon{display:inline-block;font-size:15px;line-height:1}.script-icon sup,.script-icon sub{display:inline-block;font-size:10px;line-height:0;vertical-align:baseline;position:relative}.script-icon sup{top:-.55em}.script-icon sub{top:.3em}.script-label{font-size:10px}
 
 .literal-preference{display:inline-flex;align-items:center;gap:6px;white-space:nowrap;font-size:11px;color:var(--muted)}.literal-preference input{accent-color:var(--accent)}.sourcebar{flex-wrap:wrap}
+
+.literal-preference{position:relative}.literal-preference .literal-tooltip{position:absolute;bottom:calc(100% + 9px);left:0;width:min(310px,75vw);padding:10px 12px;border:1px solid var(--line);border-radius:8px;background:var(--surface);color:var(--text);font-size:11px;font-weight:400;line-height:1.5;white-space:normal;box-shadow:0 5px 18px #0003;z-index:20;visibility:hidden;opacity:0;pointer-events:none}.literal-preference:hover .literal-tooltip,.literal-preference:focus-within .literal-tooltip{visibility:visible;opacity:1}

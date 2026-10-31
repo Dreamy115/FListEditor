@@ -46,3 +46,16 @@ const tokens=context.FolioSyntax.tokenize('**&mdash;** {color:purple|&#x25C6;} `
 assert.equal(tokens.filter(token=>token.kind==='entity').length,2);
 assert.ok(!context.FolioSyntax.tokenize('&mdash;',false).some(token=>token.kind==='entity'));
 console.log('Entity preference conversion and syntax token checks passed');
+
+// Simulate the browser scrolling to the caret after a source replacement.
+const scrollSource={value:'before',selectionStart:3,selectionEnd:3,scrollTop:400,scrollLeft:25};
+let toggleHandler,animationFrame,syncCount=0;
+const toggleContext=vm.createContext({source:scrollSource,data:{mixed:true},$:()=>({addEventListener:(type,fn)=>{toggleHandler=fn}}),
+ convertEntityPreference:()=> 'after',replaceRange:text=>{scrollSource.value=text;scrollSource.scrollTop=0;scrollSource.scrollLeft=0},
+ rememberSelection:()=>{},commitEdit:()=>{},refresh:()=>{},persist:()=>{},syncHighlightScroll:()=>{syncCount++},requestAnimationFrame:fn=>{animationFrame=fn}});
+vm.runInContext(app.slice(app.indexOf("$('preferLiterals').addEventListener('change'"),app.indexOf('function switchMode(')),toggleContext);
+toggleHandler({target:{checked:false}});
+assert.equal(scrollSource.scrollTop,400);assert.equal(scrollSource.scrollLeft,25);
+scrollSource.scrollTop=0;scrollSource.scrollLeft=0;animationFrame();
+assert.equal(scrollSource.scrollTop,400);assert.equal(scrollSource.scrollLeft,25);assert.equal(syncCount,2);
+console.log('Entity toggle preserves scroll immediately and after caret reveal');

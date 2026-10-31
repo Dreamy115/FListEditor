@@ -120,7 +120,7 @@ const templateEditors=new Map(),characterEditors=new Map();
 // consistently enter the browser's native undo stack across browsers.
 const editHistories=new Map();
 const MAX_UNDO_STATES=180;
-function editorSnapshot(){return {content:source.value,mixed:data.mixed,start:source.selectionStart,end:source.selectionEnd,scroll:source.scrollTop}}
+function editorSnapshot(){return {content:source.value,mixed:data.mixed,preferLiterals:data.preferLiterals!==false,start:source.selectionStart,end:source.selectionEnd,scroll:source.scrollTop}}
 function currentHistory(){
  let h=editHistories.get(templateSession?templateSession.historyId:data.active);
  if(!h){h={states:[editorSnapshot()],index:0,lastKind:null,lastAt:0,lastInputType:null};editHistories.set(templateSession?templateSession.historyId:data.active,h)}
@@ -134,11 +134,11 @@ function refreshUndoButtons(){
 // Before replacing a selection, remember the *actual* caret that the user set.
 function rememberSelection(){
  const h=currentHistory(),prev=h.states[h.index];
- if(prev.content===source.value&&prev.mixed===data.mixed)h.states[h.index]=editorSnapshot();
+ if(prev.content===source.value&&prev.mixed===data.mixed&&(prev.preferLiterals!==false)===(data.preferLiterals!==false))h.states[h.index]=editorSnapshot();
 }
 function commitEdit(kind='action',inputType=''){
  const h=currentHistory(),next=editorSnapshot(),old=h.states[h.index];
- if(next.content===old.content&&next.mixed===old.mixed){h.states[h.index]=next;refreshUndoButtons();return}
+ if(next.content===old.content&&next.mixed===old.mixed&&next.preferLiterals===(old.preferLiterals!==false)){h.states[h.index]=next;refreshUndoButtons();return}
  if(h.index<h.states.length-1)h.states.splice(h.index+1);
  const now=Date.now();
  const canGroup=kind==='typing'&&h.lastKind==='typing'&&h.lastInputType===inputType&&
@@ -153,7 +153,7 @@ function commitEdit(kind='action',inputType=''){
 function restoreEdit(state){
  const scrollTop=source.scrollTop,scrollLeft=source.scrollLeft;
  const selectionStart=source.selectionStart,selectionEnd=source.selectionEnd,direction=source.selectionDirection;
- data.mixed=state.mixed;source.value=state.content;
+ data.mixed=state.mixed;data.preferLiterals=state.preferLiterals!==false;source.value=state.content;
  active().content=state.content;
  if(templateSession)updateTemplateStatus();
  updateMode();
@@ -993,12 +993,19 @@ for(const [name,style] of Object.entries(fontStyles)){
 }
 $('fontBtn').addEventListener('click',()=>{fontPalette.hidden=!fontPalette.hidden;$('fontBtn').setAttribute('aria-expanded',String(!fontPalette.hidden))});
 $('preferLiterals').addEventListener('change',event=>{
+ rememberSelection();
+ const scrollTop=source.scrollTop,scrollLeft=source.scrollLeft;
  data.preferLiterals=event.target.checked;
  if(data.mixed){
   const converted=convertEntityPreference(source.value,data.preferLiterals);
-  if(converted!==source.value){const scroll=source.scrollTop;replaceRange(converted,0,source.value.length,Math.min(source.selectionStart,converted.length),Math.min(source.selectionEnd,converted.length));source.scrollTop=scroll}
+  if(converted!==source.value)replaceRange(converted,0,source.value.length,Math.min(source.selectionStart,converted.length),Math.min(source.selectionEnd,converted.length));
  }
- refresh();persist();
+ commitEdit('action');refresh();persist();
+ const value=source.value,start=source.selectionStart,end=source.selectionEnd;
+ const restoreScroll=()=>{source.scrollTop=scrollTop;source.scrollLeft=scrollLeft;syncHighlightScroll()};
+ restoreScroll();
+ // Browsers may reveal the caret after the focused textarea is rewritten.
+ requestAnimationFrame(()=>{if(source.value===value&&source.selectionStart===start&&source.selectionEnd===end)restoreScroll()});
 });
 function switchMode(toMixed){
  if(data.mixed===toMixed)return;
