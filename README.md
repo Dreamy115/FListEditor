@@ -4,7 +4,7 @@ A browser-based character profile editor with Markdown+, BBCode conversion, live
 
 ## Run and edit
 
-Open `index.html` in a browser. Edit the HTML in `index.html`, styling in `src/styles.css`, and application logic, templates, and examples in `src/app.js`. The preview also uses the vendored Horizon renderer; its sources, adapter, and notices are documented in `vendor/horizon/README.md`.
+Open `index.html` in a browser. Edit the HTML in `index.html`, styling in `src/styles.css`, and application logic and formatting examples in `src/app.js`, and built-in profile prompts in `src/templates.js`. The preview also uses the vendored Horizon renderer; its sources, adapter, and notices are documented in `vendor/horizon/README.md`.
 
 For a local server, run `python -m http.server 8000` from this directory and visit http://localhost:8000. Use `python3` instead of `python` if required on your system. Browser storage is specific to the origin: drafts saved in the previous standalone editor may not appear here. Use the editor's backup/export controls to transfer them.
 

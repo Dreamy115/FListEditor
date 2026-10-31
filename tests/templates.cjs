@@ -29,3 +29,23 @@ renderContext.renderDrafts();
 assert.deepEqual([...document.querySelectorAll('.draft span')].map(el=>el.textContent), drafts.map(d=>d.name));
 document.querySelectorAll('.draft')[1].click();
 assert.equal(selected, 'two');
+
+// The separately loaded catalogue must compile and render through the real pipeline.
+const {window, document:previewDocument} = require('linkedom').parseHTML('<html></html>');
+const builtinContext = vm.createContext({URL, window, document:previewDocument});
+vm.runInContext(fs.readFileSync('src/templates.js', 'utf8'), builtinContext);
+vm.runInContext(app.slice(app.indexOf('const macroInlineNames='), app.indexOf('function renderBB(')), builtinContext);
+vm.runInContext(app.slice(app.indexOf('function countWarnings('), app.indexOf('function refresh(')), builtinContext);
+vm.runInContext(fs.readFileSync('src/horizon-renderer.js', 'utf8'), builtinContext);
+assert.deepEqual(Object.keys(builtinContext.FolioTemplates), ['dossier','narrative','compact','archive']);
+for (const [id, markdown] of Object.entries(builtinContext.FolioTemplates)) {
+  const bbcode = builtinContext.markdownToBB(markdown);
+  assert.deepEqual(Array.from(builtinContext.countWarnings(bbcode)), [], id+' compiles without warnings');
+  const preview = builtinContext.FolioHorizon.render(bbcode);
+  assert.ok(preview.querySelector('h2'), id+' has a rendered heading');
+  assert.ok(preview.querySelector('.bbcode-collapse'), id+' has expandable details');
+  assert.ok(!preview.textContent.includes(':::') && !preview.textContent.includes('{color:'), id+' has no uncompiled layout markers');
+}
+const page = fs.readFileSync('index.html', 'utf8');
+assert.ok(page.indexOf('<script src="src/templates.js">') < page.indexOf('<script src="src/app.js">'));
+console.log('Separate built-in template catalogue compilation and rendering checks passed');
