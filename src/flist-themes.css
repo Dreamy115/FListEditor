@@ -118,3 +118,9 @@
 .previewpage.flist-blue .description .bbcode-collapse:not(.collapsed) {color:#000}
 .previewpage.flist-blue .description .bbcode-collapse:not(.collapsed) .bbcode-collapse-body,
 .previewpage.flist-blue .description .bbcode-collapse:not(.collapsed) .card-body {color:#eee}
+
+.previewpage:is(.flist-blue,.flist-dark,.flist-light) .description .profile-url-link {padding:2px 2px 2px 22px;background:url('assets/flist/common_icons2.png') 1px -261px no-repeat}
+.previewpage:is(.flist-blue,.flist-dark,.flist-light) .description .profile-url-link:hover {text-decoration:none}
+.previewpage:is(.flist-blue,.flist-dark,.flist-light) .description .link-domain {font-size:.8em;color:inherit}
+.previewpage:is(.flist-blue,.flist-dark,.flist-light) .description .url-bare > .link-domain {display:none}
+.previewpage.flist-blue .description .profile-url-link {color:#fff}

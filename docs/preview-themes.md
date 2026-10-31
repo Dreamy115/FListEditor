@@ -79,3 +79,10 @@ legacy-site DOM fixture for each scheme, including open, nested and closed
 collapses and headings. `--gallery` saves all six rendered fixture screenshots
 under `dist/preview-*.png`. The regular command checks all six appearances at
 1440px, 800px and 600px without network access.
+
+Labelled URL links now include the site's chain icon and a non-clickable
+hostname suffix at 0.8em (with `www.` removed); bare site URLs omit the suffix.
+The chain sprite is bundled from
+https://static.f-list.net/images/common_icons2.png under the same F-List asset
+attribution above. Horizon appearances show their own chain glyph and muted
+hostname, including on bare URLs, following upstream `bbcode/UrlTagView.vue`.

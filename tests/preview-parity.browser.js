@@ -21,12 +21,16 @@
       host.innerHTML = '<div class="char-header">Header</div><div class="description"></div>';
       const description = host.querySelector('.description');
       description.append(FolioHorizon.render(names.map(n=>`[color=${n}][url=https://example.com]${n}[/url][/color]`).join(' ') + '[quote]Text[/quote][collapse=Title]Body[heading]Section[/heading][collapse=Nested]Inner[/collapse][/collapse][icon]Example[/icon][hr]'));
+      description.append(FolioHorizon.render('[url=https://static.f-list.net/example.png]Horizon Portrait[/url]'));
       const css = selector => getComputedStyle(host.querySelector(selector));
+      if (scheme === 'flist-blue') check(css('a[href="https://static.f-list.net/example.png"]').color === 'rgb(255, 255, 255)', 'blue uncolored URL link is white');
       names.forEach((n,i) => {
         check(css('.'+n+'Text').color === rgb(colors[i]), scheme+' '+n);
         check(css('.'+n+'Text a').color === rgb(colors[i]), scheme+' '+n+' link');
       });
       check(css('.char-header').display === 'none', scheme+' header');
+      check(css('.profile-url-link').paddingLeft === '22px', scheme+' site link icon inset');
+      check(css('.link-domain').fontSize === '9.6px', scheme+' site hostname size');
       check(css('blockquote').paddingTop === '10px' && css('blockquote').marginTop === '2px' && css('blockquote').fontStyle === 'italic' && css('blockquote').borderLeftWidth === '1px', scheme+' quote');
       check(css('.quoteHeader').fontWeight === '700', scheme+' quote title');
       check(css('.bbcode-collapse-header').fontSize === '14.4px', scheme+' collapse title size');

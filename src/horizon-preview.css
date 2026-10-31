@@ -90,6 +90,8 @@
 .previewpage:not(:is(.flist-blue,.flist-dark,.flist-light,.classic,.noir)) .description .blackText {color:#797992}
 
 .previewpage:not(:is(.flist-blue,.flist-dark,.flist-light)) .description .row > .col-12 {flex:0 0 auto;width:100%}
+.previewpage:not(:is(.flist-blue,.flist-dark,.flist-light)) .description .link-domain {color:#808080;text-shadow:none}
+.previewpage:not(:is(.flist-blue,.flist-dark,.flist-light)) .description .profile-url-link:before {content:'';display:inline-block;width:1em;height:1em;margin-right:2px;vertical-align:-.1em;background:currentColor;mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='none' stroke='black' stroke-width='3' stroke-linecap='round' d='m10 7 3-3a5 5 0 0 1 7 7l-4 4a5 5 0 0 1-7 0m5 2-3 3a5 5 0 0 1-7-7l4-4a5 5 0 0 1 7 0'/%3E%3C/svg%3E") center/contain no-repeat}
 @media(min-width:768px){
   .previewpage:not(:is(.flist-blue,.flist-dark,.flist-light)) .description .row > .col-md-4 {width:33.333333%}
   .previewpage:not(:is(.flist-blue,.flist-dark,.flist-light)) .description .row > .col-md-6 {width:50%}

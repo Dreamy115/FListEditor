@@ -36,7 +36,15 @@ class UrlTagView {
     if (!url) { el.textContent = propsData.text; return; }
     const a = document.createElement('a');
     a.href = url; a.target = '_blank'; a.rel = 'noopener noreferrer';
-    a.textContent = propsData.text; el.replaceChildren(a);
+    a.className = 'profile-url-link user-link';
+    a.textContent = propsData.text;
+    el.classList.add('profile-url');
+    // The site adds a hostname to labelled links, but not bare URLs.
+    if (safeURL(propsData.text)) el.classList.add('url-bare');
+    const suffix = document.createElement('span');
+    suffix.className = 'link-domain bbcode-pseudo';
+    suffix.textContent = ' [' + new URL(url).host.replace(/^www\./i, '') + ']';
+    el.replaceChildren(a, suffix);
   }
   $destroy() {}
 }
