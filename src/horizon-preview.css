@@ -33,3 +33,70 @@
 .description .row {display:flex;flex-wrap:wrap;gap:1em}
 .description .row > div {flex:1;min-width:0}
 @media(prefers-reduced-motion:reduce){.description .bbcode-collapse-body {transition:none}}
+
+/* Horizon character-viewer structure for the three non-site appearances.
+ * Sources: upstream _bbcode.scss, _flist_overrides.scss and Bootstrap cards.
+ * Keep these scoped: the legacy F-List schemes have different DOM metrics. */
+.previewpage:not(:is(.flist-blue,.flist-dark,.flist-light)) {
+  --horizon-panel:#282851;--horizon-text:#dfdfef;--horizon-card:#282851;
+  --horizon-border:#ffffff2d;--horizon-cap:#ffffff08;--horizon-link:#bebedf;
+  background:var(--horizon-panel);color:var(--horizon-text);border:1px solid var(--horizon-border);
+  border-radius:.5rem;padding:1rem;box-shadow:none;
+  font-family:system-ui,-apple-system,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif;
+}
+.previewpage.classic {
+  --horizon-panel:#f2f2f2;--horizon-text:#212529;--horizon-card:#f8f9fa;
+  --horizon-border:#0000002d;--horizon-cap:#00000008;--horizon-link:#333;
+  color-scheme:light;
+}
+.previewpage.noir {
+  --horizon-panel:#333;--horizon-text:#ccc;--horizon-card:#1a1a1a;
+  --horizon-link:#b3b3b3;
+}
+.previewpage:not(:is(.flist-blue,.flist-dark,.flist-light)) .char-header {display:none}
+.previewpage:not(:is(.flist-blue,.flist-dark,.flist-light)) .description {font-size:16px;line-height:1.5}
+.previewpage:not(:is(.flist-blue,.flist-dark,.flist-light)) .description .bbcode {overflow-wrap:break-word;hyphens:auto}
+.previewpage:not(:is(.flist-blue,.flist-dark,.flist-light)) .description .bbcode h2 {font-size:1.17rem;font-weight:700;line-height:1.2;color:inherit;letter-spacing:normal;margin:0 0 .5rem}
+.previewpage:not(:is(.flist-blue,.flist-dark,.flist-light)) .description strong {font-weight:bolder}
+.previewpage:not(:is(.flist-blue,.flist-dark,.flist-light)) .description a {color:var(--horizon-link);text-underline-offset:auto}
+.previewpage:not(:is(.flist-blue,.flist-dark,.flist-light)) .description a:hover {text-decoration:none}
+.previewpage:not(:is(.flist-blue,.flist-dark,.flist-light)) .description blockquote {padding:0;margin:0 0 1rem;border:0;background:transparent;color:inherit;font-style:normal;box-shadow:none}
+.previewpage:not(:is(.flist-blue,.flist-dark,.flist-light)) .description hr {margin:1rem 0;border:0;border-top:1px solid currentColor;color:inherit;opacity:.25;background:none}
+.previewpage:not(:is(.flist-blue,.flist-dark,.flist-light)) .description .bbcode-collapse {border:1px solid var(--horizon-border);border-radius:.7em;background:var(--horizon-card);color:inherit;margin:0;overflow:hidden}
+.previewpage:not(:is(.flist-blue,.flist-dark,.flist-light)) .description .bbcode-collapse-header {width:100%;min-height:0;padding:.4em 1.25rem;background:var(--horizon-cap);color:inherit;border-bottom:1px solid var(--horizon-border);font-size:inherit;line-height:inherit;border-radius:calc(.7em - 1px) calc(.7em - 1px) 0 0}
+.previewpage:not(:is(.flist-blue,.flist-dark,.flist-light)) .description .collapsed > .bbcode-collapse-header {border-radius:calc(.7em - 1px)}
+.previewpage:not(:is(.flist-blue,.flist-dark,.flist-light)) .description .bbcode-collapse-header:before {content:none}
+.previewpage:not(:is(.flist-blue,.flist-dark,.flist-light)) .description .bbcode-collapse-header > .fas {display:inline-block;width:.55em;height:.55em;border:solid currentColor;border-width:0 .15em .15em 0;transform:translateY(-.15em) rotate(45deg);vertical-align:middle}
+.previewpage:not(:is(.flist-blue,.flist-dark,.flist-light)) .description .bbcode-collapse-header > .fa-chevron-up {transform:translateY(.15em) rotate(225deg)}
+.previewpage:not(:is(.flist-blue,.flist-dark,.flist-light)) .description .card-body {padding:1rem}
+.previewpage:not(:is(.flist-blue,.flist-dark,.flist-light)) .description .indentText {padding-left:0}
+@media(min-width:768px){.previewpage:not(:is(.flist-blue,.flist-dark,.flist-light)) .description .indentText {padding-left:1%}}
+@media(min-width:992px){.previewpage:not(:is(.flist-blue,.flist-dark,.flist-light)) .description .indentText {padding-left:2%}}
+@media(min-width:1200px){.previewpage:not(:is(.flist-blue,.flist-dark,.flist-light)) .description .indentText {padding-left:5%}}
+.previewpage:not(:is(.flist-blue,.flist-dark,.flist-light)) .description .row {gap:0;margin:0 -10px}
+.previewpage:not(:is(.flist-blue,.flist-dark,.flist-light)) .description .row > div {padding:0 10px;margin-bottom:5px;flex:1 0 0}
+.previewpage.classic .description .whiteText {color:#999}
+.previewpage.classic .description .blackText {color:#191919}
+.previewpage.classic .description .grayText {color:#999}
+.previewpage.classic .description .cyanText {color:#209898}
+.previewpage.classic .description .yellowText {color:#bcab17}
+.previewpage.classic .description .pinkText {color:#da1677}
+.previewpage.classic .description .greenText {color:#036603}
+.previewpage.classic .description .blueText {color:#00f}
+.previewpage:not(:is(.flist-blue,.flist-dark,.flist-light,.classic)) .description .grayText {color:#b3b3b3}
+.previewpage:not(:is(.flist-blue,.flist-dark,.flist-light,.classic)) .description .blackText {color:#808080}
+
+.previewpage:not(:is(.flist-blue,.flist-dark,.flist-light,.classic,.noir)) .description .grayText {color:#9e9ece}
+.previewpage:not(:is(.flist-blue,.flist-dark,.flist-light,.classic,.noir)) .description .blackText {color:#797992}
+
+.previewpage:not(:is(.flist-blue,.flist-dark,.flist-light)) .description .row > .col-12 {flex:0 0 auto;width:100%}
+@media(min-width:768px){
+  .previewpage:not(:is(.flist-blue,.flist-dark,.flist-light)) .description .row > .col-md-4 {width:33.333333%}
+  .previewpage:not(:is(.flist-blue,.flist-dark,.flist-light)) .description .row > .col-md-6 {width:50%}
+  .previewpage:not(:is(.flist-blue,.flist-dark,.flist-light)) .description .row > .col-md-8 {width:66.666667%}
+}
+@media(min-width:992px){
+  .previewpage:not(:is(.flist-blue,.flist-dark,.flist-light)) .description .row > .col-lg-3 {width:25%}
+  .previewpage:not(:is(.flist-blue,.flist-dark,.flist-light)) .description .row > .col-lg-4 {width:33.333333%}
+  .previewpage:not(:is(.flist-blue,.flist-dark,.flist-light)) .description .row > .col-lg-6 {width:50%}
+}

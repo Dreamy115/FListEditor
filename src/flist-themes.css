@@ -10,8 +10,13 @@
   --flist-yellow:#ff0;--flist-green:#4f4;--flist-pink:#ffcbdb;--flist-gray:#d3d3d3;
   --flist-orange:#ffa500;--flist-purple:#e2afff;--flist-brown:#aa840c;--flist-cyan:#0ff;
 }
-:root[data-flist-scheme="flist-dark"] {--flist-black:#888;--flist-purple:#d0f}
+:root[data-flist-scheme="flist-dark"] {
+  --flist-red:#f44;--flist-blue:#1e90ff;--flist-green:#4f4;--flist-pink:#ffcbdb;
+  --flist-gray:#d3d3d3;--flist-orange:#ffa500;--flist-brown:#aa840c;
+  --flist-black:#888;--flist-purple:#d0f;
+}
 :root[data-flist-scheme="flist-light"] {
+  --flist-red:#f44;--flist-blue:#1e90ff;
   --flist-black:#000;--flist-white:#aaa;--flist-yellow:#dbb21a;--flist-green:#1fde30;
   --flist-pink:#ff89bf;--flist-gray:#777;--flist-orange:#f2951a;--flist-purple:#d0f;
   --flist-brown:#967117;--flist-cyan:#0cc;
@@ -25,35 +30,34 @@
   font-family:Verdana,Helvetica,sans-serif;
 }
 .previewpage.flist-blue {
-  --site-panel:linear-gradient(to top,#134478,#2468af);--site-text:#ccc;--site-border:#0b345f;
+  --site-panel:linear-gradient(to top,#134478,#2468af);--site-panel-color:#2468af;--site-collapse-color:transparent;--site-text:#ccc;--site-border:#0b345f;
   --site-link:#9bb7b8;--site-hover:#cbe7e8;--site-heading:#fff;--site-rule:#082d44;
-  --site-collapse:linear-gradient(to bottom,#4389cf,#13599f);--site-collapse-text:#000;
+  --site-collapse:linear-gradient(to bottom,#4389cf,#13599f);--site-collapse-open:#235a8f;--site-collapse-open-text:#eee;--site-collapse-text:#000;
   --site-quote:linear-gradient(to top,#134478,#2468af);
 }
 .previewpage.flist-dark {
-  --site-panel:#3c3636;--site-text:#999;--site-border:#4c4646;
-  --site-link:#78c624;--site-hover:#eee;--site-heading:inherit;--site-rule:#0e0808;
-  --site-collapse:#4c4646;--site-collapse-text:#999;--site-quote:#2e2828;
+  --site-panel:#3c3636;--site-panel-color:#3c3636;--site-collapse-color:#4c4646;--site-text:#999;--site-border:#4c4646;
+  --site-link:#78c624;--site-hover:#eee;--site-heading:#78c624;--site-rule:#0e0808;
+  --site-collapse:#4c4646;--site-collapse-open:#4c4646;--site-collapse-open-text:#999;--site-collapse-text:#999;--site-quote:#2e2828;
   --site-black-shadow:0 1px 2px #000;
 }
 .previewpage.flist-light {
-  --site-panel:linear-gradient(to top,#cdd,#eff);--site-text:#333;--site-border:#cdd;
-  --site-link:#7b9798;--site-hover:#bcc;--site-heading:inherit;--site-rule:#cdd;
-  --site-collapse:#fff;--site-collapse-text:#000;--site-quote:linear-gradient(to top,#cdd,#eff);
+  --site-panel:linear-gradient(to top,#cdd,#eff);--site-panel-color:#eff;--site-collapse-color:#fff;--site-text:#333;--site-border:#cdd;
+  --site-link:#7b9798;--site-hover:#bcc;--site-heading:#478;--site-rule:#cdd;
+  --site-collapse:#fff;--site-collapse-open:#fff;--site-collapse-open-text:#000;--site-collapse-text:#000;--site-quote:linear-gradient(to top,#cdd,#eff);
   --site-text-shadow:none;--site-black-shadow:none;
   color-scheme:light;
 }
 .previewpage:is(.flist-blue,.flist-dark,.flist-light) .description {font-size:12px;line-height:normal}
-.previewpage:is(.flist-blue,.flist-dark,.flist-light) .description .bbcode h2 {color:var(--site-heading);font-size:1.5em;margin:5px 0 0;line-height:normal;letter-spacing:normal}
-.previewpage.flist-blue .description .bbcode h2 {text-shadow:0 1px 1px #06121f}
+.previewpage:is(.flist-blue,.flist-dark,.flist-light) .description .bbcode h2 {color:var(--site-heading);font-size:1.17em;margin:10px 0;line-height:normal;letter-spacing:normal}
+.previewpage.flist-blue .description .bbcode h2 {text-shadow:none}
 .previewpage:is(.flist-blue,.flist-dark,.flist-light) .description a {color:var(--site-link)}
 .previewpage:is(.flist-blue,.flist-dark,.flist-light) .description a:hover {color:var(--site-hover)}
 .previewpage:is(.flist-blue,.flist-dark,.flist-light) .description hr {border-color:var(--site-rule);background-color:var(--site-rule)}
 .previewpage:is(.flist-blue,.flist-dark,.flist-light) .description blockquote {background:var(--site-quote);border-color:var(--site-border);color:var(--site-text)}
 .previewpage:is(.flist-blue,.flist-dark,.flist-light) .description .bbcode-collapse {border-color:var(--site-border)}
 .previewpage:is(.flist-blue,.flist-dark,.flist-light) .description .bbcode-collapse-header {background:var(--site-collapse);color:var(--site-collapse-text)}
-.previewpage.flist-blue .description .collapsed > .bbcode-collapse-header {text-shadow:0 1px 2px #ffffff80}
-.previewpage.flist-blue .description .bbcode-collapse:not(.collapsed) > .bbcode-collapse-header {color:#fff;text-shadow:none}
+.previewpage.flist-blue .description .bbcode-collapse:not(.collapsed) > .bbcode-collapse-header {color:#eee;text-shadow:none}
 .previewpage:is(.flist-blue,.flist-dark,.flist-light) .char-header small {color:var(--site-text)}
 .previewpage:is(.flist-blue,.flist-dark,.flist-light) .description .placeholder-image {color:var(--site-text);border-color:var(--site-border)}
 .previewpage:is(.flist-blue,.flist-dark,.flist-light) .description :is(.redText,.blueText,.whiteText,.blackText,.yellowText,.greenText,.pinkText,.grayText,.orangeText,.purpleText,.brownText,.cyanText) {text-shadow:var(--site-text-shadow)}
@@ -70,3 +74,47 @@
 .previewpage:is(.flist-blue,.flist-dark,.flist-light) .description .purpleText, .previewpage:is(.flist-blue,.flist-dark,.flist-light) .description .purpleText a {color:var(--site-purple)}
 .previewpage:is(.flist-blue,.flist-dark,.flist-light) .description .brownText, .previewpage:is(.flist-blue,.flist-dark,.flist-light) .description .brownText a {color:var(--site-brown)}
 .previewpage:is(.flist-blue,.flist-dark,.flist-light) .description .cyanText, .previewpage:is(.flist-blue,.flist-dark,.flist-light) .description .cyanText a {color:var(--site-cyan)}
+
+/* Profile geometry from the public site's shared CSS; scoped to site schemes. */
+.previewpage:is(.flist-blue,.flist-dark,.flist-light) {padding:10px;border-radius:5px;box-shadow:none}
+.previewpage:is(.flist-blue,.flist-dark,.flist-light) .char-header {display:none}
+.previewpage.flist-light {background:url('assets/flist/toplight.png') top left repeat-x,var(--site-panel)}
+.previewpage:is(.flist-blue,.flist-dark,.flist-light) .description .bbcode,
+.previewpage:is(.flist-blue,.flist-dark,.flist-light) .description .bbcode * {box-sizing:content-box}
+.previewpage:is(.flist-blue,.flist-dark,.flist-light) .description strong {font-weight:bold}
+.previewpage:is(.flist-blue,.flist-dark,.flist-light) .description :is(span,a,strong,em,u,s,sub,img) {vertical-align:baseline}
+.previewpage:is(.flist-blue,.flist-dark,.flist-light) .description sup {vertical-align:top}
+.previewpage:is(.flist-blue,.flist-dark,.flist-light) .description a {text-underline-offset:auto}
+.previewpage:is(.flist-blue,.flist-dark,.flist-light) .description blockquote {padding:10px;margin:2px;font-style:italic;border:1px solid var(--site-border);box-shadow:0 0 1px #111}
+.previewpage:is(.flist-blue,.flist-light) .description blockquote {border-radius:5px}
+.previewpage.flist-dark .description blockquote {border-color:#3e3838}
+.previewpage:is(.flist-blue,.flist-dark,.flist-light) .description .quoteHeader {font-weight:bold;margin-bottom:5px}
+.previewpage:is(.flist-blue,.flist-dark,.flist-light) .description hr {display:block;height:0;margin:.5em auto;border:1px solid var(--site-rule);color:var(--site-rule)}
+.previewpage:is(.flist-blue,.flist-dark,.flist-light) .description .character-avatar.icon {width:50px;height:50px;margin-right:2px;border:0}
+/* F-List paints and pads the whole collapse, including the expanded body. */
+.previewpage:is(.flist-blue,.flist-dark,.flist-light) .description .bbcode-collapse {border:0;border-radius:0;overflow:visible;margin:0;padding:3px 0 4px 25px;font-size:1.2em;font-weight:bold;min-height:10px;background:url('assets/flist/chevron-expand.png') 5px 5px no-repeat,var(--site-collapse);color:var(--site-collapse-text)}
+.previewpage:is(.flist-blue,.flist-dark,.flist-light) .description .bbcode-collapse:not(.collapsed) {background: url('assets/flist/chevron.png') 5px 5px no-repeat var(--site-collapse-open);color:var(--site-collapse-open-text)}
+.previewpage:is(.flist-blue,.flist-dark,.flist-light) .description .bbcode-collapse > .bbcode-collapse-header {padding:0 15px 0 0;min-height:15px;font-size:inherit;font-weight:inherit;background:none;border:0;border-radius:0;box-shadow:none;color:inherit}
+.previewpage:is(.flist-blue,.flist-dark,.flist-light) .description .bbcode-collapse-header:before {content:none}
+.previewpage:is(.flist-blue,.flist-dark,.flist-light) .description .bbcode-collapse-header > .fas {display:none}
+.previewpage:is(.flist-blue,.flist-light) .description .bbcode-collapse {border-radius:5px}
+.previewpage.flist-blue .description .bbcode-collapse {border:1px solid #2369af;box-shadow:0 1px 1px #03498f;text-shadow:0 1px 2px #fff}
+.previewpage.flist-blue .description .bbcode-collapse:not(.collapsed) {text-shadow:none}
+.previewpage.flist-blue .description .bbcode-collapse:not(.collapsed) .bbcode-collapse {color:#eee;text-shadow:none}
+.previewpage.flist-blue .description .bbcode-collapse:not(.collapsed) .bbcode-collapse-header {text-shadow:none}
+.previewpage:is(.flist-blue,.flist-dark,.flist-light) .description .bbcode-collapse-body {margin:0;font-size:12px;font-weight:normal;text-shadow:none}
+.previewpage:is(.flist-blue,.flist-dark,.flist-light) .description .card-body {padding:0;margin:10px 10px 10px 0}
+.previewpage:is(.flist-blue,.flist-dark,.flist-light) .description .indentText {padding-left:3em}
+
+.previewpage:is(.flist-blue,.flist-dark,.flist-light) .description :is(.redText,.blueText,.whiteText,.yellowText,.greenText,.pinkText,.grayText,.orangeText,.purpleText,.brownText,.cyanText) a {text-shadow:var(--site-text-shadow)}
+.previewpage:is(.flist-blue,.flist-dark,.flist-light) .description .blackText a {text-shadow:var(--site-black-shadow)}
+.previewpage.flist-light .description * {text-shadow:none !important}
+
+.previewpage:is(.flist-blue,.flist-dark,.flist-light) {background-color:var(--site-panel-color)}
+.previewpage:is(.flist-blue,.flist-dark,.flist-light) .description .bbcode-collapse.collapsed {background-color:var(--site-collapse-color)}
+.previewpage.flist-dark .description .bbcode-collapse {border-radius:5px}
+
+/* ExpandedHeader keeps its own text black; its child divs become light. */
+.previewpage.flist-blue .description .bbcode-collapse:not(.collapsed) {color:#000}
+.previewpage.flist-blue .description .bbcode-collapse:not(.collapsed) .bbcode-collapse-body,
+.previewpage.flist-blue .description .bbcode-collapse:not(.collapsed) .card-body {color:#eee}

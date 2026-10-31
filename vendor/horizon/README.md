@@ -22,3 +22,10 @@ unavailable. External URL images remain a Folio extension. Horizon's parser
 and standard profile tag rules otherwise run directly, including nesting limits
 and literal noparse behavior. CSS is scoped and adapted to Folio's preview;
 this does not reproduce an entire Horizon theme or authenticated client state.
+
+The non-site profile appearances adapt Horizon character-viewer styling from
+`scss/_bbcode.scss`, `scss/_flist_overrides.scss`, `scss/_character_page.scss`,
+`scss/_core.scss`, and `scss/themes/variables/*_{variables,derived}.scss` at the
+same pinned revision, together with Bootstrap 5 card/reboot/type metrics.
+Horizon Default, Light, and Dark map to the saved Folio appearance IDs `default`,
+`classic`, and `noir`. The F-List site schemes use separate legacy-site rules.

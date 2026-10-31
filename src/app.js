@@ -110,9 +110,9 @@ function validateCustomTemplates(records){
   seen.add(record.id);return true;
  }).slice(0,100).map(record=>({id:record.id,name:record.name.trim().slice(0,100),content:record.content}));
 }
-let data={customTemplates:[],drafts:[{id:makeId(),name:'New Character',content:intro}],active:null,theme:'flist-blue',editorTheme:'folio',previewFontSize:'16',splitRatio:.524,previewNoteDismissed:false,preferLiterals:true,mixed:true};
+let data={customTemplates:[],drafts:[{id:makeId(),name:'New Character',content:intro}],active:null,theme:'flist-blue',editorTheme:'folio',previewFontSize:'site',splitRatio:.524,previewNoteDismissed:false,preferLiterals:true,mixed:true};
 data.active=data.drafts[0].id;
-try{const loaded=JSON.parse(localStorage.getItem(STORAGE));if(loaded&&Array.isArray(loaded.drafts)&&loaded.drafts.length){const valid=loaded.drafts.filter(d=>typeof d.id==='string'&&typeof d.name==='string'&&typeof d.content==='string').slice(0,80);if(valid.length){data={customTemplates:validateCustomTemplates(loaded.customTemplates),drafts:valid,active:valid.some(d=>d.id===loaded.active)?loaded.active:valid[0].id,editorTheme:['folio','graphite','forest','paper'].includes(loaded.editorTheme)?loaded.editorTheme:'folio',theme:Array.from($('theme').options).some(option=>option.value===loaded.theme)?loaded.theme:'flist-blue',previewFontSize:parsePreviewFontSize(loaded.previewFontSize)||'16',splitRatio:typeof loaded.splitRatio==='number'&&Number.isFinite(loaded.splitRatio)?Math.max(.25,Math.min(.75,loaded.splitRatio)):.524,previewNoteDismissed:loaded.previewNoteDismissed===true,preferLiterals:loaded.preferLiterals!==false,mixed:loaded.mixed!==false}}}}catch(e){}
+try{const loaded=JSON.parse(localStorage.getItem(STORAGE));if(loaded&&Array.isArray(loaded.drafts)&&loaded.drafts.length){const valid=loaded.drafts.filter(d=>typeof d.id==='string'&&typeof d.name==='string'&&typeof d.content==='string').slice(0,80);if(valid.length){data={customTemplates:validateCustomTemplates(loaded.customTemplates),drafts:valid,active:valid.some(d=>d.id===loaded.active)?loaded.active:valid[0].id,editorTheme:['folio','graphite','forest','paper'].includes(loaded.editorTheme)?loaded.editorTheme:'folio',theme:Array.from($('theme').options).some(option=>option.value===loaded.theme)?loaded.theme:'flist-blue',previewFontSize:parsePreviewFontSize(loaded.previewFontSize)||'site',splitRatio:typeof loaded.splitRatio==='number'&&Number.isFinite(loaded.splitRatio)?Math.max(.25,Math.min(.75,loaded.splitRatio)):.524,previewNoteDismissed:loaded.previewNoteDismissed===true,preferLiterals:loaded.preferLiterals!==false,mixed:loaded.mixed!==false}}}}catch(e){}
 let saveTimer=null,toastTimer=null;
 let templateSession=null,editorLoaded=false;
 const templateEditors=new Map(),characterEditors=new Map();
@@ -1234,7 +1234,7 @@ $('appDataImport').addEventListener('change',async event=>{
 $('purgeData').addEventListener('click',()=>requestConfirmation('Permanently delete ALL locally saved characters, templates and settings, including unsaved edits? Export all data first to keep a backup.',()=>{
  try{localStorage.removeItem(STORAGE)}catch(error){toast('Could not delete local data');return}
  const draft={id:makeId(),name:'New Character',content:''};
- replaceAppData({customTemplates:[],drafts:[draft],active:draft.id,theme:'flist-blue',editorTheme:'folio',previewFontSize:'16',splitRatio:.524,previewNoteDismissed:false,preferLiterals:true,mixed:true});
+ replaceAppData({customTemplates:[],drafts:[draft],active:draft.id,theme:'flist-blue',editorTheme:'folio',previewFontSize:'site',splitRatio:.524,previewNoteDismissed:false,preferLiterals:true,mixed:true});
  clearTimeout(saveTimer);
  try{localStorage.removeItem(STORAGE);$('saveStatus').textContent='Local data purged'}catch(error){toast('Could not delete local data');return}
  toast('All local app data purged');
