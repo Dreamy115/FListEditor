@@ -244,6 +244,8 @@ function decompileFonts(text,escapePlain){
    if(next&&!style){
     const previous=[...buffer];let start=previous.length;
     while(start>0&&unchanged(previous[start-1],next))start--;
+    // Leading spacing and symbols are decorations, not evidence of a font run.
+    while(start<previous.length&&/[\p{Z}\p{S}\t]/u.test(previous[start]))start++;
     prefix=previous.slice(start).join('');buffer=previous.slice(0,start).join('');
    }
    flush();style=next;buffer=prefix;

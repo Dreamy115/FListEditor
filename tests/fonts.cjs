@@ -69,7 +69,7 @@ for(const name of ['smallcaps','bold','doublestruck','italic','bolditalic','sans
   assert.equal(context.bbcodeToMarkdown(input),'plain{font:'+name+'|a'+space+'b}tail');
   assert.equal(context.markdownToBB(context.bbcodeToMarkdown(input)),input);
  }
- assert.equal(context.bbcodeToMarkdown(a+' plain '+b),'{font:'+name+'|a} plain{font:'+name+'| b}');
+ assert.equal(context.bbcodeToMarkdown(a+' plain '+b),'{font:'+name+'|a} plain {font:'+name+'|b}');
  assert.equal(context.bbcodeToMarkdown(a+'\n'+b),':::font '+name+'\na\nb\n:::');
 }
 assert.equal(context.bbcodeToMarkdown(context.applyFont('a','bold')+' '+context.applyFont('b','italic')),'{font:bold|a} {font:italic|b}');
@@ -112,3 +112,13 @@ assert.equal(context.markdownToBB(context.bbcodeToMarkdown(notes)),notes);
 assert.equal(context.bbcodeToMarkdown('\u1d00 \u25ba '),'{font:smallcaps|a} \u25ba ');
 assert.equal(context.bbcodeToMarkdown('\u1d00 \u25ba \u0299'),'{font:smallcaps|a \u25ba b}');
 console.log('Trailing font symbols and spaces stay outside recovered macros');
+
+for(const name of Object.keys(vm.runInContext('fontStyles',context))){
+ for(const prefix of ['◆ ','  ','😀\t']){
+  const input='[big]'+prefix+context.applyFont('Lucas',name)+' ◆[/big]';
+  const decoded=context.bbcodeToMarkdown(input);
+  assert.equal(decoded,'{big|'+prefix+'{font:'+name+'|Lucas} ◆}');
+  assert.equal(context.markdownToBB(decoded),input);
+ }
+}
+console.log('Leading font decorations stay outside recovered macros');
