@@ -30,7 +30,6 @@
 .editor-shell .editor{position:relative;z-index:1;flex:1;min-width:0;background:transparent;color:transparent;caret-color:#f1edff;border-color:#393c50;-webkit-text-fill-color:transparent}
 .editor-shell .editor::placeholder{color:#787d97;-webkit-text-fill-color:#787d97}
 .editor-shell .editor::selection{background:#8b75dc66;color:transparent}
-.syntax-tag{color:#9bdcff}.syntax-macro{color:#d2b3ff}.syntax-marker{color:#ffe09c}.syntax-emphasis{color:#ffc3dc}.syntax-link{color:#80dccb}.syntax-literal{color:#bfd3af}.syntax-escape{color:#ffe09c}
 @media(forced-colors:active){.editor-highlights{display:none}.editor-shell .editor{color:CanvasText;-webkit-text-fill-color:CanvasText;caret-color:CanvasText}}
 
 .editor-shell{--gutter-width:3ch}
@@ -39,7 +38,7 @@
 #sourceLineNumbers{position:absolute;inset:0 0 auto 0}
 .source-line-number{position:absolute;right:7px;color:#a0a9c8;text-align:right}
 .source-line-number.active{color:#ddd4ff}
-.syntax-block{color:#77f0dd}.syntax-macro{color:#d2b3ff}
+
 .syntax-unmatched{text-decoration:underline dotted #e89999;text-underline-offset:3px}
 
 /* Adjustable split, with a keyboard-accessible drag handle. */
@@ -58,30 +57,51 @@
 .custom-template-heading{margin-top:22px}
 .custom-template-list{display:grid;gap:5px}
 .custom-template-row{display:flex;min-width:0;border:1px solid #3d425a;border-radius:7px;overflow:hidden}
-.custom-template-apply,.custom-template-edit{background:#202436;color:#dce0f2;border:0;padding:8px;font-size:11px;text-align:left}
-.custom-template-apply{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.custom-template-edit{border-left:1px solid #3d425a;color:#c8b6ff}
-.custom-template-apply:hover,.custom-template-edit:hover{background:#343a54}
+.custom-template-open{background:#202436;color:#dce0f2;border:0;padding:8px;font-size:11px;text-align:left}
+.custom-template-open{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.custom-template-open:hover{background:#343a54}
 .manage-templates{width:100%;margin-top:10px;padding:8px;font-size:11px}
-.template-manager{width:min(760px,calc(100vw - 32px));max-height:90vh;padding:22px;border:1px solid #686080;border-radius:12px;background:#191d2c;color:#edeef7;box-shadow:0 20px 70px #0009}
-.template-manager[open]{display:flex;flex-direction:column;gap:9px}
-.template-manager::backdrop{background:#060810b3}
-.template-manager-head{display:flex;align-items:center;justify-content:space-between;gap:12px}
-.template-manager h2{font-size:19px;margin:0}
-.template-manager p{margin:0 0 5px}
-.template-manager label{font-size:12px;color:#c9cce0;font-weight:650}
-.template-manager input,.template-manager select,.template-manager textarea{width:100%;background:#10131f;color:#e5e7f7;border:1px solid #4b516c;border-radius:7px;padding:9px}
-.template-manager textarea{flex:1;min-height:180px;height:32vh;resize:vertical;font:13px/1.6 ui-monospace,SFMono-Regular,Consolas,monospace;tab-size:2}
-.template-manager-tools{display:flex;align-items:center;flex-wrap:wrap;gap:8px}
-.template-manager-tools .btn{padding:8px 11px}
 #templateStatus{font-size:11px;color:#c4c9df}
-.template-confirm{display:flex;align-items:center;flex-wrap:wrap;gap:8px;padding:10px;background:#332b41;border:1px solid #8b749e;border-radius:7px;font-size:12px}
-.template-confirm span{flex:1;min-width:180px}
-.template-confirm[hidden]{display:none}
 @media(max-width:940px){.custom-template-list,.custom-template-heading,.manage-templates{display:none}}
 
 .source-section-tint{position:absolute;inset:1px;overflow:hidden;pointer-events:none;border-radius:10px}
 .source-section-tint[hidden]{display:none}
-.source-section-band{position:absolute;left:var(--gutter-width);right:0;background:#b6a0ff14}
-.syntax-active-delimiter{background:#e8e1ff14;text-shadow:0 0 4px #eee7ff40;border-radius:2px}
+.source-section-band{position:absolute;left:var(--gutter-width);right:0}
+.syntax-active-delimiter{border-radius:2px}
 @media(forced-colors:active){.source-section-tint{display:none}}
+
+.template-editor-controls{display:flex;align-items:center;flex-wrap:wrap;gap:8px;padding:12px 20px;background:#252238;border-bottom:1px solid #625781}
+.template-editor-controls label{font-size:12px;font-weight:650;color:#ded6f5}
+.template-editor-controls select{flex:1;min-width:120px;background:#141724;color:#edeef7;border:1px solid #686080;border-radius:7px;padding:6px 8px;font-size:12px}
+.template-editor-tools{display:flex;gap:6px;flex-wrap:wrap;width:100%}
+.template-editor-tools .btn{font-size:11px;padding:6px 9px}
+#templateStatus{font-size:11px;color:#d1c7e9}
+.template-editor-controls[hidden],#backToProfile[hidden],#deleteDraft[hidden]{display:none!important}
+
+.custom-template-open.active,.template.active{background:#38304d;color:#f2eaff}
+
+.template-target-controls{display:flex;align-items:center;flex-wrap:wrap;gap:8px;width:100%}.template-target-controls .btn{padding:6px 11px;font-size:11px}.template-target-controls select{min-width:140px}
+
+
+.editor-title{flex:1;min-width:0}
+.editor-actions{display:flex;flex:none;align-items:center;gap:6px}
+.editor-actions .btn{padding:8px 10px;white-space:nowrap}
+.pvcontrols{justify-content:flex-start;align-items:flex-end;gap:12px 18px}
+.preview-setting{display:flex;flex-direction:column;gap:5px;min-width:0}
+.preview-appearance{flex:1 1 170px}
+.preview-text-size{flex:0 0 100px}
+.preview-setting select,.preview-setting #previewFontSize{width:100%;height:32px}
+@media(max-width:940px){.topbar{gap:8px}.editor-actions{gap:4px}.editor-actions .btn{padding:7px 8px}}
+
+
+
+.pvhead{height:auto;min-height:90px;flex-wrap:wrap;gap:10px}
+.app-appearance{display:flex;flex-direction:column;align-items:flex-end;gap:5px;flex:0 1 155px;min-width:120px;margin-left:auto}
+.app-appearance label{font-size:11px;color:var(--muted)}
+.app-appearance select{width:100%;border:1px solid var(--line);background:var(--surface2);color:var(--text);border-radius:7px;padding:6px 8px;font-size:11px}
+@media(max-width:940px){.pvhead{min-height:76px}}
+@media(max-width:660px){.pvhead{min-height:65px}}
+
+.mark svg{display:block;width:22px;height:24px}.char-avatar svg{display:block;width:24px;height:24px}
+
+.frame{overflow-anchor:none}

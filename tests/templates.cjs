@@ -16,3 +16,16 @@ assert.deepEqual(validate([
 assert.equal(validate([{id:'long',name:'x'.repeat(120),content:''}])[0].name.length, 100);
 assert.equal(validate(Array.from({length:110}, (_,i) => ({id:String(i),name:'Template '+i,content:''}))).length, 100);
 console.log('Custom template storage validation checks passed');
+
+// Sidebar labels must render names exactly, without decorative prefixes or
+// stripping question marks that are part of the user's actual character name.
+const {document} = require('linkedom').parseHTML('<div id="draftList"></div>');
+const drafts = [{id:'one',name:'Character'}, {id:'two',name:'?User-chosen name'}];
+let selected;
+const renderContext = vm.createContext({document, data:{drafts,active:'one'}, templateSession:null,
+  $:id=>document.getElementById(id), loadDraft:id=>{selected=id}, renderTemplateTargets:()=>{}});
+vm.runInContext(app.slice(app.indexOf('function renderDrafts()'), app.indexOf('function stashEditor()')), renderContext);
+renderContext.renderDrafts();
+assert.deepEqual([...document.querySelectorAll('.draft span')].map(el=>el.textContent), drafts.map(d=>d.name));
+document.querySelectorAll('.draft')[1].click();
+assert.equal(selected, 'two');

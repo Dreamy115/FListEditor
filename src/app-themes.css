@@ -1,0 +1,67 @@
+/* App chrome presets. The Folio preset deliberately retains the original CSS.
+ * Profile preview palettes remain independent of the application appearance. */
+:root[data-app-theme="graphite"]{
+ --bg:#101113;--surface:#17181b;--surface2:#202226;--line:#34373d;--text:#e7e9ed;--muted:#a2a8b2;--accent:#9bbbf0;--accent2:#98c4ba;
+ --ui-sidebar:#151619;--ui-header:#17191c;--ui-toolbar:#1b1d21;--ui-input:#111315;--ui-control:#272a30;--ui-active:#39485f;--ui-border:#454b56;--ui-hover:#353a43;--ui-confirm:#33352b;--ui-primary-text:#111a27;
+ --ui-brand:linear-gradient(135deg,#b6d0f1,#84aaa8);--ui-primary:linear-gradient(135deg,#b6d0f1,#8ba8cf);--ui-glow:none;color-scheme:dark;
+}
+:root[data-app-theme="paper"]{
+ --bg:#ede9e1;--surface:#f8f5ef;--surface2:#fffdf8;--line:#d1ccc1;--text:#30343d;--muted:#666b73;--accent:#70539d;--accent2:#386d65;
+ --ui-sidebar:#eee9df;--ui-header:#f7f3ea;--ui-toolbar:#f3efe6;--ui-input:#fffdf8;--ui-control:#eee8dc;--ui-active:#e1d7ed;--ui-border:#bdb5a7;--ui-hover:#e5ddcf;--ui-confirm:#f1e5c9;--ui-primary-text:#fff;
+ --ui-brand:linear-gradient(135deg,#c7b4e1,#a6cfc3);--ui-primary:linear-gradient(135deg,#8064a7,#655085);--ui-glow:none;color-scheme:light;
+}
+:root[data-app-theme="forest"]{
+ --bg:#0c1916;--surface:#14251e;--surface2:#1d3027;--line:#345442;--text:#e0e8d8;--muted:#a5b8a5;--accent:#d5bd81;--accent2:#9bcfba;
+ --ui-sidebar:#102018;--ui-header:#152a21;--ui-toolbar:#192d22;--ui-input:#0d1d16;--ui-control:#263e2d;--ui-active:#475135;--ui-border:#5b7050;--ui-hover:#354c35;--ui-confirm:#3d4028;--ui-primary-text:#1d2819;
+ --ui-brand:linear-gradient(135deg,#e3cc8c,#87c4a8);--ui-primary:linear-gradient(135deg,#e3cc8c,#a7bd79);--ui-glow:radial-gradient(ellipse,#99aa5426,transparent 65%);color-scheme:dark;
+}
+html[data-app-theme]:not([data-app-theme="folio"]) body{background:var(--bg);color:var(--text)}
+html[data-app-theme]:not([data-app-theme="folio"]) body:before{background:var(--ui-glow)}
+html[data-app-theme]:not([data-app-theme="folio"]) :is(.sidebar,.previewarea){background:var(--ui-sidebar)}
+html[data-app-theme]:not([data-app-theme="folio"]) :is(.topbar,.pvhead){background:var(--ui-header);border-color:var(--line)}
+html[data-app-theme]:not([data-app-theme="folio"]) :is(.toolbar,.actionbar,.sourcebar,.template-editor-controls){background:var(--ui-toolbar);border-color:var(--line)}
+html[data-app-theme]:not([data-app-theme="folio"]) :is(.sidebar,.workspace,.brand,.side-bottom,.pvfoot){border-color:var(--line)}
+html[data-app-theme]:not([data-app-theme="folio"]) :is(.eyebrow,.caps,.side-bottom,.sourcebar span,.statusbar,.pvfoot,.inline-tip,.tool-label,.palette-hint,.notice,.pvcontrols label,#templateStatus,.template-editor-controls label){color:var(--muted)}
+html[data-app-theme]:not([data-app-theme="folio"]) :is(.sourcebar strong,.guide-head strong,.example-card h4,.previewhelp strong){color:var(--text)}
+html[data-app-theme]:not([data-app-theme="folio"]) :is(.btn,.pill,.tool,.palette-option,.newbtn,.guide-close,.guide-tabs button,.custom-template-open){background:var(--ui-control);color:var(--text);border-color:var(--ui-border)}
+html[data-app-theme]:not([data-app-theme="folio"]) :is(.btn,.pill,.tool,.palette-option,.newbtn,.guide-close,.guide-tabs button,.custom-template-open):hover{background:var(--ui-hover)}
+html[data-app-theme]:not([data-app-theme="folio"]) .btn.quiet{background:transparent;color:var(--muted)}
+html[data-app-theme]:not([data-app-theme="folio"]) .btn.quiet:hover{background:var(--ui-hover);color:var(--text)}
+html[data-app-theme]:not([data-app-theme="folio"]) .btn.primary{background:var(--ui-primary);color:var(--ui-primary-text);border-color:var(--accent);box-shadow:none}
+html[data-app-theme]:not([data-app-theme="folio"]) :is(select,input:not(#source)){background:var(--ui-input);color:var(--text);border-color:var(--ui-border)}
+html[data-app-theme]:not([data-app-theme="folio"]) .titlefield{background:transparent}
+html[data-app-theme]:not([data-app-theme="folio"]) .titlefield:focus{background:var(--ui-input);border-color:var(--accent)}
+html[data-app-theme]:not([data-app-theme="folio"]) :is(.draft,.template){color:var(--muted)}
+html[data-app-theme]:not([data-app-theme="folio"]) :is(.draft,.template):hover{background:var(--ui-hover);color:var(--text)}
+html[data-app-theme]:not([data-app-theme="folio"]) :is(.draft.active,.template.active,.custom-template-open.active,.guide-tabs button.active,.seg button.active){background:var(--ui-active);color:var(--text);border-color:var(--accent)}
+html[data-app-theme]:not([data-app-theme="folio"]) :is(.template small,.draft small,.guide-head p,.example-card p,.example-footer span,.seg button){color:var(--muted)}
+html[data-app-theme]:not([data-app-theme="folio"]) :is(.seg,.guide-panel,.previewhelp,.example-card,.toast){background:var(--surface2);color:var(--text);border-color:var(--ui-border)}
+html[data-app-theme]:not([data-app-theme="folio"]) .example-card pre{background:var(--ui-input);color:var(--text)}
+html[data-app-theme]:not([data-app-theme="folio"]) .example-footer button{background:var(--ui-active);color:var(--text);border-color:var(--ui-border)}
+html[data-app-theme]:not([data-app-theme="folio"]) .confirmbar{background:var(--ui-confirm);color:var(--text);border-color:var(--ui-border)}
+html[data-app-theme]:not([data-app-theme="folio"]) .mark{background:var(--ui-brand);color:var(--ui-primary-text)}
+html[data-app-theme]:not([data-app-theme="folio"]) .template .emoji{background:var(--ui-control)}
+html[data-app-theme]:not([data-app-theme="folio"]) .side-bottom a{color:var(--accent)}
+html[data-app-theme]:not([data-app-theme="folio"]) .live{color:var(--accent2)}
+html[data-app-theme]:not([data-app-theme="folio"]) .live:before{background:var(--accent2);box-shadow:none}
+html[data-app-theme]:not([data-app-theme="folio"]) .pane-divider{background:var(--ui-toolbar)}
+html[data-app-theme]:not([data-app-theme="folio"]) .pane-divider:before{background:var(--ui-border)}
+html[data-app-theme]:not([data-app-theme="folio"]) .pane-divider:hover:before,html[data-app-theme]:not([data-app-theme="folio"]) .pane-divider:focus-visible:before{background:var(--accent)}
+html[data-app-theme]:not([data-app-theme="folio"]) .preview-note-close{color:var(--muted)}
+html[data-app-theme]:not([data-app-theme="folio"]) .preview-note-close:hover{color:var(--text);background:var(--ui-hover)}
+
+:root[data-app-theme="paper"] .mark{color:#433752}
+
+/* Give duplication/deletion clear affordances in every app palette. */
+:root{--clone-bg:#39324f;--clone-border:#8e7cb9;--clone-text:#eee5ff;--clone-hover:#494060;--delete-bg:#412a35;--delete-border:#a36175;--delete-text:#ffd1da;--delete-hover:#563441}
+:root[data-app-theme="graphite"]{--clone-bg:#29394f;--clone-border:#728fb9;--clone-text:#deebff;--clone-hover:#354a66;--delete-bg:#3d2b31;--delete-border:#a36d7a;--delete-text:#ffd7df;--delete-hover:#523840}
+:root[data-app-theme="paper"]{--clone-bg:#e8def3;--clone-border:#9677b4;--clone-text:#52346f;--clone-hover:#dac9eb;--delete-bg:#f6e2e1;--delete-border:#bb7776;--delete-text:#8a3335;--delete-hover:#efd0cf}
+:root[data-app-theme="forest"]{--clone-bg:#394b31;--clone-border:#9baf73;--clone-text:#e9f1ce;--clone-hover:#4b603d;--delete-bg:#453329;--delete-border:#ac7e63;--delete-text:#ffddc6;--delete-hover:#5b4233}
+html .btn.clone-button{background:var(--clone-bg);border-color:var(--clone-border);color:var(--clone-text);box-shadow:0 1px 3px #0002}
+html .btn.clone-button:hover{background:var(--clone-hover);border-color:var(--clone-text)}
+html .btn.delete-button{background:var(--delete-bg);border-color:var(--delete-border);color:var(--delete-text);box-shadow:0 1px 3px #0002}
+html .btn.delete-button:hover{background:var(--delete-hover);border-color:var(--delete-text)}
+html[data-app-theme]:not([data-app-theme="folio"]) .btn.clone-button{background:var(--clone-bg);border-color:var(--clone-border);color:var(--clone-text)}
+html[data-app-theme]:not([data-app-theme="folio"]) .btn.clone-button:hover{background:var(--clone-hover);border-color:var(--clone-text)}
+html[data-app-theme]:not([data-app-theme="folio"]) .btn.delete-button{background:var(--delete-bg);border-color:var(--delete-border);color:var(--delete-text)}
+html[data-app-theme]:not([data-app-theme="folio"]) .btn.delete-button:hover{background:var(--delete-hover);border-color:var(--delete-text)}

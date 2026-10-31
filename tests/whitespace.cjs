@@ -127,3 +127,26 @@ for(const literal of ['# Literal heading', '> Literal quote', '- Literal bullet'
  const bbcode='[quote]'+literal+'[/quote]';
  assert.equal(compile(context.bbcodeToMarkdown(bbcode)),bbcode);
 }
+
+const listCases = [
+ ['• Parent\n  • Child\n    • Grandchild\n• Next', '- Parent\n  - Child\n    - Grandchild\n- Next'],
+ ['1. Parent\n   1. Child\n      12. Grandchild\n2. Next', '1. Parent\n   1. Child\n      12. Grandchild\n2. Next'],
+ ['• Parent\n\t• Child\n\t\t1. Numbered\n\t\t2. Next', '- Parent\n\t- Child\n\t\t1. Numbered\n\t\t2. Next'],
+ ['  •  Spaced\n\t•\tTabbed\n    • ', '  -  Spaced\n\t-\tTabbed\n    - '],
+ ['• [b]Bold[/b]\n  3. [i]Italic[/i]', '- **Bold**\n  3. *Italic*'],
+ ['• Parent\n\n  continuation text\n  • Child\n', '- Parent\n\n  continuation text\n  - Child\n'],
+ ['[quote]• Parent\n  • Child\n  1. Ordered[/quote]', '> - Parent\n>   - Child\n>   1. Ordered']
+];
+for(const [bbcode, markdown] of listCases){
+ assert.equal(context.bbcodeToMarkdown(bbcode),markdown,'Editable indented list');
+ assert.equal(compile(markdown),bbcode,'List whitespace preserved');
+}
+for(const bbcode of [
+ '[indent]• Parent\n  • Child\n  1. Ordered[/indent]',
+ '[center]• First\n  • [b]Child[/b][/center]',
+ '[color=cyan]• First\n  • Second[/color]',
+ '[noparse]• literal\n  1. literal[/noparse]',
+ 'Mid-sentence • stays literal',
+ '0. Zero\n  42. No renumbering'
+])assert.equal(compile(context.bbcodeToMarkdown(bbcode)),bbcode);
+assert.equal(context.preferStandardMarkdown('```\n• literal\n```'),'```\n• literal\n```');

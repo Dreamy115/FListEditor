@@ -109,18 +109,20 @@ function validateCustomTemplates(records){
   seen.add(record.id);return true;
  }).slice(0,100).map(record=>({id:record.id,name:record.name.trim().slice(0,100),content:record.content}));
 }
-let data={customTemplates:[],drafts:[{id:makeId(),name:'New Character',content:intro}],active:null,theme:'flist-blue',previewFontSize:'16',splitRatio:.524,previewNoteDismissed:false,mixed:true};
+let data={customTemplates:[],drafts:[{id:makeId(),name:'New Character',content:intro}],active:null,theme:'flist-blue',editorTheme:'folio',previewFontSize:'16',splitRatio:.524,previewNoteDismissed:false,mixed:true};
 data.active=data.drafts[0].id;
-try{const loaded=JSON.parse(localStorage.getItem(STORAGE));if(loaded&&Array.isArray(loaded.drafts)&&loaded.drafts.length){const valid=loaded.drafts.filter(d=>typeof d.id==='string'&&typeof d.name==='string'&&typeof d.content==='string').slice(0,80);if(valid.length){data={customTemplates:validateCustomTemplates(loaded.customTemplates),drafts:valid,active:valid.some(d=>d.id===loaded.active)?loaded.active:valid[0].id,theme:Array.from($('theme').options).some(option=>option.value===loaded.theme)?loaded.theme:'flist-blue',previewFontSize:parsePreviewFontSize(loaded.previewFontSize)||'16',splitRatio:typeof loaded.splitRatio==='number'&&Number.isFinite(loaded.splitRatio)?Math.max(.25,Math.min(.75,loaded.splitRatio)):.524,previewNoteDismissed:loaded.previewNoteDismissed===true,mixed:loaded.mixed!==false}}}}catch(e){}
+try{const loaded=JSON.parse(localStorage.getItem(STORAGE));if(loaded&&Array.isArray(loaded.drafts)&&loaded.drafts.length){const valid=loaded.drafts.filter(d=>typeof d.id==='string'&&typeof d.name==='string'&&typeof d.content==='string').slice(0,80);if(valid.length){data={customTemplates:validateCustomTemplates(loaded.customTemplates),drafts:valid,active:valid.some(d=>d.id===loaded.active)?loaded.active:valid[0].id,editorTheme:['folio','graphite','forest','paper'].includes(loaded.editorTheme)?loaded.editorTheme:'folio',theme:Array.from($('theme').options).some(option=>option.value===loaded.theme)?loaded.theme:'flist-blue',previewFontSize:parsePreviewFontSize(loaded.previewFontSize)||'16',splitRatio:typeof loaded.splitRatio==='number'&&Number.isFinite(loaded.splitRatio)?Math.max(.25,Math.min(.75,loaded.splitRatio)):.524,previewNoteDismissed:loaded.previewNoteDismissed===true,mixed:loaded.mixed!==false}}}}catch(e){}
 let saveTimer=null,toastTimer=null;
+let templateSession=null,editorLoaded=false;
+const templateEditors=new Map(),characterEditors=new Map();
 // Undo is managed explicitly because setRangeText() and textarea.value edits do not
 // consistently enter the browser's native undo stack across browsers.
 const editHistories=new Map();
 const MAX_UNDO_STATES=180;
 function editorSnapshot(){return {content:source.value,mixed:data.mixed,start:source.selectionStart,end:source.selectionEnd,scroll:source.scrollTop}}
 function currentHistory(){
- let h=editHistories.get(data.active);
- if(!h){h={states:[editorSnapshot()],index:0,lastKind:null,lastAt:0,lastInputType:null};editHistories.set(data.active,h)}
+ let h=editHistories.get(templateSession?templateSession.historyId:data.active);
+ if(!h){h={states:[editorSnapshot()],index:0,lastKind:null,lastAt:0,lastInputType:null};editHistories.set(templateSession?templateSession.historyId:data.active,h)}
  return h;
 }
 function refreshUndoButtons(){
@@ -150,6 +152,7 @@ function commitEdit(kind='action',inputType=''){
 function restoreEdit(state){
  data.mixed=state.mixed;source.value=state.content;
  active().content=state.content;
+ if(templateSession)updateTemplateStatus();
  updateMode();
  source.focus();
  source.setSelectionRange(Math.min(state.start,source.value.length),Math.min(state.end,source.value.length));
@@ -160,8 +163,8 @@ function undoEdit(){const h=currentHistory();if(!h.index)return;h.index--;h.last
 function redoEdit(){const h=currentHistory();if(h.index>=h.states.length-1)return;h.index++;h.lastKind=null;restoreEdit(h.states[h.index])}
 $('undoEdit').addEventListener('click',undoEdit);
 $('redoEdit').addEventListener('click',redoEdit);
-const active=()=>data.drafts.find(d=>d.id===data.active)||data.drafts[0];
-function persist(){try{localStorage.setItem(STORAGE,JSON.stringify(data));$('saveStatus').textContent='● Saved locally';return true}catch(e){$('saveStatus').textContent='⚠ Storage unavailable';return false}}
+const active=()=>templateSession||data.drafts.find(d=>d.id===data.active)||data.drafts[0];
+function persist(){try{localStorage.setItem(STORAGE,JSON.stringify(templateSession?{...data,mixed:templateSession.returnContext.mixed}:data));$('saveStatus').textContent=templateSession&&templateDirty()?'Template changes not saved':'● Saved locally';return true}catch(e){$('saveStatus').textContent='⚠ Storage unavailable';return false}}
 function scheduleSave(){ $('saveStatus').textContent='◌ Saving…';clearTimeout(saveTimer);saveTimer=setTimeout(persist,260) }
 let pendingConfirm=null;
 function requestConfirmation(message,callback){pendingConfirm=callback;$('confirmText').textContent=message;$('confirmBar').hidden=false;}
@@ -169,9 +172,47 @@ function clearConfirmation(){pendingConfirm=null;$('confirmBar').hidden=true;}
 $('confirmYes').addEventListener('click',()=>{const action=pendingConfirm;clearConfirmation();if(action)action()});
 $('confirmNo').addEventListener('click',clearConfirmation);
 function toast(message){const el=$('toast');el.textContent=message;el.classList.add('show');clearTimeout(toastTimer);toastTimer=setTimeout(()=>el.classList.remove('show'),2200)}
-function renderDrafts(){const list=$('draftList');list.replaceChildren();data.drafts.forEach(d=>{const btn=document.createElement('button');btn.className='draft'+(d.id===data.active?' active':'');btn.title=d.name;const label=document.createElement('span');label.textContent='◇  '+d.name;btn.append(label);btn.addEventListener('click',()=>loadDraft(d.id));list.append(btn)})}
-function loadDraft(id){data.active=id;const d=active();source.value=d.content;$('profileName').value=d.name;renderDrafts();refresh();const h=editHistories.get(id);if(h&&(h.states[h.index].content!==source.value||h.states[h.index].mixed!==data.mixed))editHistories.delete(id);refreshUndoButtons();persist()}
+function cloneName(name,records){
+ const names=new Set(records.map(record=>record.name));
+ for(let count=1;;count++){const suffix=count===1?' copy':' copy '+count;const candidate=(name||'Untitled').slice(0,100-suffix.length)+suffix;if(!names.has(candidate))return candidate}
+}
+function cloneCharacter(id){
+ stashEditor();const original=data.drafts.find(record=>record.id===id);if(!original)return;
+ if(data.drafts.length>=80){toast('Maximum 80 characters. Delete one before cloning.');return}
+ const mixed=characterEditors.get(id)?.mixed??(typeof original.mixed==='boolean'?original.mixed:templateSession?templateSession.returnContext.mixed:data.mixed);
+ const copy={id:makeId(),name:cloneName(original.name,data.drafts),content:original.content,mixed};
+ data.drafts.unshift(copy);loadDraft(copy.id);$('profileName').focus();$('profileName').select();toast('Character cloned');
+}
+function renderDrafts(){
+ const list=$('draftList');list.replaceChildren();
+ for(const d of data.drafts){
+  const btn=document.createElement('button');btn.className='draft'+(!templateSession&&d.id===data.active?' active':'');btn.title=d.name;
+  const label=document.createElement('span');label.textContent=d.name;btn.append(label);btn.addEventListener('click',()=>loadDraft(d.id));
+  list.append(btn);
+ }
+ renderTemplateTargets();
+}
+function stashEditor(){
+ if(!editorLoaded)return;
+ rememberSelection();
+ const context={mixed:data.mixed,start:source.selectionStart,end:source.selectionEnd,scroll:source.scrollTop};
+ active().content=source.value;
+ if(templateSession)Object.assign(templateSession,context,{name:$('profileName').value});
+ else characterEditors.set(data.active,context);
+}
+function loadDraft(id){
+ const fallbackMode=templateSession?templateSession.returnContext.mixed:data.mixed;
+ stashEditor();clearConfirmation();templateSession=null;data.active=id;setTemplateEditorUI(false);
+ const d=active(),context=characterEditors.get(id);
+ data.mixed=context?context.mixed:typeof d.mixed==='boolean'?d.mixed:fallbackMode;source.value=d.content;$('profileName').value=d.name;
+ editorLoaded=true;renderDrafts();renderCustomTemplates();updateMode();
+ const h=editHistories.get(id);if(h&&(h.states[h.index].content!==source.value||h.states[h.index].mixed!==data.mixed))editHistories.delete(id);
+ refreshUndoButtons();
+ source.setSelectionRange(context?context.start:0,context?context.end:0);source.scrollTop=context?context.scroll:0;
+}
+
 function updateMode(){
+ if(templateSession)templateSession.mixed=data.mixed;else if(editorLoaded)active().mixed=data.mixed;
  $('mixedMode').classList.toggle('active',data.mixed);
  $('bbMode').classList.toggle('active',!data.mixed);
  $('mixedMode').setAttribute('aria-pressed',String(data.mixed));
@@ -184,10 +225,21 @@ function updateMode(){
 function wrapInline(tag,placeholder='your text'){
  const s=source.selectionStart,e=source.selectionEnd,selected=source.value.slice(s,e)||placeholder;
  let prefix='['+tag+']',suffix='[/'+tag.split('=')[0]+']',block=false;
+ if(tag==='heading'){prefix='[heading][big]';suffix='[/big][/heading]'}
  if(data.mixed){
+  if(tag==='quote'){
+   const lead=s>0&&source.value[s-1]!=='\n'?'\n':'';
+   const tail=e<source.value.length&&source.value[e]!=='\n'?'\n':'';
+   const quoted=selected.split('\n').map(line=>'> '+line).join('\n');
+   replaceRange(lead+quoted+tail,s,e,s+lead.length+2,s+lead.length+quoted.length);return;
+  }
   const marks={b:'**',i:'*',u:'++',s:'~~'};
+  const wholeLine=(s===0||source.value[s-1]==='\n')&&(e===source.value.length||source.value[e]==='\n');
   if(marks[tag]&&!selected.includes('\n')){prefix=marks[tag];suffix=marks[tag]}
-  else if(['center','quote','heading'].includes(tag)||selected.includes('\n')){prefix=':::'+tag+'\n';suffix='\n:::';block=true}
+  else if(tag==='heading'&&!selected.includes('\n')){prefix='# ';suffix='';block=true}
+  else if(tag==='big'&&!selected.includes('\n')&&wholeLine){prefix='### ';suffix='';block=true}
+  else if(tag==='heading'){prefix=':::heading\n:::big\n';suffix='\n:::\n:::';block=true}
+  else if(tag==='center'||selected.includes('\n')){prefix=':::'+tag+'\n';suffix='\n:::';block=true}
   else{prefix='{'+tag+'|';suffix='}'}
  }
  const lead=block&&s>0&&source.value[s-1]!=='\n'?'\n':'';
@@ -322,7 +374,8 @@ function markdownToBB(input){
    while(index+1<lines.length){const next=lines[index+1].match(/^[ \t]*>[ \t]?(.*)$/);if(!next)break;body.push(next[1]);index++}
    out.push('[quote]'+markdownToBB(body.join('\n'))+'[/quote]');continue;
   }
-  const bullet=line.match(/^(\s*)[-*+]\s+(.+)$/);if(bullet){out.push(bullet[1]+'• '+inlineMarkdown(bullet[2]));continue}
+  const bullet=line.match(/^([ \t]*)[-*+]([ \t]+)(.*)$/);
+  if(bullet){out.push(bullet[1]+'•'+bullet[2]+inlineMarkdown(bullet[3]));continue}
   // Numbered lists are already readable as plain text on F-List.
   out.push(inlineMarkdown(line));
   }finally{if(soft)pendingBreak=false}
@@ -493,6 +546,14 @@ function standardMarkdownRewrite(markdown,start,length,replacement,expected){
 function preferStandardMarkdown(markdown){
  markdown=preferHashHeadings(markdown);
  const expected=markdownToBB(markdown);
+ // F-List lists are plain text bullets/numbers, not [list] tags. Recover the
+ // Markdown bullet marker while keeping every indentation and separator byte.
+ // Include quote prefixes so lists inside > blocks remain editable too.
+ const bullets=/^((?:[ \t]*>[ \t]?)*[ \t]*)•([ \t]+)/gm;
+ for(const match of [...markdown.matchAll(bullets)].reverse()){
+  const candidate=markdown.slice(0,match.index)+match[1]+'-'+match[2]+markdown.slice(match.index+match[0].length);
+  if(markdownToBB(candidate)===expected)markdown=candidate;
+ }
  let changed=true;
  while(changed){
   changed=false;
@@ -517,9 +578,9 @@ function preferStandardMarkdown(markdown){
 }
 function renderBB(input){return FolioHorizon.render(input)}
 function countWarnings(compiled){let issues=[];const opens={};for(const m of compiled.matchAll(/\[(\/?)((?:[a-z]+))(?:=[^\]\n]*)?\]/gi)){let tag=m[2].toLowerCase();if(!allowedTags.has(tag)){if(['session','list','li','size','table','font','spoiler','youtube','code'].includes(tag))issues.push('Unsupported or unverified tag: '+tag);continue}if(tag==='hr')continue;if(m[1]){if((opens[tag]||0)===0)issues.push('Unmatched [/'+tag+']');else opens[tag]--}else opens[tag]=(opens[tag]||0)+1}Object.keys(opens).filter(tag=>opens[tag]).forEach(tag=>issues.push('Unclosed ['+tag+']'));if(/<\/?(?:div|span|table|p|br)\b/i.test(compiled))issues.push('HTML is not supported in descriptions');return [...new Set(issues)]}
-function refresh(){FolioSyntax.highlight($('sourceHighlight'),source.value,data.mixed);updateLineNumbers();syncHighlightScroll();const bb=getCompiled();$('previewTitle').textContent=$('profileName').value.trim()||'Untitled character';const preview=$('preview');preview.replaceChildren();try{preview.appendChild(renderBB(bb))}catch(e){preview.textContent='Preview error: '+e.message}const text=source.value;$('stats').textContent=(text.trim()?text.trim().split(/\s+/).length:0)+' words · '+text.length.toLocaleString()+' characters';const problems=[...countWarnings(bb),...colorWarnings(source.value)];$('warningCount').textContent=problems.length?problems.length+' potential issue'+(problems.length===1?'':'s'):'No obvious issues';$('warningCount').title=problems.join('\n')}
-function syncFromEditor(){active().content=source.value;refresh();scheduleSave()}
-function syncName(){active().name=$('profileName').value||'Untitled character';renderDrafts();refresh();scheduleSave()}
+function refresh(){FolioSyntax.highlight($('sourceHighlight'),source.value,data.mixed);updateLineNumbers();syncHighlightScroll();const bb=getCompiled();$('previewTitle').textContent=$('profileName').value.trim()||'Untitled character';const preview=$('preview');try{FolioPreview.update(preview,preview.closest('.frame'),bb,renderBB,templateSession?templateSession.historyId:'character:'+data.active)}catch(e){preview.textContent='Preview error: '+e.message}const text=source.value;$('stats').textContent=(text.trim()?text.trim().split(/\s+/).length:0)+' words · '+text.length.toLocaleString()+' characters';const problems=[...countWarnings(bb),...colorWarnings(source.value)];$('warningCount').textContent=problems.length?problems.length+' potential issue'+(problems.length===1?'':'s'):'No obvious issues';$('warningCount').title=problems.join('\n')}
+function syncFromEditor(){active().content=source.value;if(templateSession)updateTemplateStatus();refresh();scheduleSave()}
+function syncName(){active().name=$('profileName').value||(templateSession?'Untitled template':'Untitled character');if(templateSession)updateTemplateStatus();renderDrafts();refresh();scheduleSave()}
 function updateActiveSyntax(){
  FolioSyntax.markActive($('sourceHighlight'),source.selectionStart);
  const line=source.value.slice(0,source.selectionStart).split('\n').length;
@@ -565,20 +626,26 @@ source.addEventListener('beforeinput',e=>{
  }
 });
 $('profileName').addEventListener('input',syncName);
-$('newDraft').addEventListener('click',()=>{let d={id:makeId(),name:'Untitled character',content:''};data.drafts.unshift(d);loadDraft(d.id);$('profileName').focus();$('profileName').select();toast('New character draft created')});
+$('newDraft').addEventListener('click',()=>{
+ stashEditor();const d={id:makeId(),name:'Untitled character',content:''};data.drafts.unshift(d);loadDraft(d.id);$('profileName').focus();$('profileName').select();toast('New character draft created');
+});
 $('deleteDraft').addEventListener('click',()=>requestConfirmation('Delete the current draft? This cannot be undone.',()=>{data.drafts=data.drafts.filter(d=>d.id!==data.active);if(!data.drafts.length)data.drafts.push({id:makeId(),name:'New Character',content:''});loadDraft(data.drafts[0].id);toast('Draft deleted')}));
 function applyTemplate(content,name){
  rememberSelection();source.value=data.mixed?content:markdownToBB(content);
  source.focus();syncFromEditor();commitEdit('action');toast(name+' template applied');
 }
-function requestApplyTemplate(content,name){
- const apply=()=>applyTemplate(content,name);
- if(source.value.trim())requestConfirmation('Replace this draft with the '+name+' template?',apply);else apply();
+function requestApplyTemplate(content,name,targetId){
+ const character=data.drafts.find(d=>d.id===targetId);
+ if(!character)return;
+ requestConfirmation('Replace character "'+character.name+'" with template "'+name+'"? This replaces the profile description.',()=>{
+  if(!data.drafts.some(d=>d.id===targetId)){renderTemplateTargets();toast('That character no longer exists');return}
+  loadDraft(targetId);applyTemplate(content,name);
+ });
 }
-document.querySelectorAll('[data-template]').forEach(btn=>btn.addEventListener('click',()=>requestApplyTemplate(templates[btn.dataset.template],btn.querySelector('strong').textContent)));
-
+document.querySelectorAll('[data-template]').forEach(btn=>btn.addEventListener('click',()=>loadTemplateForm('builtin:'+btn.dataset.template)));
 document.querySelectorAll('[data-wrap]').forEach(btn=>btn.addEventListener('click',()=>wrapInline(btn.dataset.wrap)));
 document.querySelectorAll('[data-action]').forEach(btn=>btn.addEventListener('click',()=>{switch(btn.dataset.action){case 'hr':case 'divider':addLine(data.mixed?'---':'[hr]');break;case 'details':addLine(data.mixed?'**Field:** Details':'[b]Field:[/b] Details');break}}));
+
 const palette=$('colorPalette');
 function wrapColor(name){if(!colorSafe(name))return;
  if(!data.mixed){wrapInline('color='+name);return}
@@ -617,6 +684,12 @@ function switchMode(toMixed){
 }
 $('mixedMode').addEventListener('click',()=>switchMode(true));
 $('bbMode').addEventListener('click',()=>switchMode(false));
+function setEditorTheme(){
+ document.documentElement.dataset.appTheme=data.editorTheme;
+ source.parentElement.dataset.editorTheme=data.editorTheme;
+ $('editorTheme').value=data.editorTheme;
+}
+$('editorTheme').addEventListener('change',e=>{data.editorTheme=e.target.value;setEditorTheme();persist()});
 $('theme').addEventListener('change',e=>{data.theme=e.target.value;setTheme();persist()});function setTheme(){$('previewPage').className='previewpage'+(data.theme==='default'?'':' '+data.theme);$('theme').value=data.theme;setPreviewFontSize()}
 function parsePreviewFontSize(value){
  if(value==null)return null;
@@ -656,13 +729,15 @@ const markdownInsertionSpecs={
  user:{prefix:'{user:',suffix:'}',fallback:'Character Name'},
  icon:{prefix:'{icon:',suffix:'}',fallback:'Character Name'},
  eicon:{prefix:'{eicon:',suffix:'}',fallback:'eicon-name'},
- noparse:{prefix:'{noparse|',suffix:'}',fallback:'literal **text**'}
+ noparse:{prefix:'`',suffix:'`',fallback:'literal **text**'}
 };
 function insertTag(type){
  let spec=(data.mixed?markdownInsertionSpecs:insertionSpecs)[type];if(!spec)return;
  const s=source.selectionStart,e=source.selectionEnd,chosen=source.value.slice(s,e);
  if(data.mixed&&type==='inlineimg'&&chosen)spec={...spec,prefix:spec.prefix+'|'};
- if(data.mixed&&type==='noparse'&&(chosen.includes('\n')||/[{}]/.test(chosen)))spec={prefix:'```\n',suffix:'\n```',fallback:'literal text',block:true};
+ if(data.mixed&&type==='noparse'){
+  if(chosen.includes('\n')||chosen.includes('`'))spec=chosen.includes('```')?insertionSpecs.noparse:{prefix:'```\n',suffix:'\n```',fallback:'literal text',block:true};
+ }
  const lead=spec.block&&s>0&&source.value[s-1]!=='\n'?'\n':'';
  const tail=spec.block&&e<source.value.length&&source.value[e]!=='\n'?'\n':'';
  const text=lead+spec.prefix+(chosen||spec.fallback)+spec.suffix+tail;
@@ -683,6 +758,7 @@ const guideExamples=[
  ['Basics','Quotes','Standard Markdown blockquotes','> “Everything has a price.”'],
  ['Basics','Bullet list','Plain text bullets compatible with F-List','- Adventurous\n- Sarcastic\n- Fond of stargazing'],
  ['Basics','Numbered list','Numbers remain readable','1. First encounter\n2. Second chance\n3. Final chapter'],
+ ['Basics','Nested lists','Leading spaces and tabs survive BBCode conversion','- Parent item\n  - Nested bullet\n    1. Nested numbered item\n    2. Another numbered item\n- Next parent'],
  ['Basics','Inline code','Show syntax literally, without formatting','Write `[b]bold[/b]` to display code.'],
  ['Basics','Literal block','Triple backticks convert to noparse','```\n[b]Printed literally[/b]\n```'],
  ['Macros','Color presets','F-List supports red, orange, yellow, green, cyan, purple, blue, pink, black, brown, white and gray','{color:purple|An important note} and {color:orange|a warm welcome}'],
@@ -750,7 +826,7 @@ $('downloadMarkdown').addEventListener('click',()=>{download(data.mixed?source.v
 $('backupBtn').addEventListener('click',()=>{download(JSON.stringify({format:'folio-profile',version:1,name:active().name,content:active().content,mixed:data.mixed},null,2),slug()+'.folio.json','application/json');toast('Editable backup exported')});
 $('importBtn').addEventListener('click',()=>$('fileImport').click());
 $('fileImport').addEventListener('change',async(e)=>{const file=e.target.files[0];e.target.value='';if(!file)return;if(file.size>1500000){toast('File is too large (max 1.5 MB)');return}let str=await file.text(),name=file.name.replace(/\.(folio\.json|bbcode|txt|md|json)$/i,'');if(file.name.toLowerCase().endsWith('.json')){try{const record=JSON.parse(str);if(typeof record.content!=='string')throw Error('No profile content');name=String(record.name||name);str=record.content;if(typeof record.mixed==='boolean'){data.mixed=record.mixed;updateMode()}}catch(error){toast('Not a valid Folio backup');return}}
- const apply=()=>{active().name=name.slice(0,100);active().content=str;loadDraft(data.active);toast('Profile imported')};if(source.value.trim())requestConfirmation('Replace this draft with the imported file?',apply);else apply()});
+ const apply=()=>{if(templateSession){rememberSelection();active().name=name.slice(0,100);$('profileName').value=active().name;source.value=str;syncFromEditor();commitEdit('action')}else{active().name=name.slice(0,100);active().content=str;loadDraft(data.active)}toast('Source imported')};if(source.value.trim())requestConfirmation('Replace this draft with the imported file?',apply);else apply()});
 document.addEventListener('keydown',e=>{
  if(e.key==='Enter'&&e.ctrlKey){e.preventDefault();copyCode();return}
  if(document.activeElement!==source)return;
@@ -763,88 +839,137 @@ document.addEventListener('keydown',e=>{
  if(e.key==='Tab'){e.preventDefault();replaceRange('  ')}
 });
 source.addEventListener('dragover',e=>{if(e.dataTransfer?.types.includes('Files'))e.preventDefault()});
-const templateManager=$('templateManager');
-let editingTemplateId=null,templateSnapshot='',templatePending=null,templateChoiceValue='';
-function templateFormSnapshot(){return JSON.stringify([$('templateName').value,$('templateContent').value])}
-function templateDirty(){return templateFormSnapshot()!==templateSnapshot}
-function clearTemplateConfirm(){templatePending=null;$('templateConfirm').hidden=true}
-function confirmTemplateAction(message,action){
- templatePending=action;$('templateConfirmText').textContent=message;$('templateConfirm').hidden=false;
- $('templateConfirmYes').focus();
+let templateChoiceValue='';
+function templateFormSnapshot(){return JSON.stringify([$('profileName').value,source.value,data.mixed])}
+function templateDirty(){return !!templateSession&&templateFormSnapshot()!==templateSession.snapshot}
+function updateTemplateStatus(){
+ $('templateStatus').textContent=templateDirty()?'Unsaved template changes. Save when ready.':'Template saved. Edits use the full profile editor below.';
 }
-function guardTemplateChanges(action){
- if(templateDirty())confirmTemplateAction('Discard unsaved template changes?',action);else action();
+function renderTemplateTargets(){
+ for(const [selectId,buttonId] of [['templateTarget','applyTemplate'],['templateSource','templateFromDraft']]){
+  const select=$(selectId),previous=select.value;select.replaceChildren();
+  const placeholder=document.createElement('option');placeholder.value='';placeholder.textContent='Choose a character';select.append(placeholder);
+  for(const character of data.drafts){const option=document.createElement('option');option.value=character.id;option.textContent=character.name;select.append(option)}
+  select.value=data.drafts.some(character=>character.id===previous)?previous:'';
+  $(buttonId).disabled=!select.value;
+ }
 }
 function renderCustomTemplates(){
  const list=$('customTemplateList');list.replaceChildren();
  if(!data.customTemplates.length){const empty=document.createElement('small');empty.className='inline-tip';empty.textContent='No custom templates yet.';list.append(empty)}
  for(const record of data.customTemplates){
   const row=document.createElement('div');row.className='custom-template-row';
-  const apply=document.createElement('button');apply.className='custom-template-apply';apply.textContent=record.name;apply.title='Apply '+record.name;
-  apply.addEventListener('click',()=>requestApplyTemplate(record.content,record.name));
-  const edit=document.createElement('button');edit.className='custom-template-edit';edit.textContent='Edit';edit.setAttribute('aria-label','Edit '+record.name);
-  edit.addEventListener('click',()=>openTemplateManager(record.id));row.append(apply,edit);list.append(row);
+  const open=document.createElement('button');open.className='custom-template-open'+(templateSession?.id===record.id?' active':'');open.textContent=record.name;open.title='Edit '+record.name;
+  open.addEventListener('click',()=>openTemplateManager(record.id));
+  row.append(open);list.append(row);
  }
  const choice=$('templateChoice');choice.replaceChildren();
  const blank=document.createElement('option');blank.value='';blank.textContent='New template';choice.append(blank);
- for(const [label,records] of [['My templates',data.customTemplates.map(t=>({value:'custom:'+t.id,name:t.name}))],['Built-in templates',Object.keys(templates).map(id=>({value:'builtin:'+id,name:document.querySelector('[data-template="'+id+'"]').querySelector('strong').textContent}))]]){
+ const unsaved=[...templateEditors.values()].filter(editor=>!editor.id&&!editor.key.startsWith('builtin:')).map(editor=>({value:editor.key,name:editor.name||'Untitled template'}));
+ for(const [label,records] of [['Template drafts',unsaved],['My templates',data.customTemplates.map(t=>({value:'custom:'+t.id,name:t.name}))],['Built-in templates',Object.keys(templates).map(id=>({value:'builtin:'+id,name:document.querySelector('[data-template="'+id+'"]').querySelector('strong').textContent}))]]){
   const group=document.createElement('optgroup');group.label=label;
   for(const record of records){const option=document.createElement('option');option.value=record.value;option.textContent=record.name;group.append(option)}
   choice.append(group);
  }
  choice.value=templateChoiceValue;
+ for(const button of document.querySelectorAll('[data-template]'))button.classList.toggle('active',templateSession?.key==='builtin:'+button.dataset.template);
 }
-function loadTemplateForm(value){
- clearTemplateConfirm();templateChoiceValue=value;editingTemplateId=null;
- let name='',content='';
- if(value.startsWith('custom:')){const record=data.customTemplates.find(t=>t.id===value.slice(7));if(record){editingTemplateId=record.id;name=record.name;content=record.content}}
- else if(value.startsWith('builtin:')){const id=value.slice(8);content=templates[id]||'';name=document.querySelector('[data-template="'+id+'"]').querySelector('strong').textContent+' copy'}
- $('templateName').value=name;$('templateContent').value=content;$('templateChoice').value=value;
- $('deleteTemplate').disabled=!editingTemplateId;$('templateStatus').textContent='';templateSnapshot=templateFormSnapshot();
+function setTemplateEditorUI(editing){
+ $('templateEditorControls').hidden=!editing;$('backToProfile').hidden=!editing;$('deleteDraft').hidden=editing;
+ $('editorContext').textContent=editing?'Editing reusable template':'Editing character profile';
+ $('profileName').setAttribute('aria-label',editing?'Template name':'Character name');
+ $('cloneEditor').title=editing?'Clone current template':'Clone current character';
+ $('cloneEditor').setAttribute('aria-label',editing?'Clone template':'Clone character');
+ $('profileName').placeholder=editing?'Template name':'';
+}
+function loadTemplateForm(value,sourceCharacterId=null){
+ const profile=sourceCharacterId?data.drafts.find(d=>d.id===sourceCharacterId):null;
+ if(sourceCharacterId&&!profile){renderTemplateTargets();toast('That character no longer exists');return}
+ const returnContext=templateSession?templateSession.returnContext:{id:data.active,mixed:data.mixed};
+ stashEditor();clearConfirmation();clearTimeout(saveTimer);
+ const key=value||'new:'+makeId();
+ let session=templateEditors.get(key);
+ if(!session){
+  let id=null,name='',content='';
+  if(value.startsWith('custom:')){const record=data.customTemplates.find(t=>t.id===value.slice(7));if(record){id=record.id;name=record.name;content=record.content}}
+  else if(value.startsWith('builtin:')){const builtin=value.slice(8);content=templates[builtin]||'';name=document.querySelector('[data-template="'+builtin+'"]').querySelector('strong').textContent+' copy'}
+  if(profile){const mode=characterEditors.get(profile.id)?.mixed??(typeof profile.mixed==='boolean'?profile.mixed:returnContext.mixed);name=(profile.name+' template').slice(0,100);content=mode?profile.content:bbcodeToMarkdown(profile.content,true)}
+  session={key,id,name,content,historyId:'template:'+makeId(),mixed:true,start:0,end:0,scroll:0,snapshot:id||value.startsWith('builtin:')?JSON.stringify([name,content,true]):JSON.stringify(['','',true])};
+  templateEditors.set(key,session);
+ }
+ templateSession=session;session.returnContext=returnContext;templateChoiceValue=key;
+ data.mixed=session.mixed;source.value=session.content;$('profileName').value=session.name;
+ editorLoaded=true;setTemplateEditorUI(true);renderDrafts();renderCustomTemplates();$('deleteTemplate').disabled=false;
+ updateTemplateStatus();updateMode();refreshUndoButtons();
+ source.focus();source.setSelectionRange(session.start,session.end);source.scrollTop=session.scroll;
 }
 function openTemplateManager(id){
- const value=id?'custom:'+id:templateChoiceValue;
- const open=()=>{loadTemplateForm(value);templateManager.showModal();$('templateName').focus()};
- if(templateDirty()&&templateSnapshot) {templateManager.showModal();guardTemplateChanges(open)}else open();
+ if(templateSession&&!id){source.focus();return}
+ loadTemplateForm(id?'custom:'+id:templateChoiceValue);
 }
+function exitTemplateEditor(){if(templateSession)loadDraft(data.active)}
+function cloneTemplate(key){
+ stashEditor();
+ if(data.customTemplates.length>=100){toast('Maximum 100 templates. Delete one before cloning.');return}
+ const editor=templateEditors.get(key);
+ let name,content,mixed=true;
+ if(editor){({name,content,mixed}=editor)}
+ else if(key.startsWith('custom:')){const record=data.customTemplates.find(record=>record.id===key.slice(7));if(!record)return;({name,content}=record)}
+ else if(key.startsWith('builtin:')){const id=key.slice(8);content=templates[id];if(content===undefined)return;name=document.querySelector('[data-template="'+id+'"]').querySelector('strong').textContent}
+ else return;
+ name=cloneName(name,data.customTemplates);
+ const record={id:makeId(),name,content:mixed?content:bbcodeToMarkdown(content,true)};
+ data.customTemplates.push(record);
+ const cloneKey='custom:'+record.id;
+ templateEditors.set(cloneKey,{key:cloneKey,id:record.id,name,content,mixed,start:0,end:0,scroll:0,historyId:'template:'+makeId(),snapshot:JSON.stringify([name,content,mixed])});
+ loadTemplateForm(cloneKey);$('profileName').focus();$('profileName').select();toast('Template cloned');
+}
+$('cloneEditor').addEventListener('click',()=>{if(templateSession)cloneTemplate(templateSession.key);else cloneCharacter(data.active)});
 function saveCustomTemplate(){
- const name=$('templateName').value.trim().slice(0,100),content=$('templateContent').value;
- if(!name){$('templateStatus').textContent='Enter a template name.';$('templateName').focus();return null}
+ if(!templateSession)return null;
+ const name=$('profileName').value.trim().slice(0,100),content=data.mixed?source.value:bbcodeToMarkdown(source.value,true);
+ if(!name){$('templateStatus').textContent='Enter a template name above.';$('profileName').focus();return null}
  if(content.length>1500000){$('templateStatus').textContent='Template is too large (max 1.5 MB).';return null}
- if(!editingTemplateId&&data.customTemplates.length>=100){$('templateStatus').textContent='Maximum 100 custom templates. Delete one first.';return null}
- let record=data.customTemplates.find(t=>t.id===editingTemplateId);
+ if(!templateSession.id&&data.customTemplates.length>=100){$('templateStatus').textContent='Maximum 100 custom templates. Delete one first.';return null}
+ let record=data.customTemplates.find(t=>t.id===templateSession.id);
  if(record){record.name=name;record.content=content}else{record={id:makeId(),name,content};data.customTemplates.push(record)}
- editingTemplateId=record.id;templateChoiceValue='custom:'+record.id;renderCustomTemplates();
- $('templateName').value=name;templateSnapshot=templateFormSnapshot();$('deleteTemplate').disabled=false;
+ templateEditors.delete(templateSession.key);templateSession.id=record.id;templateSession.name=name;templateSession.key='custom:'+record.id;templateChoiceValue=templateSession.key;templateEditors.set(templateSession.key,templateSession);renderCustomTemplates();
+ $('profileName').value=name;templateSession.snapshot=templateFormSnapshot();$('deleteTemplate').disabled=false;
  $('templateStatus').textContent=persist()?'Template saved.':'Saved for this session only; browser storage is unavailable.';
  return record;
 }
 for(const id of ['manageTemplates','openTemplateManager'])$(id).addEventListener('click',()=>openTemplateManager());
-$('closeTemplateManager').addEventListener('click',()=>guardTemplateChanges(()=>{loadTemplateForm(templateChoiceValue);templateManager.close()}));
-templateManager.addEventListener('cancel',e=>{e.preventDefault();guardTemplateChanges(()=>{loadTemplateForm(templateChoiceValue);templateManager.close()})});
-$('templateChoice').addEventListener('change',e=>{const value=e.target.value;e.target.value=templateChoiceValue;guardTemplateChanges(()=>loadTemplateForm(value))});
-$('newTemplate').addEventListener('click',()=>guardTemplateChanges(()=>loadTemplateForm('')));
-$('templateFromDraft').addEventListener('click',()=>guardTemplateChanges(()=>{
- loadTemplateForm('');$('templateName').value=($('profileName').value.trim()||'Character')+' template';
- $('templateContent').value=data.mixed?source.value:bbcodeToMarkdown(source.value,true);
- $('templateStatus').textContent='Draft copied. Save to add it to My templates.';
-}));
-for(const id of ['templateName','templateContent'])$(id).addEventListener('input',()=>{$('templateStatus').textContent=templateDirty()?'Unsaved changes':''});
-$('saveTemplate').addEventListener('click',()=>{clearTemplateConfirm();saveCustomTemplate()});
-$('saveApplyTemplate').addEventListener('click',()=>{
- clearTemplateConfirm();const record=saveCustomTemplate();if(!record)return;
- const apply=()=>{templateManager.close();applyTemplate(record.content,record.name)};
- if(source.value.trim())confirmTemplateAction('Replace this draft with '+record.name+'?',apply);else apply();
+$('backToProfile').addEventListener('click',exitTemplateEditor);
+$('templateChoice').addEventListener('change',e=>loadTemplateForm(e.target.value));
+$('newTemplate').addEventListener('click',()=>loadTemplateForm(''));
+$('templateFromDraft').addEventListener('click',()=>{const id=$('templateSource').value;if(id)loadTemplateForm('',id)});
+$('templateSource').addEventListener('change',()=>{$('templateFromDraft').disabled=!$('templateSource').value});
+$('saveTemplate').addEventListener('click',()=>{clearConfirmation();saveCustomTemplate()});
+$('applyTemplate').addEventListener('click',()=>{
+ if(!templateSession)return;
+ const content=data.mixed?source.value:bbcodeToMarkdown(source.value,true);
+ requestApplyTemplate(content,$('profileName').value.trim()||'Untitled template',$('templateTarget').value);
+});
+$('templateTarget').addEventListener('change',()=>{clearConfirmation();$('applyTemplate').disabled=!$('templateTarget').value});
+$('newFromTemplate').addEventListener('click',()=>{
+ if(!templateSession)return;
+ const name=('New from '+($('profileName').value.trim()||'template')).slice(0,100);
+ const character={id:makeId(),name,content:source.value,mixed:data.mixed};
+ data.drafts.unshift(character);loadDraft(character.id);
+ $('profileName').focus();$('profileName').select();toast('New character created from template');
 });
 $('deleteTemplate').addEventListener('click',()=>{
- const id=editingTemplateId;if(!id)return;
- confirmTemplateAction('Delete this custom template'+(templateDirty()?' and its unsaved changes':'')+'?',()=>{
-  data.customTemplates=data.customTemplates.filter(t=>t.id!==id);templateChoiceValue='';renderCustomTemplates();loadTemplateForm('');persist();
+ const session=templateSession;if(!session)return;
+ requestConfirmation('Delete this template'+(templateDirty()?' and its unsaved changes':'')+'?',()=>{
+  data.customTemplates=data.customTemplates.filter(t=>t.id!==session.id);
+  exitTemplateEditor();templateEditors.delete(session.key);editHistories.delete(session.historyId);templateChoiceValue='';renderCustomTemplates();persist();
  });
 });
-$('templateConfirmYes').addEventListener('click',()=>{const action=templatePending;clearTemplateConfirm();if(action)action()});
-$('templateConfirmNo').addEventListener('click',()=>{clearTemplateConfirm();$('templateName').focus()});
-renderCustomTemplates();loadTemplateForm('');
+window.addEventListener('beforeunload',e=>{
+ stashEditor();
+ if([...templateEditors.values()].some(session=>JSON.stringify([session.name,session.content,session.mixed])!==session.snapshot)){e.preventDefault();e.returnValue=''}
+});
+renderCustomTemplates();setTemplateEditorUI(false);
 const paneDivider=$('paneDivider');
 function applyPaneSplit(){
  const app=document.querySelector('.app');
@@ -882,5 +1007,5 @@ paneDivider.addEventListener('keydown',e=>{
 $('previewNote').hidden=data.previewNoteDismissed;
 $('dismissPreviewNote').addEventListener('click',()=>{data.previewNoteDismissed=true;$('previewNote').hidden=true;$('theme').focus();persist()});
 applyPaneSplit();
-setTheme();loadDraft(data.active);updateMode();refreshUndoButtons();
+setEditorTheme();setTheme();loadDraft(data.active);updateMode();refreshUndoButtons();
 })();

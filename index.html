@@ -8,17 +8,19 @@
 <link rel="stylesheet" href="src/styles.css">
 <link rel="stylesheet" href="src/horizon-preview.css">
 <link rel="stylesheet" href="src/flist-themes.css">
+<link rel="stylesheet" href="src/editor-themes.css">
+<link rel="stylesheet" href="src/app-themes.css">
 </head>
 <body>
 <div class="app">
 <aside class="sidebar">
- <div class="brand"><div class="mark">✦</div><div><b>folio.</b><small>F-LIST PROFILE STUDIO</small></div></div>
+ <div class="brand"><div class="mark"><svg viewBox="0 0 24 26" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7v16h13"/><path d="M8 3h8l4 4v13H8z"/><path d="M16 3v5h4M11 12h6M11 16h4"/></svg></div><div><b>folio.</b><small>F-LIST PROFILE STUDIO</small></div></div>
  <div class="side-inner">
   <div class="caps">My characters</div>
   <button class="newbtn" id="newDraft">＋ &nbsp;New character</button>
   <div id="draftList" class="draft-list"></div>
   <div class="side-divider"></div>
-  <div class="caps">Start with a template</div>
+  <div class="caps">Built-in templates</div>
   <button class="template" data-template="dossier"><span class="emoji">◈</span><span><strong>Character dossier</strong><small>Details and backstory</small></span></button>
   <button class="template" data-template="narrative"><span class="emoji">✧</span><span><strong>Narrative</strong><small>Atmospheric introduction</small></span></button>
   <button class="template" data-template="compact"><span class="emoji">☷</span><span><strong>Minimalist</strong><small>Clean and skimmable</small></span></button>
@@ -30,7 +32,14 @@
  <div class="side-bottom"><div><b>●</b> Private by design</div><div>Drafts saved in this browser.</div><div style="margin-top:12px"><a href="https://www.f-list.net/" target="_blank" rel="noopener noreferrer">Open F-List ↗</a></div></div>
 </aside>
 <section class="workspace" id="sourcePane">
- <div class="topbar"><div style="min-width:0"><div class="eyebrow">Editing character profile</div><input id="profileName" class="titlefield" aria-label="Character name" maxlength="100" value="New Character" spellcheck="false" /></div><button class="btn quiet" id="deleteDraft" title="Delete this draft">Delete</button></div>
+ <div class="topbar"><div class="editor-title"><div class="eyebrow" id="editorContext">Editing character profile</div><input id="profileName" class="titlefield" aria-label="Character name" maxlength="100" value="New Character" spellcheck="false" /></div><div class="editor-actions"><button type="button" class="btn clone-button" id="cloneEditor" title="Clone current character">Clone</button><button type="button" class="btn" id="backToProfile" hidden>Back to profile</button><button class="btn delete-button" id="deleteDraft" title="Delete this draft">Delete</button></div></div>
+ <section id="templateEditorControls" class="template-editor-controls" hidden aria-label="Template controls">
+  <label for="templateChoice">Template</label><select id="templateChoice"></select>
+  <div class="template-editor-tools"><button type="button" class="btn" id="newTemplate">New blank</button><button type="button" class="btn primary" id="saveTemplate">Save template</button><button type="button" class="btn" id="newFromTemplate">New from this template</button><button type="button" class="btn delete-button" id="deleteTemplate" disabled>Delete template</button></div>
+  <div class="template-target-controls"><label for="templateSource">New template from</label><select id="templateSource" aria-label="Character to create a template from"><option value="">Choose a character</option></select><button type="button" class="btn" id="templateFromDraft" disabled>Create template</button></div>
+  <div class="template-target-controls"><label for="templateTarget">Apply template to</label><select id="templateTarget" aria-label="Character to apply template to"><option value="">Choose a character</option></select><button type="button" class="btn" id="applyTemplate" disabled>Apply</button></div>
+  <span id="templateStatus" role="status">Edit the template below using the profile editor. Save when ready.</span>
+ </section>
  <div class="toolbar" role="toolbar" aria-label="Format text">
  <div class="toolbar-row">
  <button class="tool" id="undoEdit" title="Undo (Ctrl+Z)" aria-label="Undo last edit" disabled>↶</button>
@@ -41,12 +50,12 @@
  <button class="tool" data-wrap="u" title="Underline (Ctrl+U)"><u>U</u></button>
  <button class="tool" data-wrap="s" title="Strikethrough"><s>S</s></button>
  <span class="sep"></span>
- <button class="tool tool-label" data-wrap="heading" title="Heading">H1</button>
+ <button class="tool tool-label" data-wrap="heading" title="Large heading (#)">H1</button>
  <button class="tool" data-wrap="big" title="Larger text">A+</button>
  <button class="tool" data-wrap="small" title="Smaller text" style="font-size:11px">A−</button>
  <span class="sep"></span>
  <button class="tool" data-wrap="center" title="Center alignment">☷</button>
- <button class="tool" data-wrap="quote" title="Quote">❝</button>
+ <button class="tool" data-wrap="quote" title="Block quote (>)">❝</button>
  <button class="tool" data-action="hr" title="Horizontal rule">―</button>
  <span class="sep"></span>
  <button class="tool" id="colorBtn" title="F-List text color presets" aria-label="Choose an F-List color" aria-expanded="false" aria-controls="colorPalette"><span class="color-swatch" style="--swatch:purple"></span><span style="font-size:11px">▾</span></button>
@@ -69,34 +78,27 @@
  </div>
  <div id="confirmBar" class="confirmbar" hidden><span id="confirmText"></span><button type="button" class="btn primary" id="confirmYes">Confirm</button><button type="button" class="btn" id="confirmNo">Cancel</button></div>
 <section id="guidePanel" class="guide-panel" hidden aria-label="Formatting guide"><div class="guide-head"><div><strong>Formatting &amp; macro cookbook</strong><p>Block macro markers (:::) and dividers (---) absorb the adjacent source newline. Add a blank line beside a marker for a visible break. Ordinary prose newlines remain visible. All templates are Markdown-first. Insert examples, nest macros, and export regular F-List BBCode. Only 12 named F-List colors are supported; legacy hex values are mapped to the nearest preset. Switching modes converts the source in both directions.</p></div><button type="button" class="guide-close" id="closeGuide" aria-label="Close guide">×</button></div><div class="guide-tools"><input id="guideSearch" type="search" aria-label="Search formatting examples" placeholder="Search examples, tags, macros…"><div id="guideTabs" class="guide-tabs"></div></div><div id="guideExamples" class="guide-examples"></div></section>
-<div class="sourcebar"><div><strong>Profile description</strong><div><span id="modeHint">Markdown and custom macros. Switch to BBCode to compile; switch back to decompile.</span></div></div><div class="seg"><button id="mixedMode" class="active" title="Switch to Markdown+ and decompile the current BBCode">Markdown+</button><button id="bbMode" title="Switch to BBCode and compile the current Markdown+">BBCode</button></div></div>
+<div class="sourcebar"><div><div><span id="modeHint">Markdown and custom macros. Switch to BBCode to compile; switch back to decompile.</span></div></div><div class="seg"><button id="mixedMode" class="active" title="Switch to Markdown+ and decompile the current BBCode">Markdown+</button><button id="bbMode" title="Switch to BBCode and compile the current Markdown+">BBCode</button></div></div>
+
  <div class="editorwrap"><div class="editor-shell"><div id="sourceGutter" class="source-gutter" aria-hidden="true"><div id="sourceLineNumbers"></div></div><div id="sourceSectionTint" class="source-section-tint" aria-hidden="true" hidden><div class="source-section-band"></div></div><pre id="sourceHighlight" class="editor-highlights" aria-hidden="true"></pre><textarea class="editor" id="source" spellcheck="true" aria-label="Profile description source" placeholder="Start writing your character's story…"></textarea></div></div>
  <div class="statusbar"><span id="stats">0 words · 0 characters</span><span id="saveStatus">● Saved locally</span></div>
  <div class="actionbar"><button class="btn primary" id="copyCode">▤ &nbsp;Copy BBCode</button><button class="btn" id="downloadCode">↓ Export .bbcode</button><button class="btn" id="downloadMarkdown" title="Export editable Markdown+ source">↓ Export .md</button><div class="grow"></div><button class="btn quiet" id="importBtn">↑ Import</button><button class="btn quiet" id="backupBtn">⇩ Backup</button></div>
 </section>
 <div id="paneDivider" class="pane-divider" role="separator" tabindex="0" aria-label="Resize source and preview panes" aria-orientation="vertical" aria-controls="sourcePane previewPane" aria-valuemin="25" aria-valuemax="75" aria-valuenow="52" title="Drag to resize; arrow keys adjust; double-click resets"></div>
 <section class="previewarea" id="previewPane">
- <div class="pvhead"><div><h2>Live preview</h2><span class="live">UPDATING AS YOU TYPE</span></div></div>
- <div class="pvcontrols"><label for="theme">Profile appearance</label><select id="theme" aria-label="Preview theme"><optgroup label="F-List site schemes"><option value="flist-blue">F-List Blue (default)</option><option value="flist-dark">F-List Dark</option><option value="flist-light">F-List Light</option></optgroup><optgroup label="Folio appearances"><option value="default">Midnight lilac</option><option value="classic">Light parchment</option><option value="noir">Obsidian</option></optgroup></select><label for="previewFontSize">Text size</label><input id="previewFontSize" type="text" inputmode="decimal" list="previewFontSizes" value="16" placeholder="Site default" aria-label="Preview text size in pixels" title="Enter 1?200 pixels; leave empty for site default" autocomplete="off"><datalist id="previewFontSizes"><option value="14"></option><option value="16"></option><option value="18"></option><option value="20"></option><option value="24"></option></datalist></div>
- <div class="frame"><div id="previewPage" class="previewpage"><div class="char-header"><div class="char-avatar">✦</div><div><h3 id="previewTitle">New Character</h3><small>Character description preview</small></div></div><div id="preview" class="description"></div></div></div>
+ <div class="pvhead"><div><h2>Live preview</h2><span class="live">UPDATING AS YOU TYPE</span></div><div class="app-appearance"><label for="editorTheme">App appearance</label><select id="editorTheme"><option value="folio">Folio (default)</option><option value="graphite">Graphite dark</option><option value="paper">Paper light</option><option value="forest">Verdant</option></select></div></div>
+ <div class="pvcontrols"><div class="preview-setting preview-appearance"><label for="theme">Profile appearance</label><select id="theme" aria-label="Preview theme"><optgroup label="F-List site schemes"><option value="flist-blue">F-List Blue (default)</option><option value="flist-dark">F-List Dark</option><option value="flist-light">F-List Light</option></optgroup><optgroup label="Folio appearances"><option value="default">Midnight lilac</option><option value="classic">Light parchment</option><option value="noir">Obsidian</option></optgroup></select></div><div class="preview-setting preview-text-size"><label for="previewFontSize">Text size</label><input id="previewFontSize" type="text" inputmode="decimal" list="previewFontSizes" value="16" placeholder="Site default" aria-label="Preview text size in pixels" title="Enter 1-200 pixels; leave empty for site default" autocomplete="off"><datalist id="previewFontSizes"><option value="14"></option><option value="16"></option><option value="18"></option><option value="20"></option><option value="24"></option></datalist></div></div>
+ <div class="frame"><div id="previewPage" class="previewpage"><div class="char-header"><div class="char-avatar" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="8" r="3.5"/><path d="M5 21v-2a7 7 0 0 1 14 0v2"/></svg></div><div><h3 id="previewTitle">New Character</h3><small>Character description preview</small></div></div><div id="preview" class="description"></div></div></div>
  <div class="previewhelp" id="previewNote"><button type="button" class="preview-note-close" id="dismissPreviewNote" aria-label="Dismiss preview note" title="Dismiss note">&times;</button><strong>✦ A little note:</strong> Switching between Markdown+ and BBCode automatically converts the source. For older or complicated BBCode, keep a backup: unrecognized tags stay as BBCode and spacing can change. Preview uses the Horizon BBCode parser with a browser adapter. Numeric image IDs need profile image metadata and display placeholders here. Only the 12 named F-List colors are exported; legacy hex colors are approximated to the nearest preset. Site themes, image permissions and unsupported tags may look different on your actual profile. Use <b>Copy BBCode</b>, then paste it into F-List's description editor.</div>
  <div class="pvfoot"><span><span class="dot"></span> Local-only editor</span><span id="warningCount">No obvious issues</span></div>
 </section>
 </div>
-<dialog id="templateManager" class="template-manager" aria-labelledby="templateManagerTitle">
- <div class="template-manager-head"><h2 id="templateManagerTitle">My templates</h2><button type="button" class="btn quiet" id="closeTemplateManager" aria-label="Close template manager">Close</button></div>
- <p class="inline-tip">Templates use Markdown+ and are saved in this browser. Edit a built-in to save your own copy.</p>
- <label for="templateChoice">Choose a template</label><select id="templateChoice"></select>
- <div class="template-manager-tools"><button type="button" class="btn" id="newTemplate">New blank</button><button type="button" class="btn" id="templateFromDraft">From current draft</button></div>
- <label for="templateName">Template name</label><input id="templateName" maxlength="100" placeholder="My character template">
- <label for="templateContent">Markdown+ source</label><textarea id="templateContent" spellcheck="true" placeholder="Write a reusable profile here…"></textarea>
- <div id="templateConfirm" class="template-confirm" hidden><span id="templateConfirmText"></span><button type="button" class="btn primary" id="templateConfirmYes">Continue</button><button type="button" class="btn" id="templateConfirmNo">Cancel</button></div>
- <div class="template-manager-tools"><button type="button" class="btn primary" id="saveTemplate">Save template</button><button type="button" class="btn" id="saveApplyTemplate">Save &amp; apply</button><button type="button" class="btn quiet" id="deleteTemplate" disabled>Delete template</button><span id="templateStatus" role="status"></span></div>
-</dialog>
+
 <div id="toast" class="toast" role="status" aria-live="polite"></div>
 <input type="file" id="fileImport" accept=".txt,.md,.bbcode,.json,text/plain,application/json" hidden />
 <script src="src/horizon-renderer.js"></script>
 <script src="src/syntax.js"></script>
+<script src="src/preview-state.js"></script>
 <script src="src/app.js"></script>
 </body>
 </html>

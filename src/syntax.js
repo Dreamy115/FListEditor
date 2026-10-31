@@ -15,11 +15,12 @@
       const emphasis = mixed && value.match(/^(\*{1,3}|__|_|~~|\+\+)([\s\S]+)\1$/);
       if (emphasis) {
         const mark = emphasis[1];
-        tokens.push({text: mark, kind: 'emphasis'});
+        const format = {'*':'italic', '_':'italic', '**':'bold', '__':'bold', '***':'bold-italic', '~~':'strike', '++':'underline'}[mark];
+        tokens.push({text: mark, kind: 'emphasis', format});
         for (const token of lex(emphasis[2], mixed)) {
-          tokens.push({text: token.text, kind: token.kind || 'emphasis'});
+          tokens.push({...token, kind: token.kind || 'emphasis', format: token.kind ? token.format : format});
         }
-        tokens.push({text: mark, kind: 'emphasis'});
+        tokens.push({text: mark, kind: 'emphasis', format});
         last = match.index + value.length;
         continue;
       }
@@ -31,7 +32,8 @@
       else if (/^!?\[.*\]\(https?:/i.test(value)) kind = 'link';
       else if (value.startsWith('[')) kind = 'tag';
       else if (/^[ \t]*(?:#|>|[-*+]|\d+\.)/.test(value)) kind = 'marker';
-      tokens.push({text: value, kind});
+      const marker = kind === 'marker' ? (/^[ \t]*#/.test(value) ? 'heading' : /^[ \t]*>/.test(value) ? 'quote' : 'list') : undefined;
+      tokens.push({text: value, kind, marker});
       last = match.index + value.length;
     }
     if (last < text.length) tokens.push({text: text.slice(last), kind: ''});
@@ -87,6 +89,9 @@
         if (!token.kind) { fragment.appendChild(document.createTextNode(pieces[i])); continue; }
         const span = document.createElement('span');
         span.className = 'syntax-' + token.kind;
+        if (token.marker) span.classList.add('syntax-marker-' + token.marker);
+        if (token.format) span.classList.add('syntax-emphasis-' + token.format);
+        if (token.depth !== undefined) span.classList.add('syntax-depth-' + token.depth % 5);
         if (token.unmatched) { span.classList.add('syntax-unmatched'); span.title = 'Unmatched delimiter'; }
         if (token.pair !== undefined) span.dataset.pair = String(token.pair);
         span.textContent = pieces[i]; fragment.appendChild(span);

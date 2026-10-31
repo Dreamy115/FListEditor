@@ -43,6 +43,19 @@ const nested = tokenize('*Text {color:cyan|Name} [b]bold[/b] `literal`*', true);
 for (const kind of ['emphasis', 'macro', 'tag', 'literal']) assert.ok(nested.some(t => t.kind === kind));
 assert.equal(tokenize('*Italic*', true)[0].kind, 'emphasis');
 assert.equal(tokenize('- List item', true)[0].kind, 'marker');
+assert.equal(tokenize('# Heading', true)[0].marker, 'heading');
+assert.equal(tokenize('> Quote', true)[0].marker, 'quote');
+assert.equal(tokenize('- List item', true)[0].marker, 'list');
+for (const [marks, format] of Object.entries({'*':'italic', '_':'italic', '**':'bold', '__':'bold', '***':'bold-italic', '~~':'strike', '++':'underline'})) {
+  const layer = document.createElement('pre');
+  highlight(layer, marks + 'Text' + marks, true);
+  assert.ok(layer.querySelector('.syntax-emphasis-' + format));
+  assert.equal(layer.textContent, marks + 'Text' + marks + '\n');
+}
+const formats = tokenize('**Bold ~~strike~~ {color:cyan|macro}**', true);
+assert.ok(formats.some(token => token.text === 'Bold ' && token.format === 'bold'));
+assert.ok(formats.some(token => token.text === 'strike' && token.format === 'strike'));
+assert.ok(formats.filter(token => token.kind === 'macro').every(token => !token.format));
 
 const deep = ':::center\n:::color cyan\n*{color:cyan|{big|[b][i]Nested[/i][/b]}}*\n:::\n:::';
 const deepTokens = tokenize(deep, true);
@@ -61,6 +74,15 @@ for (const kind of ['block', 'macro', 'tag']) {
 const deepLayer = document.createElement('pre');
 highlight(deepLayer, deep, true);
 assert.equal(deepLayer.querySelectorAll('.source-line-anchor').length, deep.split('\n').length);
+for (const kind of ['block', 'macro', 'tag']) {
+  assert.ok(deepLayer.querySelector('.syntax-' + kind + '.syntax-depth-0'));
+  assert.ok(deepLayer.querySelector('.syntax-' + kind + '.syntax-depth-1'));
+}
+for (const open of deepTokens.filter(t => t.partner > t.start)) {
+  const pair = [...deepLayer.querySelectorAll('[data-pair]')].filter(span => span.dataset.pair === String(open.pair));
+  assert.equal(pair.length, 2);
+  assert.ok(pair.every(span => span.classList.contains('syntax-depth-' + open.depth % 5)));
+}
 context.FolioSyntax.markActive(deepLayer, deep.indexOf('{big|') + 2);
 assert.equal(deep.slice(deepLayer.activeSyntaxRange.start, deepLayer.activeSyntaxRange.end), '{big|[b][i]Nested[/i][/b]}');
 context.FolioSyntax.markActive(deepLayer, deep.indexOf('Nested') + 2);
