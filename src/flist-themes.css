@@ -30,7 +30,7 @@
   font-family:Verdana,Helvetica,sans-serif;
 }
 .previewpage.flist-blue {
-  --site-panel:linear-gradient(to top,#134478,#2468af);--site-panel-color:#2468af;--site-collapse-color:transparent;--site-text:#ccc;--site-border:#0b345f;
+  --site-panel:#1b446f;--site-panel-color:#1b446f;--site-collapse-color:transparent;--site-text:#ccc;--site-border:#0b345f;
   --site-link:#9bb7b8;--site-hover:#cbe7e8;--site-heading:#fff;--site-rule:#082d44;
   --site-collapse:linear-gradient(to bottom,#4389cf,#13599f);--site-collapse-open:#235a8f;--site-collapse-open-text:#eee;--site-collapse-text:#000;
   --site-quote:linear-gradient(to top,#134478,#2468af);

@@ -18,7 +18,8 @@ saved explicit size preferences remain available. Site schemes hide the decorati
 Folio character header and use 10px panel padding. Quotes, collapse headers and
 bodies, character icons, rules, and inline typography follow the shared site CSS.
 
-Preview backgrounds use the site's MediumPanel colors and gradients. Links,
+The Blue preview background uses the site's solid `#1b446f` Content color.
+Other preview backgrounds use the site's panel colors and gradients. Links,
 rules, quote panels, collapse headers, and Verdana/Helvetica typography also use
 site values. Blue is the default for new installations. Existing saved Folio
 appearance selections are retained, and all six options remain available.
