@@ -28,6 +28,13 @@ blank line inside the quote. The quote contents accept Markdown, including neste
 quotes. Ordinary prose line breaks remain significant. Macro markers and divider
 lines absorb their syntax boundary newlines, as documented in the main README.
 
+Hash headings also absorb their editing boundary newlines. `## Title` followed
+by `abcd` on the next source line exports as `[heading]Title[/heading]abcd`.
+Use a blank line (two newlines) for one intentional BBCode break, including at
+the end of the source. Decompilation uses the same rule to prefer hash notation
+even when prose immediately follows the closing heading tag. Multiline heading
+contents still require a block macro.
+
 Lists preserve leading spaces and tabs, whitespace after the marker, blank lines,
 and continuation-line indentation. Nested bullet/numbered combinations are
 supported, including inside quotes and layout macros. F-List has no native list

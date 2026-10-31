@@ -330,16 +330,19 @@ function markdownToBB(input){
  const lines=input.replace(/\r\n?/g,'\n').split('\n'),parts=[],stack=[];
  // Only content lines contribute breaks. Macro/fence delimiters attach to their
  // contents: pretty-printing BBCode tags would create visible F-List spacing.
- let pendingBreak=false,afterClose=false;
+ let pendingBreak=false,afterClose=false,trailingHeading=false;
  const beforeLine=()=>{if(pendingBreak)parts.push('\n');pendingBreak=false};
  const out={
   push(value){if(value===''&&afterClose){parts.push('\n');return}beforeLine();parts.push(value);pendingBreak=true;afterClose=false},
   open(value){pendingBreak=false;afterClose=false;parts.push(value)},
-  close(value){pendingBreak=false;afterClose=true;parts.push(value)}
+  close(value){pendingBreak=false;afterClose=true;parts.push(value)},
+  heading(value){pendingBreak=false;afterClose=true;trailingHeading=true;parts.push(value)}
  };
  let inFence=false,inNoParse=false;
  for(let index=0;index<lines.length;index++){
   let line=lines[index];
+  if(index===lines.length-1&&line===''&&trailingHeading)continue;
+  if(line!=='')trailingHeading=false;
   const soft=!inFence&&!inNoParse&&index<lines.length-1&&((line.match(/\\+$/)||[''])[0].length%2===1);
   if(soft)line=line.slice(0,-1);
   try{
@@ -365,7 +368,9 @@ function markdownToBB(input){
   const heading=line.match(/^[ \t]*(#{1,6})[ \t]+(.*)$/);
   if(heading){
    const level=heading[1].length,content=inlineMarkdown(heading[2].replace(/\s+#+\s*$/,''));
-   out.push(level===1?'[heading][big]'+content+'[/big][/heading]':level===3?'[big]'+content+'[/big]':'[heading]'+content+'[/heading]');continue;
+   // Heading lines are structural, like ::: boundaries and dividers.
+   // Their editing newline must not become an extra F-List line break.
+   out.heading(level===1?'[heading][big]'+content+'[/big][/heading]':level===3?'[big]'+content+'[/big]':'[heading]'+content+'[/heading]');continue;
   }
   if(/^\s*(?:-{3,}|\*{3,}|_{3,})\s*$/.test(line)){out.close('[hr]');continue}
   const quote=line.match(/^[ \t]*>[ \t]?(.*)$/);
@@ -447,7 +452,7 @@ function bbcodeToMarkdown(input,escapePlain=true){
    const large=node.children.length===1&&node.children[0].tag==='big';
    return boundaries(large?'# '+children(node.children[0]):'## '+content);
   }
-  if(tag==='big'&&inline&&!editableLayout)return boundaries('### '+content);
+  if(tag==='big'&&inline&&!editableLayout&&!preserveLayout)return boundaries('### '+content);
   if(['b','i','u','s'].includes(tag)){
    const marks={b:'**',i:'*',u:'++',s:'~~'};
    if(!inline)return block(tag,'',content);
@@ -495,8 +500,8 @@ function bbcodeToMarkdown(input,escapePlain=true){
  const markdown=result.replace(/[\uE006\uE007\n]+/g,part=>'\n'.repeat(Math.max(1,(part.match(/\n/g)||[]).length))).trim();
  if(markdownToBB(markdown)===normalized.replace(/\r\n?/g,'\n'))return preferStandardMarkdown(markdown);
  editableLayout=true;
- const editable=children(tree).replace(/^[\uE006\uE007]+|[\uE006\uE007]+$/g,'')
-  .replace(/[\uE006\uE007\n]+/g,part=>'\n'.repeat((part.match(/\n/g)||[]).length+(/[\uE006\uE007]/.test(part)?1:0)));
+ const structured=children(tree).replace(/^[\uE006\uE007]+|[\uE006\uE007]+$/g,'');
+ const editable=structured.replace(/[\uE006\uE007\n]+/g,(part,offset)=>'\n'.repeat((part.match(/\n/g)||[]).length+(/[\uE006\uE007]/.test(part)&&offset+part.length<structured.length?1:0)));
  if(markdownToBB(editable)===normalized.replace(/\r\n?/g,'\n'))return preferStandardMarkdown(editable);
  editableLayout=false;preserveLayout=true;
  return preferStandardMarkdown(children(tree));
@@ -533,8 +538,13 @@ function standardMarkdownRewrite(markdown,start,length,replacement,expected){
  const before=markdown.slice(0,start),after=markdown.slice(start+length);
  // Macro boundaries absorb a source newline; Markdown prose does not. Try
  // reusing that boundary before retaining an unnecessary visible blank line.
- for(const prefix of [before,before.replace(/\n$/,'')]){
-  for(const suffix of [after,after.replace(/^\n/,'')]){
+ const prefixes=[before,before.replace(/\n$/,'')],suffixes=[after,after.replace(/^\n/,'')];
+ if(/^#{1,6} /.test(replacement)){
+  if(before.endsWith('\n'))prefixes.push(before+'\n');
+  if(after.startsWith('\n')||after==='')suffixes.push('\n'+after);
+ }
+ for(const prefix of prefixes){
+  for(const suffix of suffixes){
    const candidate=prefix+replacement+suffix;
    if(markdownToBB(candidate)===expected)return candidate;
   }

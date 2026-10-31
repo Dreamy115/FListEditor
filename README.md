@@ -33,6 +33,7 @@ Create an empty remote repository and follow its instructions for adding the rem
 
 - Markdown+ compiles to F-List BBCode; switching back decompiles recognized formatting.
 - Decompilation prefers `#`, `##`, and `###` over heading/size macros wherever recompiling preserves the exact BBCode and whitespace. Headings that require explicit macros do not affect that preference elsewhere in the profile.
+- Heading source newlines are editing boundaries and do not add BBCode breaks before or after the heading. Add a blank line for an intentional break. Packed headings followed immediately by prose decompile to hash notation using these same rules.
 - Standard Markdown is preferred for quotes (`>`), external images, links/autolinks, and literal code as well. Consecutive `>` lines form one quote, with nested quotes supported. See `docs/conversion-maps.md` for the full mapping and fallback rules.
 - BBCode text bullets decompile into `-` lists; numbered lists retain their numbers. Nested lists preserve spaces, tabs, blank lines, and continuation indentation, including inside quotes and layout macros.
 - Every exported newline is a visible F-List line break. Markdown+ preserves content line breaks, blank lines, and indentation; block macro markers and code fences add no extra breaks around their contents.

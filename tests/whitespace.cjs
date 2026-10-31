@@ -150,3 +150,36 @@ for(const bbcode of [
  '0. Zero\n  42. No renumbering'
 ])assert.equal(compile(context.bbcodeToMarkdown(bbcode)),bbcode);
 assert.equal(context.preferStandardMarkdown('```\n• literal\n```'),'```\n• literal\n```');
+
+assert.equal(compile('## Title\nabcd'),'[heading]Title[/heading]abcd');
+assert.equal(context.bbcodeToMarkdown('[heading]Title[/heading]abcd'),'## Title\nabcd');
+assert.equal(compile('## Title\n'),'[heading]Title[/heading]');
+assert.equal(compile('## Title\n\n'),'[heading]Title[/heading]\n');
+assert.equal(compile('## Title\n\nabcd'),'[heading]Title[/heading]\nabcd');
+assert.equal(compile('Before\n## Title\nAfter'),'Before[heading]Title[/heading]After');
+assert.equal(compile('Before\n\n## Title\n\nAfter'),'Before\n[heading]Title[/heading]\nAfter');
+for(const [marker,open,close] of [
+ ['#','[heading][big]','[/big][/heading]'], ['##','[heading]','[/heading]'], ['###','[big]','[/big]']
+]){
+ for(const before of ['', 'Before', 'Before\n', '\n']){
+  for(const after of ['', 'abcd', '\nabcd', '\n\nabcd', '\n', '\n\n']){
+   const bbcode=before+open+'Title'+close+after;
+   const markdown=context.bbcodeToMarkdown(bbcode);
+   assert.match(markdown,new RegExp('^'+marker+' Title$','m'));
+   assert.doesNotMatch(markdown, /:::heading|\{big\||[\uE006\uE007]/);
+   assert.equal(compile(markdown),bbcode,'Heading boundaries retain exact BBCode');
+  }
+ }
+}
+for(const bbcode of [
+ '[heading][color=cyan]Title[/color][/heading]abcd',
+ '[center][heading]Title[/heading]abcd[/center]\n',
+ '[heading]One[/heading][heading]Two[/heading]abcd',
+ '[heading]One[/heading]\n[heading]Two[/heading]\n',
+ '[heading][big]Large[/big][/heading]\n',
+ '[heading]First\nSecond[/heading]abcd'
+]){
+ const markdown=context.bbcodeToMarkdown(bbcode);
+ assert.doesNotMatch(markdown,/[\uE006\uE007]/);
+ assert.equal(compile(markdown),bbcode);
+}
