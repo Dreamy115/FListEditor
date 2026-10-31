@@ -84,3 +84,14 @@ assert.match(context.bbcodeToMarkdown(nestedHeading), /^# \{color:cyan\|Name\}$/
 assert.equal(compile(context.bbcodeToMarkdown(nestedHeading)), nestedHeading);
 assert.equal(compile(context.bbcodeToMarkdown('[heading]First\nSecond[/heading]')), '[heading]First\nSecond[/heading]');
 assert.equal(context.preferHashHeadings('```\n:::heading\nLiteral\n:::\n```'), '```\n:::heading\nLiteral\n:::\n```');
+
+for (const tag of ['i', 'b', 'u', 's']) {
+  const bbcode = `[${tag}]a\nb[/${tag}]`;
+  assert.equal(context.bbcodeToMarkdown(bbcode), `:::${tag}\na\nb\n:::`);
+  assert.equal(compile(context.bbcodeToMarkdown(bbcode)), bbcode);
+  const nested = `Before[${tag}][color=cyan]a\nb[/color][/${tag}]After`;
+  assert.match(context.bbcodeToMarkdown(nested), new RegExp(`:::${tag}\\n`));
+  assert.equal(compile(context.bbcodeToMarkdown(nested)), nested);
+  const padded = `[${tag}]\na\n\nb\n[/${tag}]`;
+  assert.equal(compile(context.bbcodeToMarkdown(padded)), padded);
+}

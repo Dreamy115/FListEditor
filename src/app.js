@@ -383,11 +383,11 @@ function bbcodeToMarkdown(input,escapePlain=true){
   if(tag==='big'&&inline&&!editableLayout)return boundaries('### '+content);
   if(['b','i','u','s'].includes(tag)){
    const marks={b:'**',i:'*',u:'++',s:'~~'};
+   if(!inline)return block(tag,'',content);
    // Nested emphasis with surrounding prose is ambiguous to the compact parser.
    const nestedEmphasis=node.children.some(c=>['b','i'].includes(c.tag));
    const simpleBoldItalic=tag==='b'&&node.children.length===1&&node.children[0].tag==='i'&&node.children[0].children.every(c=>c.text!==undefined);
    if(['b','i','s'].includes(tag)&&nestedEmphasis&&!simpleBoldItalic)return '{'+tag+'|'+content+'}';
-   if(/[\r\n]/.test(content))return raw(node);
    return marks[tag]+content+marks[tag];
   }
   if(['sup','sub','big','small'].includes(tag))return inline?'{'+tag+'|'+content+'}':block(tag,'',content);
@@ -651,6 +651,7 @@ $('copyCode').addEventListener('click',copyCode);
 function download(text,file,type='text/plain;charset=utf-8'){const link=document.createElement('a');link.href=URL.createObjectURL(new Blob([text],{type}));link.download=file;document.body.append(link);link.click();setTimeout(()=>URL.revokeObjectURL(link.href),2000);link.remove()}
 const slug=()=> (active().name||'character').trim().replace(/[^a-z0-9_-]+/gi,'_').replace(/^_+|_+$/g,'').slice(0,60)||'character';
 $('downloadCode').addEventListener('click',()=>{download(getCompiled(),slug()+'.bbcode');toast('BBCode exported')});
+$('downloadMarkdown').addEventListener('click',()=>{download(data.mixed?source.value:bbcodeToMarkdown(source.value,true),slug()+'.md','text/markdown;charset=utf-8');toast('Markdown source exported')});
 $('backupBtn').addEventListener('click',()=>{download(JSON.stringify({format:'folio-profile',version:1,name:active().name,content:active().content,mixed:data.mixed},null,2),slug()+'.folio.json','application/json');toast('Editable backup exported')});
 $('importBtn').addEventListener('click',()=>$('fileImport').click());
 $('fileImport').addEventListener('change',async(e)=>{const file=e.target.files[0];e.target.value='';if(!file)return;if(file.size>1500000){toast('File is too large (max 1.5 MB)');return}let str=await file.text(),name=file.name.replace(/\.(folio\.json|bbcode|txt|md|json)$/i,'');if(file.name.toLowerCase().endsWith('.json')){try{const record=JSON.parse(str);if(typeof record.content!=='string')throw Error('No profile content');name=String(record.name||name);str=record.content;if(typeof record.mixed==='boolean'){data.mixed=record.mixed;updateMode()}}catch(error){toast('Not a valid Folio backup');return}}
