@@ -294,32 +294,33 @@ function decompileFonts(text,escapePlain){
  for(const [name,style] of Object.entries(fontStyles))style.chars.forEach((char,i)=>{if(char!==fontAlphabet[i])reverse.set(char,{name,char:fontAlphabet[i]})});
  let result='',buffer='',style=null;
  const flush=()=>{if(buffer)result+=style?'{font:'+style+'|'+plain(buffer)+'}':plain(buffer);buffer=''};
- // Only decode characters uniquely belonging to a known alphabet. Ordinary
- // letters beside small caps may be unrelated text and must stay untouched.
  const chars=[...text];
+ const unchanged=(char,name)=>{
+  if(char==='\n'||char==='\r'||reverse.has(char))return false;
+  const index=fontAlphabet.indexOf(char);
+  return index<0||fontStyles[name].chars[index]===char;
+ };
  if(text.includes('\n')){
   const names=new Set(chars.map(char=>reverse.get(char)?.name).filter(Boolean));
-  if(names.size===1){const name=[...names][0],decoded=chars.map(char=>reverse.get(char)?.char||char).join('');
+  const styledLines=text.split(/\r?\n/).every(line=>!line.trim()||[...line].some(char=>reverse.has(char)));
+  if(names.size===1&&styledLines){const name=[...names][0],decoded=chars.map(char=>reverse.get(char)?.char||char).join('');
    if(applyFont(decoded,name)===text)return '\uE006:::font '+name+'\n'+plain(decoded)+'\n:::\uE007';
   }
  }
-
- for(let index=0;index<chars.length;index++){
-  const char=chars[index];
-  // Bridge unchanged characters only between runs of the same font. This
-  // includes small-cap x, capitals and punctuation, without changing output
-  // or taking leading/trailing plain text into the macro.
-  if(style&&!reverse.has(char)&&char!=='\n'&&char!=='\r'){
-   let end=index;
-   while(end<chars.length&&!reverse.has(chars[end])&&chars[end]!=='\n'&&chars[end]!=='\r'){
-    const alphabetIndex=fontAlphabet.indexOf(chars[end]);
-    if(alphabetIndex>=0&&fontStyles[style].chars[alphabetIndex]!==chars[end])break;
-    end++;
+ for(const char of chars){
+  const entry=reverse.get(char);
+  if(!entry&&style&&unchanged(char,style)){buffer+=char;continue}
+  const next=entry?.name||null;
+  if(next!==style){
+   let prefix='';
+   // Greedily recover the unchanged suffix before a styled run, too.
+   if(next&&!style){
+    const previous=[...buffer];let start=previous.length;
+    while(start>0&&unchanged(previous[start-1],next))start--;
+    prefix=previous.slice(start).join('');buffer=previous.slice(0,start).join('');
    }
-   if(end>index&&reverse.get(chars[end])?.name===style){buffer+=chars.slice(index,end).join('');index=end-1;continue}
+   flush();style=next;buffer=prefix;
   }
-  const entry=reverse.get(char),next=entry?.name||null;
-  if(next!==style){flush();style=next}
   buffer+=entry?.char||char;
  }
  flush();return result;

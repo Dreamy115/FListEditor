@@ -100,10 +100,10 @@ Inline font macros cannot span source lines. Nesting font macros or blocks
 produces a warning.
 
 Decompilation recognizes mapped Unicode characters and reconstructs their font
-macros. It can bridge spaces and unchanged characters between matching styled
-runs, such as the ordinary `x` inside small-cap text, without changing exported
-characters. Surrounding plain text, different styles, and literal code stay
-separate. Multiline runs of one recognizable font use `:::font` blocks. A font
+macros. It greedily includes adjacent spaces and unchanged characters on the same line,
+including uppercase letters and ordinary `x` beside small caps, only when the
+exported Unicode stays identical. Characters that the font would change, different
+styles, literal code and line boundaries stop this expansion. Multiline runs of one recognizable font use `:::font` blocks. A font
 choice that leaves all characters unchanged cannot be inferred from BBCode.
 
 ## HTML character references

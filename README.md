@@ -85,11 +85,10 @@ macros must stay on one line. Font blocks accept Markdown and other formatting
 macros. Nesting fonts, including an inline font inside a font block, produces a
 warning. Font block boundaries follow the same newline rules as other blocks.
 
-Decompilation wraps recognized styled characters in font macros. Unchanged
-characters between matching styled runs are included only if applying that font
-leaves them unchanged. For example, small-cap `x` stays ordinary `x`, but
-`{font:smallcaps|your text}` can still return as one editable macro. Plain text
-outside the styled run remains outside. Font choices that change no characters
+Decompilation wraps recognized styled characters in font macros. Adjacent unchanged characters on the same line are greedily included only if
+applying that font leaves them unchanged. For example, small-cap `x` stays ordinary `x`, but
+`{font:smallcaps|your text}` can still return as one editable macro. Characters that the font would change stay outside, and this greedy expansion
+does not cross line breaks. Font choices that change no characters
 cannot be recovered from exported text. Recognizable multiline runs use font
 blocks; literal code does not become active font macros.
 
