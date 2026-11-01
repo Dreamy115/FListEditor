@@ -12,7 +12,7 @@ for(const [markdown,bbcode] of [
  ['**[there]**','[b][noparse][there][/noparse][/b]'],
  ['{color:purple|[there]}','[color=purple][noparse][there][/noparse][/color]'],
  ['[Label](https://example.com)','[url=https://example.com]Label[/url]'],
- ['**before** [noparse] **after**','[b]before[/b] [noparse][noparse][/noparse] [b]after[/b]'],
+ ['**before** [noparse] **after**','[b]before[/b] [noparse][[/noparse]noparse][noparse][/noparse] [b]after[/b]'],
  ['\\[b]','[noparse][b][/noparse]']
 ]){
  assert.equal(compile(markdown),bbcode,markdown);

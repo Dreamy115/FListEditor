@@ -177,11 +177,24 @@ Character link: {user:Example Character}
 Character avatar: {icon:Example Character}
 Eicon: {eicon:smile}
 These are sample names and URLs; remote assets may be unavailable or require a connection. A missing remote image does not indicate a conversion failure.
+If a character avatar fails to load, its linked image should show a local silhouette placeholder while retaining the character name and profile link. This fallback also works offline; eicons and inline images have separate loading behavior.
 
 ## 7. Literal content, escapes, and whitespace
 
 Inline literal: `**not bold** {color:teal|not interpreted} [table]not a tag here[/table]`.
 Explicit literal macro: {noparse|**also literal** {typo|not a warning here}}.
+Escaped backticks stay ordinary text: \`one backtick pair\` and \`\`\`.
+Double-backtick code can contain a single backtick: ``code ` inside``.
+Backticks inside a literal macro stay literal: {noparse|`not another code span`}.
+
+````text
+This longer fence contains literal triple backticks:
+```
+{unknown|still literal, with no warning}
+```
+````
+
+Switch to BBCode and back: literal backticks, code contents, and visible line breaks should survive. Decompilation may choose a longer delimiter or a noparse macro to preserve the same exported BBCode.
 
 ```text
 **Literal bold markers**
@@ -318,6 +331,56 @@ Invalid link and image arguments: expect inline macro warnings.
 ```
 
 Repeat the same bad macro on two separate lines and verify both warning locations are available. Repeat raw BBCode errors in BBCode mode to check native-mode diagnostics. Literal examples in this saved showcase should remain warning-free.
+
+Invalid native URLs: paste into **BBCode mode**. Expect an Invalid URL warning on each opening tag, with guidance to use a complete HTTP(S) address. Unsafe schemes must not create clickable links.
+```text
+[url]example.com[/url]
+[url=javascript:alert(1)]Unsafe link[/url]
+[url][/url]
+```
+
+Unexpected native arguments: paste into **BBCode mode**. Expect a warning on the opening tag and a Remove tag argument quick fix. The fix should preserve the body and closing tag; undo should restore the argument.
+```text
+[b=ignored]Keep this text[/b]
+```
+
+Invalid character and eicon names: activate in Markdown+. Expect Invalid name guidance on each macro; these names cannot render as character links or images.
+```text
+{user:Bad!Name}
+{icon:Bad!Name}
+{eicon:Bad!Name}
+```
+
+Unsupported formatting combinations: activate in Markdown+. Expect the warning on the inner color macro. The preview displays the unsupported inner tags literally; the guidance should suggest moving the formatting outside the superscript or removing the inner wrapper.
+```text
+{sup|{color:red|Unsupported inner color}}
+```
+
+Nested size warning locations: activate this whole specimen in Markdown+. Expect two Unsupported nesting warnings, one on each inner `{big|` opener. Check their source lines, underlines, and warning navigation. The preceding heading also exports a big tag, and the literal example contains macro spellings; neither should shift the warnings to another line or receive a warning itself.
+```text
+# A heading before the size examples
+
+`{big|A literal example}`
+
+{big|Outer text with {big|First inner size}}
+
+{big|Another outer span with {big|Second inner size}}
+```
+
+Mixed block and inline size nesting: activate in Markdown+. Expect the warning on the inner macro line, rather than the block opener or first line of the source.
+```text
+Introductory text.
+:::big
+{big|Inner size}
+:::
+```
+
+Compatibility controls: paste into **BBCode mode**. These should produce no warnings: blank collapse titles remain valid, alignment nesting is supported in native mode, and noparse keeps its contents literal.
+```text
+[collapse]A deliberately blank title[/collapse]
+[center][right]The inner alignment takes precedence[/right][/center]
+[noparse][big][big]Literal size tags[/big][/big][url]invalid[/url][/noparse]
+```
 
 ## 10. Unicode font verification
 

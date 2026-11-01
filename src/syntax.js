@@ -3,7 +3,7 @@
   // Highlight source without parsing it into editable HTML or changing whitespace.
   function lex(text, mixed) {
     const pattern = mixed
-      ? /```[^\n]*(?:\n[\s\S]*?(?:\n[ \t]*```[^\n]*|(?![\s\S])))?|\{noparse\|[^}\n]*\}|`[^`\n]*`|\\[^\n]|\\$|^[ \t]*>[^\n]*|^[ \t]*:::[^\n]*|^[ \t]*#{1,6}[ \t]+|^[ \t]*(?:-{3,}|\*{3,}|_{3,})[ \t]*$|^[ \t]*(?:>[ \t]?|[-*+][ \t]+|\d+\.[ \t]+)|!?\[[^\]\n]*\]\(https?:\/\/[^\s)]+\)|\[\/?[a-z]+(?:=[^\]\n]*)?\]|&(?:#(?:x[0-9a-f]+|[0-9]+)|[a-z][a-z0-9]+);|\{[a-z]+(?::[^|}\n]*)?(?:\||\})|\}|\*{1,3}[^*\n]+\*{1,3}|__[^_\n]+__|_[^_\n]+_|~~[^~\n]+~~|\+\+[^+\n]+\+\+/gim
+      ? /^[ \t]*(`{3,})[^`\n]*(?:\n[\s\S]*?(?:\n[ \t]*\1`*[ \t]*(?=\n|$)|(?![\s\S])))?|\{noparse\|[^}\n]*\}|(`+)(?!`)[^\n]+?\2(?!`)|\\[^\n]|\\$|^[ \t]*>[^\n]*|^[ \t]*:::[^\n]*|^[ \t]*#{1,6}[ \t]+|^[ \t]*(?:-{3,}|\*{3,}|_{3,})[ \t]*$|^[ \t]*(?:>[ \t]?|[-*+][ \t]+|\d+\.[ \t]+)|!?\[[^\]\n]*\]\(https?:\/\/[^\s)]+\)|\[\/?[a-z]+(?:=[^\]\n]*)?\]|&(?:#(?:x[0-9a-f]+|[0-9]+)|[a-z][a-z0-9]+);|\{[a-z]+(?::[^|}\n]*)?(?:\||\})|\}|\*{1,3}[^*\n]+\*{1,3}|__[^_\n]+__|_[^_\n]+_|~~[^~\n]+~~|\+\+[^+\n]+\+\+/gim
       : /\[noparse\][\s\S]*?(?:\[\/noparse\]|(?![\s\S]))|\[\/?[a-z]+(?:=[^\]\n]*)?\]/gi;
     const tokens = [];
     let last = 0;
@@ -34,7 +34,7 @@
         continue;
       }
       let kind = 'emphasis';
-      if (/^(?:```|`|\[noparse\]|\{noparse\|)/i.test(value)) kind = 'literal';
+      if (/^(?:[ \t]*`|\[noparse\]|\{noparse\|)/i.test(value)) kind = 'literal';
       else if (value.startsWith('&')) kind = 'entity';
       else if (value.startsWith('\\')) kind = 'escape';
       else if (/^[ \t]*:::/.test(value)) kind = 'block';

@@ -6,6 +6,13 @@ const {document} = parseHTML('<pre></pre>');
 const context = vm.createContext({document});
 vm.runInContext(fs.readFileSync('src/syntax.js', 'utf8'), context);
 const {tokenize, highlight} = context.FolioSyntax;
+for (const source of ['``code ` inside``', '````text\n```\n{unknown|literal}\n```\n````', '```\n```literal\n```']) {
+  const tokens = tokenize(source, true);
+  assert.equal(tokens.length, 1, source);
+  assert.equal(tokens[0].kind, 'literal', source);
+  assert.equal(tokens[0].text, source);
+}
+assert.ok(!tokenize('\\`literal\\`', true).some(token => token.kind === 'literal'));
 const sample = ':::center\n# Heading\n{color:cyan|**Name**}\n[hr]\n\n<script>alert(1)</script>\n';
 for (const mixed of [true, false]) {
   assert.equal(tokenize(sample, mixed).map(t => t.text).join(''), sample);

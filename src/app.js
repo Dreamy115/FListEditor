@@ -334,15 +334,42 @@ function convertEntityPreference(text,preferLiterals){
  for(const edit of edits){const next=apply(result,edit);if(markdownToBB(next)===expected)result=next}
  return result;
 }
-function literalBBCode(text){
- // A literal closing noparse tag must be split so it cannot end its wrapper.
- return '[noparse]'+text.replace(/\[\/noparse\]/gi,tag=>'[[/noparse]'+tag.slice(1)+'[noparse]')+'[/noparse]';
+function literalBBContent(text){
+ // Split both forms: closers terminate the wrapper, while openers can make
+ // the renderer consume the wrapper's closer as part of a nested literal tag.
+ return text.replace(/\[\/?noparse\]/gi,tag=>'[[/noparse]'+tag.slice(1)+'[noparse]');
+}
+function literalBBCode(text){return '[noparse]'+literalBBContent(text)+'[/noparse]'}
+function transformInlineLiterals(text,transform){
+ let output='';
+ for(let i=0;i<text.length;){
+  if(text[i]==='\\'&&i+1<text.length){output+=text.slice(i,i+2);i+=2;continue}
+  const macro=text.slice(i).match(/^\{noparse\|/i);
+  if(macro){
+   let depth=1,j=i+macro[0].length;
+   for(;j<text.length&&text[j]!=='\n'&&depth;j++){if(text[j]==='{'&&text[j-1]!=='\\')depth++;else if(text[j]==='}'&&text[j-1]!=='\\')depth--}
+   if(!depth){output+=transform(text.slice(i,j),text.slice(i+macro[0].length,j-1));i=j;continue}
+  }
+  if(text[i]==='`'){
+   const run=text.slice(i).match(/^`+/)[0];let j=i+run.length,matched=false;
+   while(j<text.length&&text[j]!=='\n'){
+    if(text[j]!=='`'){j++;continue}
+    const closing=text.slice(j).match(/^`+/)[0];
+    if(closing.length===run.length&&j>i+run.length){const end=j+run.length;output+=transform(text.slice(i,end),text.slice(i+run.length,j));i=end;matched=true;break}
+    j+=closing.length;
+   }
+   if(matched)continue;
+   output+=run;i+=run.length;continue;
+  }
+  output+=text[i++];
+ }
+ return output;
 }
 function inlineMarkdown(text,protectedParts=[],issues=[]){
  const warn=message=>issues.push(message);
  const protect=value=>{const id=protectedParts.length;protectedParts.push(value);return '\uE000'+id+'\uE001'};
  // Shield literal inline code before interpreting any BBCode or custom macros.
- text=text.replace(/`([^`\n]+)`/g,(_,literal)=>protect(literalBBCode(literal)));
+ text=transformInlineLiterals(text,(_,literal)=>protect(literalBBCode(literal)));
  // Explicitly escaped bracket expressions stay literal even for known tags.
  text=text.replace(/(\\+)(\[[^\[\]\n]*\])/g,(_,slashes,literal)=>slashes.length%2?slashes.slice(0,-1)+protect(literalBBCode(literal)):slashes+literal);
  // Support nested inline macros, e.g. {color:purple|**bright**}.
@@ -359,7 +386,7 @@ function inlineMarkdown(text,protectedParts=[],issues=[]){
   else if(name==='hr'&&body===undefined&&!arg)compiled='[hr]';
   else if(name==='font'&&body!==undefined&&Object.hasOwn(fontStyles,arg.toLowerCase()))compiled=applyFont(inlineMarkdown(body,[],issues),arg.toLowerCase());
   else if(name==='color'&&body!==undefined){const color=resolvedColor(arg);const content=inlineMarkdown(body,protectedParts,issues);compiled=color?'[color='+color+']'+content+'[/color]':content;}
-  else if(['b','i','s','big','small','u','underline','sup','sub','noparse','heading','center','left','right','justify','indent','quote','collapse'].includes(name)&&body!==undefined){let tag=name==='underline'?'u':name;compiled='['+tag+(tag==='collapse'&&arg?'='+arg:'')+']'+(name==='noparse'?body:inlineMarkdown(body,protectedParts,issues))+'[/'+tag+']'}
+  else if(['b','i','s','big','small','u','underline','sup','sub','noparse','heading','center','left','right','justify','indent','quote','collapse'].includes(name)&&body!==undefined){let tag=name==='underline'?'u':name;compiled='['+tag+(tag==='collapse'&&arg?'='+arg:'')+']'+(name==='noparse'?literalBBContent(body):inlineMarkdown(body,protectedParts,issues))+'[/'+tag+']'}
   else if(['user','icon','eicon'].includes(name)&&arg&&body===undefined&&!/[\[\]{}]/.test(arg))compiled='['+name+']'+arg+'[/'+name+']';
   else if(['img','image'].includes(name)&&arg){if(/^\d+$/.test(arg))compiled='[img='+arg+']'+(body===undefined?'':body)+'[/img]';else if(body===undefined&&safeUrl(arg))compiled='[img]'+arg+'[/img]'}
   else if(name==='link'&&safeUrl(arg)&&body!==undefined)compiled='[url='+arg+']'+inlineMarkdown(body,protectedParts,issues)+'[/url]';
@@ -411,8 +438,10 @@ function markdownToBB(input,issues=[]){
   try{
   const trimmed=line.trim();
   // A fenced code block is literal text. F-List supports noparse, not Markdown fences.
-  if(/^```/.test(trimmed)){if(inFence)out.close('[/noparse]');else out.open('[noparse]');inFence=!inFence;continue}
-  if(inFence){out.push(line);continue}
+  if(inFence&&new RegExp('^`{'+inFence+',}$').test(trimmed)){out.close('[/noparse]');inFence=false;continue}
+  const fence=!inFence&&trimmed.match(/^(`{3,})[^`]*$/);
+  if(fence){out.open('[noparse]');inFence=fence[1].length;continue}
+  if(inFence){out.push(literalBBContent(line));continue}
   if(trimmed===':::'){
    if(stack.length){const closing=stack.pop();if(closing)out.close('[/'+closing+']');continue}
    issues.push('Unmatched block macro closing marker: :::; exported as literal text');out.push(line);continue;
@@ -424,7 +453,9 @@ function markdownToBB(input,issues=[]){
     const body=[];let depth=1,fenced=false;
     while(++index<lines.length){
      const next=lines[index],marker=next.trim();
-     if(/^```/.test(marker))fenced=!fenced;
+     const fenceOpen=!fenced&&marker.match(/^(`{3,})[^`]*$/);
+     if(fenceOpen)fenced=fenceOpen[1].length;
+     else if(fenced&&new RegExp('^`{'+fenced+',}$').test(marker))fenced=false;
      if(!fenced){if(/^:::[a-z]/i.test(marker))depth++;else if(marker===':::'&&--depth===0)break}
      body.push(next);
     }
@@ -576,10 +607,11 @@ function bbcodeToMarkdown(input,escapePlain=true){
    return raw(node);
   }
   if(tag==='noparse'){
-   if(plain&&!/[`\r\n]/.test(plain))return '`'+plain+'`';
+   const longest=Math.max(0,...[...plain.matchAll(/`+/g)].map(match=>match[0].length));
+   if(plain&&!/[\r\n]/.test(plain)&&!plain.startsWith('`')&&!plain.endsWith('`')){const ticks='`'.repeat(longest+1);return ticks+plain+ticks}
    if(!/[{}\n]/.test(plain))return '{noparse|'+plain+'}';
-   if(!/```|\[\/noparse\]/i.test(plain))return boundaries('```\n'+plain+'\n```');
-   return raw(node);
+   const fence='`'.repeat(Math.max(3,longest+1));
+   return boundaries(fence+'\n'+plain+'\n'+fence);
   }
   return raw(node);
  }
@@ -840,7 +872,16 @@ function blockMacroWarnings(text){
 function warningSource(text,mixed){
  const blank=value=>value.replace(/[^\n]/g,' ');
  if(!mixed)text=text.replace(/(\[noparse\])([\s\S]*?)(\[\/noparse\]|$)/gi,(_,open,body,close)=>open+blank(body)+close);
- if(mixed)text=text.replace(/^\s*```[^\n]*\n[\s\S]*?(?:^\s*```[^\n]*(?:\n|$)|(?![\s\S]))/gm,blank).replace(/`[^`\n]+`/g,blank).replace(/\\[{}]/g,blank);
+ if(mixed){
+  let fence=0;
+  text=text.split('\n').map(line=>{
+   const trimmed=line.trim(),open=!fence&&trimmed.match(/^(`{3,})[^`]*$/);
+   if(open){fence=open[1].length;return blank(line)}
+   if(fence){if(new RegExp('^`{'+fence+',}$').test(trimmed))fence=0;return blank(line)}
+   return line;
+  }).join('\n');
+  text=transformInlineLiterals(text,blank).replace(/\\[{}]/g,blank);
+ }
  return text;
 }
 function locatedWarnings(text,mixed,compiled){

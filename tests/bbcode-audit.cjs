@@ -27,6 +27,38 @@ for (const bb of ['[b=ignored]X[/b]', '[icon=ignored]Test Name[/icon]']) assert.
 for (const tag of ['user','icon','eicon']) assert.ok(warnings(`[${tag}]Bad!Name[/${tag}]`).some(message => message.startsWith('Invalid name in ')));
 for (const bb of ['[collapse]Body[/collapse]', '[center][right]X[/right][/center]', '[sup][b]X[/b][/sup]', '[url]https://example.com[/url]', '[noparse][big][big]X[/big][/big][url]bad[/url][/noparse]']) assert.deepEqual(warnings(bb), [], bb);
 const native = '[url]https://example.com[/url]\n[url]bad[/url]';
+for (const [markdown, literal] of [
+  ['`**literal**`', '**literal**'],
+  ['\\`literal\\`', '`literal`'],
+  ['\\`\\`\\`', '```'],
+  ['``code ` with tick``', 'code ` with tick'],
+  ['{noparse|`tick`}', '`tick`'],
+  ['{noparse|**literal** `tick`}', '**literal** `tick`'],
+  ['```\n`tick`\n```', '`tick`'],
+  ['```\n```literal\n```', '```literal'],
+  ['````text\n```\n{unknown|literal}\n```\n````', '```\n{unknown|literal}\n```'],
+  ['````\nfirst\n```\nlast\n````', 'first\n```\nlast']
+]) {
+  const bb = context.markdownToBB(markdown);
+  assert.equal(context.FolioHorizon.render(bb).textContent, literal, markdown);
+  assert.deepEqual(warnings(bb), [], markdown);
+  assert.equal(context.locatedWarnings(markdown, true, bb).length, 0, markdown);
+  const restored = context.bbcodeToMarkdown(bb);
+  assert.equal(context.markdownToBB(restored), bb, 'Code round trip: '+markdown+' -> '+restored);
+}
+for (const literal of ['[/noparse]', '[noparse][b]Literal[/b][/noparse]', '[/NOPARSE] [/noparse]']) {
+  for (const markdown of ['```text\n'+literal+'\n```', '{noparse|'+literal+'}', '`'+literal+'`']) {
+    const bb = context.markdownToBB(markdown);
+    assert.deepEqual(warnings(bb), [], markdown);
+    assert.equal(context.FolioHorizon.render(bb).textContent, literal, markdown);
+    assert.equal(context.locatedWarnings(markdown, true, bb).length, 0, markdown);
+    assert.equal(context.locatedWarnings(bb, false, bb).length, 0, 'BBCode mode: '+markdown);
+  }
+}
+const showcase = fs.readFileSync('docs/feature-showcase.md', 'utf8').replace(/\r\n?/g, '\n');
+const showcaseBB = context.markdownToBB(showcase);
+assert.deepEqual(warnings(showcaseBB), [], 'Showcase literal diagnostics must export balanced noparse wrappers');
+assert.equal(context.locatedWarnings(showcaseBB, false, showcaseBB).length, 0);
 const located = Array.from(context.locatedWarnings(native, false, native));
 assert.equal(located.length, 1);
 assert.equal(located[0].start, native.lastIndexOf('[url]'));

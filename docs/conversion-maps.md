@@ -45,6 +45,14 @@ A backslash at the end of a Markdown+ line joins it to the next line with one
 space. Backtick code, fenced code and the `{noparse|...}` macro preserve literal
 content. Raw `[noparse]` in Markdown+ does not disable Markdown parsing.
 
+Escape a backtick with a backslash to display it as ordinary text. Inline code
+uses matching backtick runs: double backticks can contain a single backtick.
+Fences use at least three backticks; their closing line contains only backticks
+(at least as many as the opener). Use four or more to contain triple backticks.
+Decompilation chooses delimiters that preserve literal backticks and line breaks.
+Backticks inside `{noparse|...}` remain literal. Literal opening and closing
+noparse tags are split safely in exported BBCode, including inside code fences.
+
 Lists preserve leading spaces and tabs, whitespace after the marker, blank lines,
 and continuation-line indentation. Nested bullet/numbered combinations are
 supported, including inside quotes and layout macros. F-List has no native list
