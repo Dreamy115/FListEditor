@@ -23,7 +23,19 @@
     const fragment = text.slice(problem.start, problem.end), message = problem.message;
     const result = {help: '', example: '', fix: null};
     const fix = (label, replacement) => { result.fix = {label, start: problem.start, end: problem.end, text: replacement}; };
-    if (message.startsWith('Color ')) {
+    if (message.startsWith('Invalid URL in ')) {
+      result.help = 'Use a complete HTTP or HTTPS address, including the scheme and hostname.';
+      result.example = '[url=https://example.com]Link text[/url]';
+    } else if (message.startsWith('Invalid name in ')) {
+      result.help = 'Use the character or eicon name without punctuation other than underscores and hyphens. The preview cannot render this name.';
+      result.example = config.mixed ? '{user:Character Name}' : '[user]Character Name[/user]';
+    } else if (message.startsWith('Unexpected parameter on ')) {
+      result.help = 'Remove the argument from the opening tag; keep its content and closing tag.';
+      if (/^\[[a-z]+=[^\]]*\]$/i.test(fragment)) fix('Remove tag argument', fragment.replace(/=[^\]]*/, ''));
+    } else if (message.startsWith('Unsupported nesting:')) {
+      result.help = 'Move this formatting outside the enclosing tag, or remove the inner wrapper. This combination displays bracket tags as text in the preview.';
+      result.example = config.mixed ? '{sup|First} {color:red|Second}' : '[sup]First[/sup] [color=red]Second[/color]';
+    } else if (message.startsWith('Color ')) {
       const value = message.slice(6, message.indexOf(' is not supported'));
       const suggestion = config.resolveColor(value) || nearest(value.toLowerCase(), config.colors);
       result.help = 'Use one of the 12 profile colors: ' + [...config.colors].join(', ') + '.';

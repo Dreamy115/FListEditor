@@ -723,7 +723,33 @@ function countWarnings(compiled){
  const parsedText=compiled.replace(/\[noparse\][\s\S]*?(?:\[\/noparse\]|$)/gi,'');
  if(/\[img\][\s\S]*?\[\/img\]|\[img=(?!\d+\])[^\]\n]*\]/i.test(parsedText))issues.push('External image URLs are not supported by F-List profiles; use an uploaded profile image ID such as [img=12345] instead');
  if(/<\/?(?:div|span|table|p|br)\b/i.test(parsedText))issues.push('HTML is not supported in descriptions');
- return [...new Set(issues)];
+ return [...new Set([...issues,...tagContentWarnings(compiled).map(issue=>issue.message)])];
+}
+function tagContentWarnings(compiled){
+ const issues=[],stack=[],opaque=new Set(['noparse','url','user','icon','eicon','img']);
+ const add=(message,m)=>issues.push({message,start:m.index,end:m.index+m[0].length,tag:m[2].toLowerCase()});
+ for(const m of compiled.matchAll(/\[(\/?)([a-z][a-z0-9_-]*)(?:=([^\]\n]*))?\]/gi)){
+  const tag=m[2].toLowerCase(),close=!!m[1],parent=stack.at(-1);
+  if(parent&&opaque.has(parent.tag)){
+   if(close&&tag===parent.tag){
+    const content=compiled.slice(parent.end,m.index);
+    if(tag==='url'){
+     const value=(parent.param||content).trim();
+     if(!safeUrl(value)||(globalThis.FolioHorizon?.validURL&&!globalThis.FolioHorizon.validURL(value)))add('Invalid URL in [url]: use a complete http(s) URL',parent.match);
+    }else if(['user','icon','eicon'].includes(tag)&&!(/^[a-zA-Z0-9_\-\s]+$/.test(content)&&content.trim()))add('Invalid name in ['+tag+']: use letters, numbers, spaces, underscores or hyphens',parent.match);
+    stack.pop();
+   }
+   continue;
+  }
+  if(!allowedTags.has(tag))continue;
+  if(close){const index=stack.map(item=>item.tag).lastIndexOf(tag);if(index>=0)stack.splice(index);continue}
+  if(m[3]!==undefined&&!['color','url','img','collapse'].includes(tag))add('Unexpected parameter on ['+tag+']: this tag does not accept an argument',m);
+  const restricted=stack.find(item=>globalThis.FolioHorizon?.allowsChild(item.tag,tag)===false);
+  if(restricted)add('Unsupported nesting: ['+tag+'] inside ['+restricted.tag+'] displays literal markup in preview',m);
+  // Blank collapse titles remain valid for legacy-site compatibility.
+  if(tag!=='hr')stack.push({tag,param:m[3],end:m.index+m[0].length,match:m});
+ }
+ return issues;
 }
 function nestedAlignmentWarnings(text,mixed){
  if(!mixed)return [];
@@ -820,10 +846,34 @@ function warningSource(text,mixed){
 function locatedWarnings(text,mixed,compiled){
  const searchable=warningSource(text,mixed),records=[];
  const add=(message,start,end)=>{const line=text.slice(0,start).split('\n').length;if(!records.some(item=>item.message===message&&item.start===start))records.push({message,start,end,line})};
+ const contentIssues=tagContentWarnings(compiled),contentMessages=new Set(contentIssues.map(issue=>issue.message));
+ for(const issue of contentIssues){
+  if(!mixed){add(issue.message,issue.start,issue.end);continue}
+  const aliases={url:'link',img:'(?:img|image)',u:'(?:u|underline)'},name=aliases[issue.tag]||issue.tag;
+  const shorthand={big:'|^[ \\t]*#[ \\t]+',heading:'|^[ \\t]*#{1,6}[ \\t]+',b:'|\\*\\*|__',i:'|\\*|_',s:'|~~',u:'|\\+\\+',url:'|\\[(?=[^\\]\\n]*\\]\\(https?:)'};
+  const candidates=[...searchable.matchAll(new RegExp('\\{'+name+'(?=[:|}])[^|}\\n]*(?:\\||\\})|^[ \\t]*:::'+name+'(?=[ \\t]|$)[^\\n]*'+(shorthand[issue.tag]||''),'gmi'))];
+  // Probe the compiler instead of counting tag names: headings also emit big,
+  // and literal examples can contain matching macro spellings.
+  let marker='FOLIOSOURCEPOSITION';while(text.includes(marker))marker+='X';
+  for(const candidate of candidates){
+   let insertion=candidate.index+candidate[0].length;
+   if(candidate[0].trimStart().startsWith(':::'))insertion+=text[insertion]==='\r'?2:1;
+   else if(['user','icon','eicon'].includes(issue.tag))insertion=candidate.index+candidate[0].indexOf(':')+1;
+   if(insertion>text.length)continue;
+   const probe=markdownToBB(text.slice(0,insertion)+marker+text.slice(insertion));
+   const position=probe.indexOf(marker);
+   if(position<0||probe.slice(0,position)+probe.slice(position+marker.length)!==compiled)continue;
+   const opening=probe.lastIndexOf('[',position);
+   if(opening===issue.start&&new RegExp('^\\['+issue.tag+'(?:=[^\\]]*)?\\]$','i').test(probe.slice(opening,position))){
+    add(issue.message,candidate.index,candidate.index+candidate[0].length);break;
+   }
+  }
+ }
  const messages=[...countWarnings(compiled),...colorWarnings(text,mixed),...(mixed?macroWarnings(text).filter(message=>!message.includes('block macro')&&!message.startsWith('Nested font macros')):[])].filter(message=>!message.startsWith('Nested text alignment:'));
  records.push(...nestedAlignmentWarnings(text,mixed));
  if(mixed)records.push(...blockMacroWarnings(text),...nestedFontWarnings(text));
  for(const message of messages){
+  if(contentMessages.has(message))continue;
   let matches=[];
   if(message.startsWith('Color ')){
    const color=message.slice(6,message.indexOf(' is not supported'));

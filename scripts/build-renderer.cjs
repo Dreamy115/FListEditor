@@ -45,6 +45,10 @@ parser.addTag(new BBCodeTextTag('img', (p, parent, param, content) => {
   parent.appendChild(el);
   return el;
 }));
-globalThis.FolioHorizon = {render: input => parser.parseEverything(input)};
+globalThis.FolioHorizon = {
+  render: input => parser.parseEverything(input),
+  allowsChild: (parent, child) => parser.getTag(parent)?.isAllowed(child) !== false,
+  validURL: value => analyzeUrlTag(parser, value, '').success && !!safeURL(value)
+};
 })();
 `);

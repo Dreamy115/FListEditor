@@ -30,6 +30,10 @@ class IconView {
     const img = document.createElement('img');
     img.className = 'character-avatar icon'; img.alt = name;
     img.src = Utils.staticDomain + 'images/avatar/' + encodeURIComponent(name.toLowerCase()) + '.png';
+    // A local fallback also works when the avatar server is unavailable.
+    img.addEventListener('error', () => {
+      img.src = 'data:image/svg+xml,' + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="50" height="50"><rect width="50" height="50" rx="4" fill="#586575"/><circle cx="25" cy="18" r="9" fill="#d4dce5"/><path d="M8 47v-5a17 17 0 0 1 34 0v5" fill="#d4dce5"/></svg>');
+    }, {once: true});
     a.appendChild(img); el.replaceChildren(a);
   }
   $destroy() {}
@@ -772,5 +776,9 @@ parser.addTag(new BBCodeTextTag('img', (p, parent, param, content) => {
   parent.appendChild(el);
   return el;
 }));
-globalThis.FolioHorizon = {render: input => parser.parseEverything(input)};
+globalThis.FolioHorizon = {
+  render: input => parser.parseEverything(input),
+  allowsChild: (parent, child) => parser.getTag(parent)?.isAllowed(child) !== false,
+  validURL: value => analyzeUrlTag(parser, value, '').success && !!safeURL(value)
+};
 })();
