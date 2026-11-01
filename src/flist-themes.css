@@ -104,6 +104,10 @@
 .previewpage.flist-blue .description .bbcode-collapse:not(.collapsed) .bbcode-collapse-header {text-shadow:none}
 .previewpage:is(.flist-blue,.flist-dark,.flist-light) .description .bbcode-collapse-body {margin:0;font-size:12px;font-weight:normal;text-shadow:none}
 .previewpage:is(.flist-blue,.flist-dark,.flist-light) .description .card-body {padding:0;margin:10px 10px 10px 0}
+/* Center against the whole box; the background arrow takes no layout space. */
+.previewpage:is(.flist-blue,.flist-dark,.flist-light) .description .centerText .bbcode-collapse {padding-left:0;padding-right:0}
+.previewpage:is(.flist-blue,.flist-dark,.flist-light) .description .centerText .bbcode-collapse > .bbcode-collapse-header {padding-right:0}
+.previewpage:is(.flist-blue,.flist-dark,.flist-light) .description .centerText .bbcode-collapse > .bbcode-collapse-body > .card-body {margin-right:0}
 .previewpage:is(.flist-blue,.flist-dark,.flist-light) .description .indentText {padding-left:3em}
 
 .previewpage:is(.flist-blue,.flist-dark,.flist-light) .description :is(.redText,.blueText,.whiteText,.yellowText,.greenText,.pinkText,.grayText,.orangeText,.purpleText,.brownText,.cyanText) a {text-shadow:var(--site-text-shadow)}

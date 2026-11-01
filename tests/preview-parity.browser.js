@@ -16,6 +16,22 @@
   };
   try {
     check(getComputedStyle(document.querySelector('#preview')).fontSize === '12px', 'initial site text size');
+    document.querySelector('#mixedMode').click();
+    const editor = document.querySelector('#source');
+    editor.value = ':::center\n:::collapse More details\nyour text\n:::\n:::';
+    editor.dispatchEvent(new Event('input'));
+    const theme = document.querySelector('#theme');
+    theme.value = 'flist-blue';
+    theme.dispatchEvent(new Event('change'));
+    const liveBox = document.querySelector('#preview .bbcode-collapse');
+    liveBox.querySelector('.bbcode-collapse-header').click();
+    const liveBounds = liveBox.getBoundingClientRect();
+    for (const element of [liveBox.querySelector('.bbcode-collapse-header'), liveBox.querySelector('.card-body')]) {
+      const range = document.createRange();
+      range.selectNodeContents(element);
+      const bounds = range.getBoundingClientRect();
+      check(Math.abs((bounds.left + bounds.right - liveBounds.left - liveBounds.right) / 2) < 1, 'Markdown+ live editor centered ' + element.className);
+    }
     for (const [scheme, colors] of Object.entries(palettes)) {
       document.documentElement.dataset.flistScheme = scheme;
       host.className = 'previewpage ' + scheme;
@@ -70,6 +86,25 @@
         compare('.bbcode-collapse', '.CollapseHeader', ['backgroundColor','color','textShadow']);
         compare('.bbcode-collapse-header', '.CollapseHeaderText', ['color','textShadow']);
         frame.remove();
+      }
+    }
+    for (const scheme of Object.keys(palettes)) {
+      host.className = 'previewpage ' + scheme;
+      host.innerHTML = '<div class="description"></div>';
+      host.querySelector('.description').append(FolioHorizon.render('[center][collapse=More details]your text[/collapse][/center]'));
+      const header = host.querySelector('.bbcode-collapse-header');
+      header.click();
+      const box = host.querySelector('.bbcode-collapse').getBoundingClientRect();
+      const boxStyle = getComputedStyle(host.querySelector('.bbcode-collapse'));
+      check(boxStyle.paddingLeft === '0px' && boxStyle.paddingRight === '0px', scheme + ' arrow reserves no centered content space');
+      const midpoint = (box.left + box.right) / 2;
+      for (const element of [header, host.querySelector('.card-body')]) {
+        const elementBounds = element.getBoundingClientRect();
+        check(Math.abs(elementBounds.width - box.width + parseFloat(boxStyle.borderLeftWidth) + parseFloat(boxStyle.borderRightWidth)) < 1, scheme + ' centered content uses full box width');
+        const range = document.createRange();
+        range.selectNodeContents(element);
+        const bounds = range.getBoundingClientRect();
+        check(Math.abs((bounds.left + bounds.right) / 2 - midpoint) < 1, scheme + ' centered collapse ' + element.className);
       }
     }
     host.className = 'previewpage horizon-moon-prism';
