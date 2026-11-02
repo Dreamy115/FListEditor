@@ -240,8 +240,13 @@ const fontStyles={
 };
 function applyFont(text,name){
  const style=fontStyles[name];if(!style)return text;
- // Preserve BBCode parameters, URLs, image labels and literal text.
- return text.split(/(\[noparse\][\s\S]*?\[\/noparse\]|\[(?:url|img|user|icon|eicon)(?:=[^\]]*)?\][\s\S]*?\[\/(?:url|img|user|icon|eicon)\]|\[[^\]\n]*\])/gi).map((part,i)=>i%2?part:[...part].map(c=>{const index=fontAlphabet.indexOf(c);return index<0?c:style.chars[index]}).join('')).join('');
+ // Preserve syntax, URLs, image labels and literal text; collapse titles are visible text.
+ const transform=value=>[...value].map(c=>{const index=fontAlphabet.indexOf(c);return index<0?c:style.chars[index]}).join('');
+ return text.split(/(\[noparse\][\s\S]*?\[\/noparse\]|\[(?:url|img|user|icon|eicon)(?:=[^\]]*)?\][\s\S]*?\[\/(?:url|img|user|icon|eicon)\]|\[[^\]\n]*\])/gi).map((part,i)=>i%2?part.replace(/^(\[collapse=)([^\]\n]*)(\])$/i,(_,open,title,close)=>open+transform(title)+close):transform(part)).join('');
+}
+function compileCollapseTitle(title){
+ // Titles are BBCode parameters: convert Unicode fonts without emitting tags.
+ return title.replace(/\{font:([a-z]+)\|([^{}]*)\}/gi,(macro,name,body)=>Object.hasOwn(fontStyles,name.toLowerCase())?applyFont(body,name.toLowerCase()):macro);
 }
 function decompileFonts(text,escapePlain){
  const plain=value=>escapePlain?escapePlainMarkdown(value):value;
@@ -423,7 +428,7 @@ function inlineMarkdown(text,protectedParts=[],issues=[]){
   else if(name==='hr'&&body===undefined&&!arg)compiled='[hr]';
   else if(name==='font'&&body!==undefined&&Object.hasOwn(fontStyles,arg.toLowerCase()))compiled=applyFont(inlineMarkdown(body,[],issues),arg.toLowerCase());
   else if(name==='color'&&body!==undefined){const color=resolvedColor(arg);const content=inlineMarkdown(body,protectedParts,issues);compiled=color?'[color='+color+']'+content+'[/color]':content;}
-  else if(['b','i','s','big','small','u','underline','sup','sub','noparse','heading','center','left','right','justify','indent','quote','collapse'].includes(name)&&body!==undefined){let tag=name==='underline'?'u':name;compiled='['+tag+(tag==='collapse'&&arg?'='+arg:'')+']'+(name==='noparse'?literalBBContent(body):inlineMarkdown(body,protectedParts,issues))+'[/'+tag+']'}
+  else if(['b','i','s','big','small','u','underline','sup','sub','noparse','heading','center','left','right','justify','indent','quote','collapse'].includes(name)&&body!==undefined){let tag=name==='underline'?'u':name;compiled='['+tag+(tag==='collapse'&&arg?'='+compileCollapseTitle(arg):'')+']'+(name==='noparse'?literalBBContent(body):inlineMarkdown(body,protectedParts,issues))+'[/'+tag+']'}
   else if(['user','icon','eicon'].includes(name)&&arg&&body===undefined&&!/[\[\]{}]/.test(arg))compiled='['+name+']'+arg+'[/'+name+']';
   else if(['img','image'].includes(name)&&arg){if(/^\d+$/.test(arg))compiled='[img='+arg+']'+(body===undefined?'':body)+'[/img]';else if(body===undefined&&safeUrl(arg))compiled='[img]'+arg+'[/img]'}
   else if(name==='link'&&safeUrl(arg)&&body!==undefined)compiled='[url='+arg+']'+inlineMarkdown(body,protectedParts,issues)+'[/url]';
@@ -502,7 +507,7 @@ function markdownToBB(input,issues=[]){
    if(macroBlockNames.has(tag)){
     if(tag==='color'&&!resolvedColor(arg)){stack.push('');continue;}
     if((tag==='collapse'&&arg&&!/[\[\]]/.test(arg))||(tag==='color'&&resolvedColor(arg))||(!['collapse','color','font'].includes(tag)&&!arg)){
-     out.open('['+tag+(arg?'='+(tag==='color'?resolvedColor(arg):arg):'')+']');stack.push(tag);continue;
+     out.open('['+tag+(arg?'='+(tag==='color'?resolvedColor(arg):tag==='collapse'?compileCollapseTitle(arg):arg):'')+']');stack.push(tag);continue;
     }
    }
    issues.push('Invalid or unknown block macro: '+trimmed+'; exported as literal text');
@@ -595,7 +600,7 @@ function bbcodeToMarkdown(input,escapePlain=true){
    if(tag==='hr')return '{hr}';
    if(['b','i','u','s','sup','sub','big','small','heading'].includes(tag))return '{'+tag+'|'+body+'}';
    if(tag==='color')return '{color:'+node.param+'|'+body+'}';
-   if(blockTags.has(tag))return '{'+tag+(tag==='collapse'?':'+node.param:'')+'|'+body+'}';
+   if(blockTags.has(tag))return '{'+tag+(tag==='collapse'?':'+decompileFonts(node.param,false):'')+'|'+body+'}';
   }
   if(tag==='hr')return boundaries('---');
   if(tag==='heading'){
@@ -621,7 +626,7 @@ function bbcodeToMarkdown(input,escapePlain=true){
   if(tag==='quote'&&!editableLayout)return boundaries(content.split('\n').map(line=>'> '+line).join('\n'));
   if(blockTags.has(tag)){
    if(tag==='collapse'&&(!node.param||/[\[\]\n]/.test(node.param)))return raw(node);
-   return block(tag,tag==='collapse'?node.param:'',content);
+   return block(tag,tag==='collapse'?decompileFonts(node.param,false):'',content);
   }
   if(tag==='url'){
    if(!node.param)return safeUrl(plain)&&!/[<>\s]/.test(plain)?'<'+plain+'>':raw(node);

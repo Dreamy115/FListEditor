@@ -59,6 +59,41 @@ assert.equal([...valueLayer.querySelectorAll('.syntax-macro-value')].map(span=>s
 assert.equal(valueLayer.textContent, '{macro:xyz}\n');
 console.log('Syntax highlighting checks passed');
 
+for (const title of ['{font:smallcaps|SUBJECT DOCUMENTATION}', 'Prefix {font:bold|Title} suffix']) {
+  const source = ':::collapse ' + title + '\nBody\n:::';
+  const layer = document.createElement('pre');
+  const warningStart = source.indexOf('font:') + 5;
+  highlight(layer, source, true, [{start:warningStart,end:warningStart+2,message:'Title warning'}]);
+  assert.equal(layer.textContent, source + '\n');
+  assert.ok(layer.querySelector('.syntax-macro'));
+  assert.equal([...layer.querySelectorAll('.syntax-macro-value')].map(el=>el.textContent).join(''), title.includes('smallcaps')?'smallcaps':'bold');
+  assert.ok(layer.querySelector('.syntax-warning .syntax-macro-value'));
+  assert.ok(layer.querySelector('.syntax-collapse-title'));
+  assert.ok(!layer.querySelector('.syntax-unmatched'));
+  assert.equal(layer.syntaxTokens.filter(token=>token.kind==='block').length, 2);
+  context.FolioSyntax.markActive(layer, source.indexOf('Body'));
+  assert.ok(layer.querySelector('.syntax-active-delimiter'));
+  assert.equal(layer.activeSyntaxRange.start, 0);
+}
+console.log('Collapse title inline macro highlighting and diagnostics passed');
+
+for (const title of [
+  '{color:red|Title} {big|Text} {user:Name} **bold** *italic* ++underline++ &mdash; [Link](https://example.com) `literal`',
+  '{font:bold|**bold** {color:red|Text}}',
+  '{font:smallcaps|**bold** [Link](https://example.com) &mdash; `literal`}'
+]) {
+  const source = ':::collapse ' + title + '\nBody\n:::';
+  const layer = document.createElement('pre');
+  highlight(layer, source, true);
+  assert.equal(layer.textContent, source + '\n');
+  assert.equal(layer.querySelector('.syntax-color-value, .syntax-emphasis, .syntax-link, .syntax-literal, .syntax-entity'), null);
+  const macros = [...layer.querySelectorAll('.syntax-macro')].map(span=>span.textContent).join('');
+  assert.equal(macros, title.startsWith('{font:smallcaps|') ? '{font:smallcaps|}' : '');
+}
+const mixedTitleLayer = document.createElement('pre');
+highlight(mixedTitleLayer, ':::collapse {color:red|Plain} {font:bold|Font} {big|Plain}\nBody\n:::', true);
+assert.equal([...mixedTitleLayer.querySelectorAll('.syntax-macro')].map(span=>span.textContent).join(''), '{font:bold|}');
+
 assert.equal(tokenize('[Visit](https://example.com)', true)[0].kind, 'link');
 for (const prefix of ['', '!']) {
   const layer = document.createElement('pre');

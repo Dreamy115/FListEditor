@@ -191,10 +191,14 @@ Section content
 ```
 Click the preview header to expand or collapse. Nested sections have independent states. Sections can contain formatting, lists, quotes, images, and additional blocks.
 
+Use inline font macros in section titles: `:::collapse {font:smallcaps|Section title}`. You can combine fonts with plain title text. Font macros in the body work as usual.
+In the source pane, only font macros in titles highlight their delimiters and font names separately. Other macros and Markdown syntax remain plain title text.
+Wrapping a section in `:::font bold` applies that font to its title and body, including nested sections.
+
 Wrap a section in `:::center` to center its title. Use `:::left` inside the section to explicitly left-align its body. In F-List preview themes, the body retains side margins inside the panel.
 
 :::center
-:::collapse Centered title
+:::collapse {font:smallcaps|Centered title}
 :::left
 This content is left-aligned inside the section margins.
 :::
@@ -258,6 +262,7 @@ Mappings persist locally and are shared across characters and templates. Mapping
 {font:fullwidth|Fullwidth 123} — `fullwidth`
 
 **Inline:** `{font:smallcaps|Text}`
+The `smallcaps` font converts lowercase letters and preserves uppercase letters. Use `{font:smallcaps|subject documentation}` for an entirely small-cap title; `{font:smallcaps|SUBJECT DOCUMENTATION}` retains ordinary capitals.
 **Multiline:**
 ```text
 

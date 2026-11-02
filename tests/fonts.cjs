@@ -122,3 +122,44 @@ for(const name of Object.keys(vm.runInContext('fontStyles',context))){
  }
 }
 console.log('Leading font decorations stay outside recovered macros');
+
+for(const name of Object.keys(vm.runInContext('fontStyles',context))){
+ const title='Details '+context.applyFont('Section',name)+' end';
+ const input=':::collapse Details {font:'+name+'|Section} end\n{font:'+name+'|Body}\n:::';
+ const expected='[collapse='+title+']'+context.applyFont('Body',name)+'[/collapse]';
+ const issues=[];
+ assert.equal(context.markdownToBB(input,issues),expected);
+ assert.deepEqual(issues,[]);
+ const decoded=context.bbcodeToMarkdown(expected);
+ assert.ok(decoded.includes('{font:'+name+'|Section}'),decoded);
+ assert.equal(context.markdownToBB(decoded),expected);
+ // Adjacent prose can force inline layout during mode conversion.
+ const adjacent='Before'+expected+'After';
+ assert.equal(context.markdownToBB(context.bbcodeToMarkdown(adjacent)),adjacent);
+}
+assert.equal(context.markdownToBB(':::collapse {font:unknown|Title}\nBody\n:::'),'[collapse={font:unknown|Title}]Body[/collapse]');
+console.log('Collapse title font compilation and mode conversion checks passed');
+
+for(const name of Object.keys(vm.runInContext('fontStyles',context))){
+ const input=':::font '+name+'\n:::collapse Outer\nBody\n:::collapse Inner\nNested\n:::\n:::\n:::';
+ const expected='[collapse='+context.applyFont('Outer',name)+']'+context.applyFont('Body',name)+'[collapse='+context.applyFont('Inner',name)+']'+context.applyFont('Nested',name)+'[/collapse][/collapse]';
+ assert.equal(context.markdownToBB(input),expected);
+ assert.equal(context.markdownToBB(context.bbcodeToMarkdown(expected)),expected);
+ assert.equal(context.applyFont('[noparse][collapse=Literal]Text[/collapse][/noparse]',name),'[noparse][collapse=Literal]Text[/collapse][/noparse]');
+}
+console.log('Enclosing font blocks style nested collapse titles and bodies');
+
+// Check actual preview text for all-uppercase smallcaps titles as well as lowercase.
+const {parseHTML}=require('linkedom');
+const {document,window}=parseHTML('<html><body></body></html>');
+const previewContext=vm.createContext({document,window,URL,setTimeout,clearTimeout});
+vm.runInContext(fs.readFileSync('src/horizon-renderer.js','utf8'),previewContext);
+for(const [title,expected] of [
+ ['SUBJECT DOCUMENTATION','SUBJECT DOCUMENTATION'],
+ ['subject documentation','\ua731\u1d1c\u0299\u1d0a\u1d07\u1d04\u1d1b \u1d05\u1d0f\u1d04\u1d1c\u1d0d\u1d07\u0274\u1d1b\u1d00\u1d1b\u026a\u1d0f\u0274']
+]){
+ const bb=context.markdownToBB(':::collapse {font:smallcaps|'+title+'}\nBody\n:::');
+ const preview=previewContext.FolioHorizon.render(bb);
+ assert.equal(preview.querySelector('.bbcode-collapse-header').textContent,expected);
+}
+console.log('Smallcaps title preview preserves capitals and converts lowercase');

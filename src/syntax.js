@@ -112,7 +112,28 @@
     const tokens = tokenize(text, mixed);
     // Split only the painted spans. Original tokens retain their pairing and
     // offsets for active-section highlighting and caret navigation.
-    const painted = tokens.flatMap(token => {
+    const paintTokens = tokens.flatMap(token => {
+      const collapse = token.kind === 'block' && token.text.match(/^([ \t]*:::collapse[ \t]+)([^\n]*)$/i);
+      if (!collapse) return [token];
+      const titleStart = token.start + collapse[1].length;
+      // Keep structural pairing intact. Only font macros work in titles;
+      // their bodies and every other syntax form remain plain title text.
+      const paintedTitle = [{...token, text: collapse[1], end: titleStart}];
+      const append = (value, offset, kind = 'block') => {
+        if (value) paintedTitle.push({text:value, kind, collapseTitle:kind === 'block', start:titleStart + offset, end:titleStart + offset + value.length});
+      };
+      let last = 0;
+      for (const match of collapse[2].matchAll(/(\{font:[a-z]+\|)([^{}]*)(\})/gi)) {
+        append(collapse[2].slice(last, match.index), last);
+        append(match[1], match.index, 'macro');
+        append(match[2], match.index + match[1].length);
+        append(match[3], match.index + match[0].length - 1, 'macro');
+        last = match.index + match[0].length;
+      }
+      append(collapse[2].slice(last), last);
+      return paintedTitle;
+    });
+    const painted = paintTokens.flatMap(token => {
       const collapse = token.kind === 'block' && token.text.match(/^([ \t]*:::collapse[ \t]+)(\S[^\n]*?)([ \t]*)$/i);
       const titleStart = collapse ? token.start + collapse[1].length : token.end;
       const titleEnd = collapse ? titleStart + collapse[2].length : token.end;
@@ -126,7 +147,7 @@
       ])])].sort((a, b) => a - b);
       return boundaries.slice(0, -1).map((start, i) => {
         const end = boundaries[i + 1];
-        return {...token, text: text.slice(start, end), collapseTitle: !!collapse && start >= titleStart && end <= titleEnd, macroValue: !!macroValue && start >= valueStart && end <= valueEnd, diagnostics: overlapping.filter(problem => problem.start < end && problem.end > start)};
+        return {...token, text: text.slice(start, end), collapseTitle: token.collapseTitle || (!!collapse && start >= titleStart && end <= titleEnd), macroValue: !!macroValue && start >= valueStart && end <= valueEnd, diagnostics: overlapping.filter(problem => problem.start < end && problem.end > start)};
       });
     });
     let line = 1;
