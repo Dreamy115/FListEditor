@@ -155,3 +155,48 @@ for(const [mixed,text] of [[true,'{color:red|a}{color:blue|b}'],[true,'{color:re
 }
 data.mixed=true;reset('{color:red|body}');source.selectionStart=source.selectionEnd=12;assert.equal(context.unwrapSelectedColor(),false);
 console.log('Color unwrapping preserves nested formatting, selection and surrounding text');
+
+// Formatting toggles recognize complete spans and the body selected after insertion.
+for(const mixed of [true,false]){
+ data.mixed=mixed;
+ for(const tag of ['b','i','u','s']){
+  for(const text of ['Text','First\nSecond']){
+   reset(text);context.wrapInline(tag);
+   const wrapped=source.value;
+   [source.selectionStart,source.selectionEnd]=selection;
+   context.wrapInline(tag);assert.equal(source.value,text);
+   assert.equal(source.value.slice(...selection),text);
+   reset(wrapped);context.wrapInline(tag);assert.equal(source.value,text);
+  }
+ }
+}
+data.mixed=true;
+for(const [tag,wrapped,expected] of [
+ ['b','__Text__','Text'],['i','_Text_','Text'],['u','{underline|Text}','Text'],
+ ['b','{b|Text *nested*}','Text *nested*'],['b','***Text***','*Text*'],
+ ['i','***Text***','**Text**'],['b','**one** and **two**','****one** and **two****']
+]){
+ reset(wrapped);context.wrapInline(tag);assert.equal(source.value,expected);
+}
+for(const mixed of [true,false]){
+ data.mixed=mixed;reset('before Text after');source.selectionStart=7;source.selectionEnd=11;
+ context.wrapInline('b');[source.selectionStart,source.selectionEnd]=selection;
+ context.wrapInline('b');assert.equal(source.value,'before Text after');
+ assert.deepEqual(selection,[7,11]);
+}
+console.log('Formatting toggle checks passed');
+
+// Italic must not mistake either half of a bold delimiter for existing italics.
+data.mixed=true;
+for(const mark of ['**','__']){
+ for(const bodyOnly of [true,false]){
+  reset(mark+'Text'+mark);
+  if(bodyOnly){source.selectionStart=2;source.selectionEnd=6}
+  context.wrapInline('i');
+  assert.ok(['[b][i]Text[/i][/b]','[i][b]Text[/b][/i]'].includes(context.markdownToBB(source.value)));
+  [source.selectionStart,source.selectionEnd]=selection;
+  context.wrapInline('i');
+  assert.equal(source.value,mark+'Text'+mark);
+ }
+}
+console.log('Italic toggling preserves bold formatting');

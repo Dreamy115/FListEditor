@@ -80,7 +80,7 @@ Bold line 1
 Bold line 2
 :::
 
-**Toolbar:** bold, italic, underline, strike, H1/H2, larger/smaller text, superscript, and subscript. Select text before clicking to wrap it.
+**Toolbar:** bold, italic, underline, strike, H1/H2, larger/smaller text, superscript, and subscript. Select text before clicking to wrap it. Bold, italic, underline, and strike toggle off when you select an already formatted span, including its markers or just its entire body. The same toggle behavior applies to keyboard shortcuts in both source modes. Bold and italic toggle independently: applying italic to bold text produces bold italic; toggling italic off keeps the bold.
 :::
 
 :::collapse 03 / Colors
