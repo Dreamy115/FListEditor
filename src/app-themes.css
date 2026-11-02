@@ -1,17 +1,17 @@
 /* App chrome presets. The Folio preset deliberately retains the original CSS.
  * Profile preview palettes remain independent of the application appearance. */
 :root[data-app-theme="graphite"]{
- --bg:#101113;--surface:#17181b;--surface2:#202226;--line:#34373d;--text:#e7e9ed;--muted:#a2a8b2;--accent:#9bbbf0;--accent2:#98c4ba;
+ --bg:#101113;--surface:#17181b;--surface2:#202226;--line:#34373d;--text:#e7e9ed;--muted:#b0b5be;--accent:#9bbbf0;--accent2:#98c4ba;
  --ui-sidebar:#151619;--ui-header:#17191c;--ui-toolbar:#1b1d21;--ui-input:#111315;--ui-control:#272a30;--ui-active:#39485f;--ui-border:#454b56;--ui-hover:#353a43;--ui-confirm:#33352b;--ui-primary-text:#111a27;
  --ui-brand:linear-gradient(135deg,#b6d0f1,#84aaa8);--ui-primary:linear-gradient(135deg,#b6d0f1,#8ba8cf);--ui-glow:none;color-scheme:dark;
 }
 :root[data-app-theme="paper"]{
- --bg:#ede9e1;--surface:#f8f5ef;--surface2:#fffdf8;--line:#d1ccc1;--text:#30343d;--muted:#666b73;--accent:#70539d;--accent2:#386d65;
+ --bg:#ede9e1;--surface:#f8f5ef;--surface2:#fffdf8;--line:#d1ccc1;--text:#30343d;--muted:#5c6168;--accent:#6f529c;--accent2:#366961;
  --ui-sidebar:#eee9df;--ui-header:#f7f3ea;--ui-toolbar:#f3efe6;--ui-input:#fffdf8;--ui-control:#eee8dc;--ui-active:#e1d7ed;--ui-border:#bdb5a7;--ui-hover:#e5ddcf;--ui-confirm:#f1e5c9;--ui-primary-text:#fff;
  --ui-brand:linear-gradient(135deg,#c7b4e1,#a6cfc3);--ui-primary:linear-gradient(135deg,#8064a7,#655085);--ui-glow:none;color-scheme:light;
 }
 :root[data-app-theme="forest"]{
- --bg:#0c1916;--surface:#14251e;--surface2:#1d3027;--line:#345442;--text:#e0e8d8;--muted:#a5b8a5;--accent:#d5bd81;--accent2:#9bcfba;
+ --bg:#0c1916;--surface:#14251e;--surface2:#1d3027;--line:#345442;--text:#e0e8d8;--muted:#b2c2b2;--accent:#d5bd81;--accent2:#9bcfba;
  --ui-sidebar:#102018;--ui-header:#152a21;--ui-toolbar:#192d22;--ui-input:#0d1d16;--ui-control:#263e2d;--ui-active:#475135;--ui-border:#5b7050;--ui-hover:#354c35;--ui-confirm:#3d4028;--ui-primary-text:#1d2819;
  --ui-brand:linear-gradient(135deg,#e3cc8c,#87c4a8);--ui-primary:linear-gradient(135deg,#e3cc8c,#a7bd79);--ui-glow:radial-gradient(ellipse,#99aa5426,transparent 65%);color-scheme:dark;
 }
@@ -65,3 +65,17 @@ html[data-app-theme]:not([data-app-theme="folio"]) .btn.clone-button{background:
 html[data-app-theme]:not([data-app-theme="folio"]) .btn.clone-button:hover{background:var(--clone-hover);border-color:var(--clone-text)}
 html[data-app-theme]:not([data-app-theme="folio"]) .btn.delete-button{background:var(--delete-bg);border-color:var(--delete-border);color:var(--delete-text)}
 html[data-app-theme]:not([data-app-theme="folio"]) .btn.delete-button:hover{background:var(--delete-hover);border-color:var(--delete-text)}
+
+/* Controls introduced after the original appearance presets. */
+html[data-app-theme]:not([data-app-theme="folio"]) .statusbar strong{color:var(--accent2)}
+html[data-app-theme]:not([data-app-theme="folio"]) :is(.sep,.custom-template-row){border-color:var(--ui-border)}
+html[data-app-theme]:not([data-app-theme="folio"]) .sep{background:var(--ui-border)}
+html[data-app-theme]:not([data-app-theme="folio"]) input::placeholder{color:var(--muted);opacity:1}
+html[data-app-theme]:not([data-app-theme="folio"]) .source-diagnostic{background:var(--ui-input);color:var(--text);border-color:var(--accent)}
+html[data-app-theme]:not([data-app-theme="folio"]) .source-diagnostic strong{color:var(--accent)}
+html[data-app-theme]:not([data-app-theme="folio"]) .source-diagnostic button{color:var(--text);background:var(--ui-control);border-color:var(--accent)}
+html[data-app-theme]:not([data-app-theme="folio"]) .source-diagnostic button:hover{background:var(--ui-hover)}
+html[data-app-theme]:not([data-app-theme="folio"]) .source-diagnostic button:focus-visible{outline-color:var(--accent)}
+html[data-app-theme]:not([data-app-theme="folio"]) .source-diagnostic small{opacity:1;color:var(--muted)}
+html[data-app-theme]:not([data-app-theme="folio"]) #warningList{background:var(--ui-input);color:var(--text);border-color:var(--accent)}
+html[data-app-theme]:not([data-app-theme="folio"]) #warningList button:hover,html[data-app-theme]:not([data-app-theme="folio"]) #warningList button:focus-visible{background:var(--ui-hover);outline-color:var(--accent)}

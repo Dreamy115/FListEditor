@@ -16,9 +16,9 @@ function validateCustomTemplates(records){
   seen.add(record.id);return true;
  }).slice(0,100).map(record=>({id:record.id,name:record.name.trim().slice(0,100),content:record.content}));
 }
-let data={customTemplates:[],drafts:[{id:makeId(),name:'New Character',content:intro}],active:null,theme:'flist-blue',editorTheme:'folio',previewFontSize:'site',splitRatio:.524,previewNoteDismissed:false,preferLiterals:true,mixed:true};
+let data={customTemplates:[],drafts:[{id:makeId(),name:'New Character',content:intro}],active:null,theme:'flist-blue',customPreviewCss:'',customPreviewCssName:'',editorTheme:'folio',previewFontSize:'site',splitRatio:.524,previewNoteDismissed:false,preferLiterals:true,mixed:true};
 data.active=data.drafts[0].id;
-try{const loaded=JSON.parse(localStorage.getItem(STORAGE));if(loaded&&Array.isArray(loaded.drafts)&&loaded.drafts.length){const valid=loaded.drafts.filter(d=>typeof d.id==='string'&&typeof d.name==='string'&&typeof d.content==='string').slice(0,80);if(valid.length){data={customTemplates:validateCustomTemplates(loaded.customTemplates),drafts:valid,active:valid.some(d=>d.id===loaded.active)?loaded.active:valid[0].id,editorTheme:['folio','graphite','forest','paper'].includes(loaded.editorTheme)?loaded.editorTheme:'folio',theme:Array.from($('theme').options).some(option=>option.value===loaded.theme)?loaded.theme:'flist-blue',previewFontSize:parsePreviewFontSize(loaded.previewFontSize)||'site',splitRatio:typeof loaded.splitRatio==='number'&&Number.isFinite(loaded.splitRatio)?Math.max(.25,Math.min(.75,loaded.splitRatio)):.524,previewNoteDismissed:loaded.previewNoteDismissed===true,preferLiterals:loaded.preferLiterals!==false,mixed:loaded.mixed!==false}}}}catch(e){}
+try{const loaded=JSON.parse(localStorage.getItem(STORAGE));if(loaded&&Array.isArray(loaded.drafts)&&loaded.drafts.length){const valid=loaded.drafts.filter(d=>typeof d.id==='string'&&typeof d.name==='string'&&typeof d.content==='string').slice(0,80);if(valid.length){data={customPreviewCss:typeof loaded.customPreviewCss==='string'&&loaded.customPreviewCss.length<=200000?loaded.customPreviewCss:'',customPreviewCssName:typeof loaded.customPreviewCssName==='string'?loaded.customPreviewCssName.slice(0,100):'',customTemplates:validateCustomTemplates(loaded.customTemplates),drafts:valid,active:valid.some(d=>d.id===loaded.active)?loaded.active:valid[0].id,editorTheme:['folio','graphite','forest','paper'].includes(loaded.editorTheme)?loaded.editorTheme:'folio',theme:Array.from($('theme').options).some(option=>option.value===loaded.theme)?loaded.theme:'flist-blue',previewFontSize:parsePreviewFontSize(loaded.previewFontSize)||'site',splitRatio:typeof loaded.splitRatio==='number'&&Number.isFinite(loaded.splitRatio)?Math.max(.25,Math.min(.75,loaded.splitRatio)):.524,previewNoteDismissed:loaded.previewNoteDismissed===true,preferLiterals:loaded.preferLiterals!==false,mixed:loaded.mixed!==false}}}}catch(e){}
 let saveTimer=null,toastTimer=null;
 let templateSession=null,editorLoaded=false;
 const templateEditors=new Map(),characterEditors=new Map();
@@ -1300,7 +1300,27 @@ function setEditorTheme(){
  $('editorTheme').value=data.editorTheme;
 }
 $('editorTheme').addEventListener('change',e=>{data.editorTheme=e.target.value;setEditorTheme();persist()});
-$('theme').addEventListener('change',e=>{data.theme=e.target.value;setTheme();persist()});function setTheme(){document.documentElement.dataset.flistScheme=data.theme;$('previewPage').className='previewpage'+(data.theme==='default'?'':' '+data.theme);$('theme').value=data.theme;setPreviewFontSize()}
+const previewCssMenu=$('previewCssMenu');
+previewCssMenu.addEventListener('click',event=>{if(event.target.closest('button'))previewCssMenu.open=false});
+document.addEventListener('click',event=>{if(!previewCssMenu.contains(event.target))previewCssMenu.open=false});
+previewCssMenu.addEventListener('keydown',event=>{if(event.key==='Escape'){previewCssMenu.open=false;previewCssMenu.querySelector('summary').focus();event.preventDefault()}});
+$('loadPreviewCss').addEventListener('click',()=>$('previewCssFile').click());
+$('previewCssFile').addEventListener('change',async event=>{
+ const file=event.target.files[0];event.target.value='';if(!file)return;
+ if(!file.name.toLowerCase().endsWith('.css')||file.size>200000){toast('Choose a .css file up to 200 KB.');return}
+ try{
+  const css=await file.text();FolioPreviewThemes.compile(css);
+  data.customPreviewCss=css;data.customPreviewCssName=file.name.slice(0,100);data.theme='custom-css';setTheme();persist();toast('Custom preview CSS loaded');
+ }catch(error){toast('Could not load CSS. Include flat style rules, @media, or @supports.')}
+});
+$('downloadPreviewCss').addEventListener('click',()=>{
+ const theme=FolioPreviewThemes.themes[data.theme]?data.theme:'folio-midnight';
+ download(FolioPreviewThemes.themes[theme],theme+'.css','text/css;charset=utf-8');
+});
+$('clearPreviewCss').addEventListener('click',()=>{
+ data.customPreviewCss='';data.customPreviewCssName='';if(data.theme==='custom-css')data.theme='folio-midnight';setTheme();persist();
+});
+$('theme').addEventListener('change',e=>{data.theme=e.target.value;setTheme();persist()});function setTheme(){try{FolioPreviewThemes.apply(data.theme,data.customPreviewCss)}catch(error){FolioPreviewThemes.apply('default','');toast('Could not load saved preview CSS. Load a valid CSS file.')} $('previewCssStatus').textContent=data.customPreviewCssName||'No custom sheet';$('clearPreviewCss').disabled=!data.customPreviewCss;document.documentElement.dataset.flistScheme=data.theme;$('previewPage').className='previewpage'+(data.theme==='default'?'':' '+data.theme);$('theme').value=data.theme;setPreviewFontSize()}
 function parsePreviewFontSize(value){
  if(value==null)return null;
  const text=String(value??'').trim().toLowerCase();
@@ -1569,6 +1589,7 @@ $('downloadMarkdown').addEventListener('click',()=>{download(data.mixed?source.v
 function validateAppBackup(record){
  if(!record||record.format!=='folio-app'||record.version!==1)throw Error('Unsupported app backup');
  const value=record.data;
+ if(value&&((value.customPreviewCss!==undefined&&(typeof value.customPreviewCss!=='string'||value.customPreviewCss.length>200000))||(value.customPreviewCssName!==undefined&&(typeof value.customPreviewCssName!=='string'||value.customPreviewCssName.length>100))))throw Error('Invalid custom preview CSS');
  if(value&&'preferLiterals' in value&&typeof value.preferLiterals!=='boolean')throw Error('Invalid character preference');
  if(!value||!Array.isArray(value.drafts)||!value.drafts.length||value.drafts.length>80||!Array.isArray(value.customTemplates)||value.customTemplates.length>100)throw Error('Invalid app data');
  for(const records of [value.drafts,value.customTemplates]){
@@ -1609,7 +1630,7 @@ $('appDataImport').addEventListener('change',async event=>{
 $('purgeData').addEventListener('click',()=>requestConfirmation('Permanently delete ALL locally saved characters, templates, settings and image attachments, including unsaved edits? Export all data first to keep a backup.',async()=>{
  try{localStorage.removeItem(STORAGE)}catch(error){toast('Could not delete local data');return}
  const draft={id:makeId(),name:'New Character',content:''};
- replaceAppData({customTemplates:[],drafts:[draft],active:draft.id,theme:'flist-blue',editorTheme:'folio',previewFontSize:'site',splitRatio:.524,previewNoteDismissed:false,preferLiterals:true,mixed:true});
+ replaceAppData({customTemplates:[],drafts:[draft],active:draft.id,theme:'flist-blue',customPreviewCss:'',customPreviewCssName:'',editorTheme:'folio',previewFontSize:'site',splitRatio:.524,previewNoteDismissed:false,preferLiterals:true,mixed:true});
  clearTimeout(saveTimer);
  try{localStorage.removeItem(STORAGE);$('saveStatus').textContent='Local data purged'}catch(error){toast('Could not delete local data');return}
  try{await globalThis.FolioLocalImages?.clear()}catch(error){toast('Profile data purged, but image attachments could not be removed.');return}

@@ -45,6 +45,20 @@
   --editor-tag4:#a3d2e0;
 }
 .editor-shell[data-editor-theme="graphite"]{
+  /* Source colors stay readable independently of the profile preview. */
+  --editor-color-red:#ff9999;
+  --editor-color-orange:#ffc080;
+  --editor-color-yellow:#eee18b;
+  --editor-color-green:#a0dda0;
+  --editor-color-cyan:#89dddd;
+  --editor-color-purple:#ceb0ff;
+  --editor-color-blue:#91bdff;
+  --editor-color-pink:#edb7d3;
+  --editor-color-black:#c7cbd2;
+  --editor-color-brown:#d8b18a;
+  --editor-color-white:#f5f5f5;
+  --editor-color-gray:#b7bdc7;
+
   --editor-entity:#ffab99;
   --editor-bg:#18191b;
   --editor-gutter:#202124;
@@ -53,7 +67,7 @@
   --editor-border:#45484e;
   --editor-number:#a8adb7;
   --editor-active-number:#ffffff;
-  --editor-placeholder:#787d97;
+  --editor-placeholder:#a0a6b2;
   --editor-selection:#6986b94d;
   --editor-section:#c5d6ed0a;
   --editor-delimiter:#ffffff0d;
@@ -74,22 +88,36 @@
   --editor-color-shadow-white:none;
   --editor-scheme:dark;
   --editor-block0:#c2b3e2;
-  --editor-block1:#a39ed6;
+  --editor-block1:#b2aedd;
   --editor-block2:#d8bce9;
-  --editor-block3:#b399d2;
+  --editor-block3:#c0aad9;
   --editor-block4:#d9d0f1;
-  --editor-macro0:#87a7d9;
-  --editor-macro1:#94b2e4;
+  --editor-macro0:#9ab5df;
+  --editor-macro1:#97b4e5;
   --editor-macro2:#9ebceb;
-  --editor-macro3:#86a5d6;
+  --editor-macro3:#9bb5dd;
   --editor-macro4:#aac6f0;
   --editor-tag0:#a1c3e0;
   --editor-tag1:#bdd2e2;
-  --editor-tag2:#94b3d7;
+  --editor-tag2:#98b6d8;
   --editor-tag3:#9ac2d5;
   --editor-tag4:#b0d2db;
 }
 .editor-shell[data-editor-theme="forest"]{
+  /* Source colors stay readable independently of the profile preview. */
+  --editor-color-red:#f6aeaa;
+  --editor-color-orange:#edbd8a;
+  --editor-color-yellow:#e5d99b;
+  --editor-color-green:#a9d39b;
+  --editor-color-cyan:#9ad8cc;
+  --editor-color-purple:#ceb6ef;
+  --editor-color-blue:#a6c1f1;
+  --editor-color-pink:#e6b4cf;
+  --editor-color-black:#c3d2c5;
+  --editor-color-brown:#d8bc97;
+  --editor-color-white:#f1f7dd;
+  --editor-color-gray:#b3c6b9;
+
   --editor-entity:#ffab99;
   --editor-bg:#101b17;
   --editor-gutter:#15251e;
@@ -107,43 +135,57 @@
   --editor-structural:#dfca9d;
   --editor-emphasis:#eccd92;
   --editor-bold:#eabb8a;
-  --editor-italic:#c6b6f2;
+  --editor-italic:#c7b8f2;
   --editor-bold-italic:#f2d79e;
   --editor-underline:#a8d5b5;
-  --editor-strike:#e1b1a1;
+  --editor-strike:#e3b6a7;
   --editor-link:#8ed2bd;
   --editor-literal:#becdad;
   --editor-escape:#8cdda0;
-  --editor-warning:#eca9a9;
+  --editor-warning:#eeb1b1;
   --editor-color-shadow-black:-1px -1px 0 #f1f7dd,0 -1px 0 #f1f7dd,1px -1px 0 #f1f7dd,-1px 0 0 #f1f7dd,1px 0 0 #f1f7dd,-1px 1px 0 #f1f7dd,0 1px 0 #f1f7dd,1px 1px 0 #f1f7dd;
   --editor-color-shadow-white:none;
   --editor-scheme:dark;
   --editor-block0:#decc94;
   --editor-block1:#c2cd93;
   --editor-block2:#f2ddaf;
-  --editor-block3:#d1ba88;
+  --editor-block3:#d3be8e;
   --editor-block4:#e7e2b6;
-  --editor-macro0:#84a6dc;
-  --editor-macro1:#90b1e4;
-  --editor-macro2:#9dbbed;
-  --editor-macro3:#83a5d9;
+  --editor-macro0:#aac2e7;
+  --editor-macro1:#a8c2ea;
+  --editor-macro2:#a7c2ef;
+  --editor-macro3:#aac2e5;
   --editor-macro4:#aac4f2;
-  --editor-tag0:#c3b4e6;
+  --editor-tag0:#c7b9e8;
   --editor-tag1:#d3c4e7;
-  --editor-tag2:#acaedd;
+  --editor-tag2:#bcbde3;
   --editor-tag3:#d7bfdb;
   --editor-tag4:#bdc9ed;
 }
 .editor-shell[data-editor-theme="paper"]{
+  /* Source colors stay readable independently of the profile preview. */
+  --editor-color-red:#9b2929;
+  --editor-color-orange:#924500;
+  --editor-color-yellow:#685600;
+  --editor-color-green:#28642d;
+  --editor-color-cyan:#08636b;
+  --editor-color-purple:#713b98;
+  --editor-color-blue:#285b9a;
+  --editor-color-pink:#913a6c;
+  --editor-color-black:#303640;
+  --editor-color-brown:#795126;
+  --editor-color-white:#4d5260;
+  --editor-color-gray:#575b62;
+
   --editor-entity:#873322;
   --editor-bg:#faf7f0;
   --editor-gutter:#f0ece3;
   --editor-text:#303640;
   --editor-caret:#19202a;
   --editor-border:#d3ccbf;
-  --editor-number:#6b706b;
+  --editor-number:#626760;
   --editor-active-number:#2d3342;
-  --editor-placeholder:#73766e;
+  --editor-placeholder:#686b63;
   --editor-selection:#9caedb66;
   --editor-section:#5372930a;
   --editor-delimiter:#4b587c0d;
@@ -247,3 +289,17 @@
 
 .editor-shell .syntax-entity-glyph{border-radius:3px;box-shadow:0 0 0 1px color-mix(in srgb,var(--editor-entity) 35%,transparent)}
 @media(forced-colors:active){.editor-shell .syntax-entity-glyph{outline:1px solid GrayText}}
+
+/* Folio keeps the site-matched source colors and its original outlines. */
+.editor-shell:is([data-editor-theme="graphite"],[data-editor-theme="forest"],[data-editor-theme="paper"]) .syntax-color-value[data-color="red"]{color:var(--editor-color-red);text-shadow:none}
+.editor-shell:is([data-editor-theme="graphite"],[data-editor-theme="forest"],[data-editor-theme="paper"]) .syntax-color-value[data-color="orange"]{color:var(--editor-color-orange);text-shadow:none}
+.editor-shell:is([data-editor-theme="graphite"],[data-editor-theme="forest"],[data-editor-theme="paper"]) .syntax-color-value[data-color="yellow"]{color:var(--editor-color-yellow);text-shadow:none}
+.editor-shell:is([data-editor-theme="graphite"],[data-editor-theme="forest"],[data-editor-theme="paper"]) .syntax-color-value[data-color="green"]{color:var(--editor-color-green);text-shadow:none}
+.editor-shell:is([data-editor-theme="graphite"],[data-editor-theme="forest"],[data-editor-theme="paper"]) .syntax-color-value[data-color="cyan"]{color:var(--editor-color-cyan);text-shadow:none}
+.editor-shell:is([data-editor-theme="graphite"],[data-editor-theme="forest"],[data-editor-theme="paper"]) .syntax-color-value[data-color="purple"]{color:var(--editor-color-purple);text-shadow:none}
+.editor-shell:is([data-editor-theme="graphite"],[data-editor-theme="forest"],[data-editor-theme="paper"]) .syntax-color-value[data-color="blue"]{color:var(--editor-color-blue);text-shadow:none}
+.editor-shell:is([data-editor-theme="graphite"],[data-editor-theme="forest"],[data-editor-theme="paper"]) .syntax-color-value[data-color="pink"]{color:var(--editor-color-pink);text-shadow:none}
+.editor-shell:is([data-editor-theme="graphite"],[data-editor-theme="forest"],[data-editor-theme="paper"]) .syntax-color-value[data-color="black"]{color:var(--editor-color-black);text-shadow:none}
+.editor-shell:is([data-editor-theme="graphite"],[data-editor-theme="forest"],[data-editor-theme="paper"]) .syntax-color-value[data-color="brown"]{color:var(--editor-color-brown);text-shadow:none}
+.editor-shell:is([data-editor-theme="graphite"],[data-editor-theme="forest"],[data-editor-theme="paper"]) .syntax-color-value[data-color="white"]{color:var(--editor-color-white);text-shadow:none}
+.editor-shell:is([data-editor-theme="graphite"],[data-editor-theme="forest"],[data-editor-theme="paper"]) .syntax-color-value[data-color="gray"]{color:var(--editor-color-gray);text-shadow:none}

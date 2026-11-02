@@ -30,3 +30,40 @@ for (const {name,vars} of palettes) {
   }
 }
 console.log('Editor theme palette and contrast checks passed');
+
+// Named source colors must remain legible without borrowing the preview palette.
+function rgb(hex) { return [1,3,5].map(i=>parseInt(hex.slice(i,i+2),16)); }
+function composite(foreground, background) {
+  const alpha=foreground.length===9?parseInt(foreground.slice(7),16)/255:1;
+  return '#'+rgb(foreground).map((v,i)=>Math.round(v*alpha+rgb(background)[i]*(1-alpha)).toString(16).padStart(2,'0')).join('');
+}
+function contrast(a,b) {
+  const x=luminance(a),y=luminance(b);
+  return (Math.max(x,y)+.05)/(Math.min(x,y)+.05);
+}
+for (const {name,vars} of palettes.filter(p=>p.name!=='folio')) {
+  const section=composite(vars.section,vars.bg);
+  const delimiter=composite(vars.delimiter,section);
+  const selected=composite(vars.selection,delimiter);
+  const colors=['red','orange','yellow','green','cyan','purple','blue','pink','black','brown','white','gray'];
+  for (const key of [...foregrounds.filter(key=>!['number','active-number'].includes(key)),...colors.map(c=>'color-'+c)]) {
+    for (const background of [vars.bg,section,delimiter,selected]) {
+      assert.ok(contrast(vars[key],background)>=4.5, `${name}: ${key} on ${background}`);
+    }
+  }
+  assert.ok(contrast(vars.placeholder,vars.bg)>=4.5, name+': placeholder');
+  assert.ok(contrast(vars.number,vars.gutter)>=4.5, name+': gutter numbers');
+}
+console.log('Non-Folio syntax contrast passed on section, delimiter, and selection backgrounds');
+
+const appCss=fs.readFileSync('src/app-themes.css','utf8');
+for (const match of appCss.matchAll(/:root\[data-app-theme="(graphite|paper|forest)"\]\{([^}]+)\}/g)) {
+  const vars=Object.fromEntries([...match[2].matchAll(/--([\w-]+):([^;]+);/g)].map(m=>[m[1],m[2]]));
+  if (!vars.bg) continue;
+  for (const foreground of ['text','muted','accent','accent2']) {
+    for (const background of ['bg','surface','surface2','ui-sidebar','ui-header','ui-toolbar','ui-input','ui-control','ui-active','ui-hover']) {
+      assert.ok(contrast(vars[foreground],vars[background])>=4.5, `${match[1]}: ${foreground} on ${background}`);
+    }
+  }
+}
+console.log('Non-Folio app control and status contrast checks passed');
