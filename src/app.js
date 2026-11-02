@@ -112,11 +112,48 @@ function cloneCharacter(id){
  const copy={id:makeId(),name:uniqueCharacterName(cloneName(original.name,data.drafts)),content:original.content,mixed};
  data.drafts.unshift(copy);loadDraft(copy.id);$('profileName').focus();$('profileName').select();toast('Character cloned');
 }
+let draggedDraftId=null;
+function reorderDraft(id,targetId,after){
+ if(id===targetId)return;
+ const from=data.drafts.findIndex(d=>d.id===id);
+ if(from<0||!data.drafts.some(d=>d.id===targetId))return;
+ const [draft]=data.drafts.splice(from,1);
+ const to=data.drafts.findIndex(d=>d.id===targetId)+(after?1:0);
+ data.drafts.splice(to,0,draft);
+ persist();renderDrafts();
+}
+function clearDraftDrag(){
+ draggedDraftId=null;
+ for(const row of $('draftList').children)row.classList.remove('dragging','drop-before','drop-after');
+}
 function renderDrafts(){
  const list=$('draftList');list.replaceChildren();
  for(const d of data.drafts){
   const btn=document.createElement('button');btn.className='draft'+(!templateSession&&d.id===data.active?' active':'');btn.title=d.name;
   const label=document.createElement('span');label.textContent=d.name;btn.append(label);btn.addEventListener('click',()=>loadDraft(d.id));
+  btn.draggable=true;btn.title=d.name+' — Drag to reorder; Alt+Up/Down to move';
+  btn.addEventListener('dragstart',event=>{
+   draggedDraftId=d.id;event.dataTransfer.effectAllowed='move';event.dataTransfer.setData('text/plain',d.id);btn.classList.add('dragging');
+  });
+  btn.addEventListener('dragover',event=>{
+   if(!draggedDraftId||draggedDraftId===d.id)return;
+   event.preventDefault();event.dataTransfer.dropEffect='move';
+   for(const row of list.children)row.classList.remove('drop-before','drop-after');
+   const rect=btn.getBoundingClientRect();btn.classList.add(event.clientY<rect.top+rect.height/2?'drop-before':'drop-after');
+  });
+  btn.addEventListener('dragleave',()=>btn.classList.remove('drop-before','drop-after'));
+  btn.addEventListener('drop',event=>{
+   if(!draggedDraftId)return;
+   event.preventDefault();const id=draggedDraftId,rect=btn.getBoundingClientRect();clearDraftDrag();
+   reorderDraft(id,d.id,event.clientY>=rect.top+rect.height/2);
+  });
+  btn.addEventListener('dragend',clearDraftDrag);
+  btn.addEventListener('keydown',event=>{
+   if(!event.altKey||!['ArrowUp','ArrowDown'].includes(event.key))return;
+   event.preventDefault();const index=data.drafts.findIndex(record=>record.id===d.id),after=event.key==='ArrowDown';
+   const target=data.drafts[index+(after?1:-1)];if(!target)return;
+   reorderDraft(d.id,target.id,after);$('draftList').children[index+(after?1:-1)].focus();
+  });
   list.append(btn);
  }
  renderTemplateTargets();
