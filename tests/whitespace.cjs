@@ -136,14 +136,21 @@ for(const literal of ['# Literal heading', '> Literal quote', '- Literal bullet'
 }
 
 const listCases = [
- ['• Parent\n  • Child\n    • Grandchild\n• Next', '- Parent\n  - Child\n    - Grandchild\n- Next'],
+ ['• Parent\n  • Child\n    • Grandchild\n• Next', '* Parent\n  * Child\n    * Grandchild\n* Next'],
  ['1. Parent\n   1. Child\n      12. Grandchild\n2. Next', '1. Parent\n   1. Child\n      12. Grandchild\n2. Next'],
- ['• Parent\n\t• Child\n\t\t1. Numbered\n\t\t2. Next', '- Parent\n\t- Child\n\t\t1. Numbered\n\t\t2. Next'],
- ['  •  Spaced\n\t•\tTabbed\n    • ', '  -  Spaced\n\t-\tTabbed\n    - '],
- ['• [b]Bold[/b]\n  3. [i]Italic[/i]', '- **Bold**\n  3. *Italic*'],
- ['• Parent\n\n  continuation text\n  • Child\n', '- Parent\n\n  continuation text\n  - Child\n'],
- ['[quote]• Parent\n  • Child\n  1. Ordered[/quote]', '> - Parent\n>   - Child\n>   1. Ordered']
+ ['• Parent\n\t• Child\n\t\t1. Numbered\n\t\t2. Next', '* Parent\n\t* Child\n\t\t1. Numbered\n\t\t2. Next'],
+ ['  •  Spaced\n\t•\tTabbed\n    • ', '  *  Spaced\n\t*\tTabbed\n    * '],
+ ['• [b]Bold[/b]\n  3. [i]Italic[/i]', '* **Bold**\n  3. *Italic*'],
+ ['• Parent\n\n  continuation text\n  • Child\n', '* Parent\n\n  continuation text\n  * Child\n'],
+ ['[quote]• Parent\n  • Child\n  1. Ordered[/quote]', '> * Parent\n>   * Child\n>   1. Ordered']
 ];
+for(const marker of ['-', '*', '+']){
+ const markdown=marker+' **Parent**\n  '+marker+'\tChild\n\n  continuation\n'+marker+' Next';
+ const bbcode=markdown.replace(/\*\*Parent\*\*/, '[b]Parent[/b]').replace(/^([ \t]*)([-*+])([ \t]+)/gm, (_,indent,marker,space)=>indent+({'-':'–','*':'•','+':'▪'}[marker])+space);
+ assert.equal(compile(markdown),bbcode,'Compile '+marker+' bullet');
+ assert.equal(context.bbcodeToMarkdown(bbcode),markdown,'Decompile '+marker+' bullet');
+ assert.equal(compile(context.bbcodeToMarkdown('[quote]'+bbcode+'[/quote]')),'[quote]'+bbcode+'[/quote]','Quoted '+marker+' round trip');
+}
 for(const [bbcode, markdown] of listCases){
  assert.equal(context.bbcodeToMarkdown(bbcode),markdown,'Editable indented list');
  assert.equal(compile(markdown),bbcode,'List whitespace preserved');

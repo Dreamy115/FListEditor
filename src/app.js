@@ -487,8 +487,8 @@ function markdownToBB(input,issues=[]){
    while(index+1<lines.length){const next=lines[index+1].match(/^[ \t]*>[ \t]?(.*)$/);if(!next)break;body.push(next[1]);index++}
    out.push('[quote]'+markdownToBB(body.join('\n'),issues)+'[/quote]');continue;
   }
-  const bullet=line.match(/^([ \t]*)[-*+]([ \t]+)(.*)$/);
-  if(bullet){out.push(bullet[1]+'•'+bullet[2]+inlineMarkdown(bullet[3],[],issues));continue}
+  const bullet=line.match(/^([ \t]*)([-*+])([ \t]+)(.*)$/);
+  if(bullet){out.push(bullet[1]+({'-':'-','*':'•','+':'▪'}[bullet[2]])+bullet[3]+inlineMarkdown(bullet[4],[],issues));continue}
   // Numbered lists are already readable as plain text on F-List.
   out.push(inlineMarkdown(line,[],issues));
   }finally{if(soft)pendingBreak=false}
@@ -709,9 +709,9 @@ function preferStandardMarkdown(markdown){
  // F-List lists are plain text bullets/numbers, not [list] tags. Recover the
  // Markdown bullet marker while keeping every indentation and separator byte.
  // Include quote prefixes so lists inside > blocks remain editable too.
- const bullets=/^((?:[ \t]*>[ \t]?)*[ \t]*)•([ \t]+)/gm;
+ const bullets=/^((?:[ \t]*>[ \t]?)*[ \t]*)(–|•|▪|\\[-+])([ \t]+)/gm;
  for(const match of [...markdown.matchAll(bullets)].reverse()){
-  const candidate=markdown.slice(0,match.index)+match[1]+'-'+match[2]+markdown.slice(match.index+match[0].length);
+  const candidate=markdown.slice(0,match.index)+match[1]+({'-':'-','•':'*','▪':'+'}[match[2]]||match[2].slice(1))+match[3]+markdown.slice(match.index+match[0].length);
   if(markdownToBB(candidate)===expected)markdown=candidate;
  }
  let changed=true;

@@ -18,7 +18,9 @@ One tightly packed construct does not force unrelated constructs to use macros.
 | `[heading]` | `## …` | `:::heading` |
 | `[big]` | `{big\|…}` | `:::big` for multiline content |
 | `[hr]` | `---` | `{hr}` for packed layouts |
-| Line-leading `•` bullets | `-` list items | Literal/code contexts are left intact |
+| Line-leading `•` bullets | `*` list items | Literal/code contexts are left intact |
+| Line-leading `–` bullets | `-` list items | Literal/code contexts are left intact |
+| Line-leading `▪` bullets | `+` list items | Literal/code contexts are left intact |
 | Plain numbered items (`1.`, `2.`, etc.) | The same numbered items | Numbers are retained, never renumbered |
 | `[quote]` | `> …`, including consecutive lines and nested `> > …` | `:::quote` for packed layouts |
 | `[url=https://…]label` | `[label](https://…)` | Link macro for supported label/layout; otherwise literal text |
@@ -56,7 +58,8 @@ noparse tags are split safely in exported BBCode, including inside code fences.
 Lists preserve leading spaces and tabs, whitespace after the marker, blank lines,
 and continuation-line indentation. Nested bullet/numbered combinations are
 supported, including inside quotes and layout macros. F-List has no native list
-tags: export uses plain text bullets and numbers. Structural `[indent]` wrappers
+tags: export converts `-` markers to `–`, `+` markers to `▪`, and `*` markers to `•`, and keeps numbers.
+Decompilation restores `–` to `-`, `•` to `*`, and `▪` to `+`. Structural `[indent]` wrappers
 remain `:::indent` so their visual indent is not silently replaced with spaces.
 
 The toolbar follows these mappings too: Quote prefixes selected lines with `>`,
