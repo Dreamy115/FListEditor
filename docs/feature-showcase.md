@@ -363,7 +363,7 @@ Text inside triple backticks.
 - **Export .md:** downloads editable Markdown+ from either mode, preserving the active document and mode.
 - **Import:** opens `.md`, `.bbcode`, `.txt`, and single-profile JSON backups.
 - **Export screenshot (.png):** downloads the full card, including its name, current appearance, and text size; all nested sections are expanded for capture.
-- **Copy screenshot:** copies the expanded card as a PNG image to the clipboard.
+- **Copy screenshot:** copies the expanded card as a PNG image to the clipboard. Allow clipboard access when your browser asks. If copying is blocked, a permission popup offers **Retry copy**, **Export screenshot (.png)**, and **Cancel**. Allow **Clipboard** in browser site permissions before retrying; retry copies the captured image.
 - **Export .html:** downloads a responsive page with embedded styles, selectable text, and interactive sections. Sections start collapsed; click or press **Enter / Space** to toggle them.
 - Screenshot capture preserves the current preview scroll and expansion state.
 

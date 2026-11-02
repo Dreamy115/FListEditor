@@ -1522,18 +1522,35 @@ $('exportScreenshot').addEventListener('click',async()=>{
  catch(error){console.error('Screenshot export failed',error);toast('Screenshot export failed. Please try again.')}
  finally{button.disabled=false;button.textContent=label;button.removeAttribute('aria-busy')}
 });
+function showScreenshotPermission(png){
+ const dialog=document.createElement('dialog');dialog.className='clipboard-dialog';
+ dialog.setAttribute('aria-labelledby','clipboardPermissionTitle');
+ dialog.innerHTML=`<h2 id="clipboardPermissionTitle">Allow clipboard access</h2><p>Allow clipboard access in your browser's permission prompt. If access is blocked, open the site permissions beside the address bar and allow Clipboard, then retry.</p><p role="status"></p><div class="clipboard-actions"><button type="button">Retry copy</button><button type="button">Export screenshot (.png)</button><button type="button">Cancel</button></div>`;
+ const [retry,exportButton,cancel]=dialog.querySelectorAll('button'),status=dialog.querySelector('[role="status"]');
+ retry.addEventListener('click',async()=>{
+  retry.disabled=true;status.textContent='Requesting clipboard access?';
+  try{await navigator.clipboard.write([new ClipboardItem({'image/png':png})]);dialog.close();toast('Screenshot copied. Paste it into another app!')}
+  catch(error){status.textContent='Clipboard access is still blocked. Allow Clipboard in browser site permissions, then retry, or export the PNG.'}
+  finally{retry.disabled=false}
+ });
+ exportButton.addEventListener('click',()=>{download(png,slug()+'.png','image/png');dialog.close();toast('Screenshot exported')});
+ cancel.addEventListener('click',()=>dialog.close());
+ dialog.addEventListener('close',()=>{dialog.remove();$('copyScreenshot').focus()});
+ document.body.append(dialog);dialog.showModal();
+}
 $('copyScreenshot').addEventListener('click',async()=>{
  const button=$('copyScreenshot'),label=button.textContent;
  if(!navigator.clipboard?.write||typeof ClipboardItem==='undefined'||(ClipboardItem.supports&&!ClipboardItem.supports('image/png'))){toast('Image clipboard is unavailable in this browser. Use Export screenshot (.png).');return}
  button.disabled=true;button.textContent='Copying screenshot…';button.setAttribute('aria-busy','true');
+ let png;
  try{
   refresh();
-  const png=FolioScreenshot.capture($('previewPage'));
+  png=FolioScreenshot.capture($('previewPage'));
   // Start the clipboard write during the click gesture while rendering finishes.
   png.catch(()=>{});
   await navigator.clipboard.write([new ClipboardItem({'image/png':png})]);
   toast('Screenshot copied. Paste it into another app!');
- }catch(error){console.error('Screenshot copy failed',error);toast('Could not copy screenshot. Allow clipboard access or use Export screenshot (.png).')}
+ }catch(error){console.error('Screenshot copy failed',error);try{showScreenshotPermission(await png)}catch(captureError){toast('Screenshot capture failed. Please try again.')} }
  finally{button.disabled=false;button.textContent=label;button.removeAttribute('aria-busy')}
 });
 for(const [id,format,type] of [['exportHtml','html','text/html;charset=utf-8']]){
