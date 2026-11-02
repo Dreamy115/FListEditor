@@ -312,6 +312,7 @@ Text inside triple backticks.
 **Keyboard shortcuts**
 - **Ctrl+B / Ctrl+I / Ctrl+U:** bold / italic / underline
 - **Ctrl+Z:** undo
+- **Alt+Up / Alt+Down:** move the selected source lines up / down by one line, keeping the selection. With no selection, move the caret's line. A selection ending at the start of a line excludes that line. Moves stop at the document boundaries and can be undone.
 - **Ctrl+Y / Ctrl+Shift+Z:** redo
 
 **Layout and appearance**
