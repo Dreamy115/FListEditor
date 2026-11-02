@@ -1086,6 +1086,55 @@ colorNames.forEach(name=>{const btn=document.createElement('button');btn.type='b
  btn.addEventListener('click',()=>{wrapColor(name);palette.hidden=true;$('colorBtn').setAttribute('aria-expanded','false')});palette.append(btn)});
 const colorHint=document.createElement('span');colorHint.className='palette-hint';colorHint.textContent='F-List named presets only';palette.append(colorHint);
 $('colorBtn').addEventListener('click',()=>{palette.hidden=!palette.hidden;$('colorBtn').setAttribute('aria-expanded',String(!palette.hidden))});
+const quickColorKeys={r:'red',o:'orange',y:'yellow',g:'green',c:'cyan',b:'blue',p:'purple',i:'pink',k:'black',n:'brown',w:'white',a:'gray'};
+const quickColorPicker=document.createElement('div');
+quickColorPicker.className='quick-color-picker';quickColorPicker.hidden=true;
+quickColorPicker.setAttribute('role','dialog');quickColorPicker.setAttribute('aria-label','Quick color picker');
+const quickColorHint=document.createElement('div');quickColorHint.className='quick-color-hint';quickColorHint.textContent='Press a letter to apply · Esc to cancel';quickColorPicker.append(quickColorHint);
+let quickColorSelection=null;
+function closeQuickColor(restore=false){
+ quickColorPicker.hidden=true;
+ if(restore&&quickColorSelection){source.focus({preventScroll:true});source.setSelectionRange(...quickColorSelection)}
+ quickColorSelection=null;
+}
+function applyQuickColor(name){closeQuickColor(true);wrapColor(name)}
+for(const [key,name] of Object.entries(quickColorKeys)){
+ const button=document.createElement('button');button.type='button';button.className='palette-option';
+ const swatch=document.createElement('span');swatch.className='color-swatch';swatch.style.setProperty('--swatch','var(--flist-'+name+')');
+ const label=document.createElement('span');label.textContent=key.toUpperCase()+' · '+name;
+ button.append(swatch,label);button.addEventListener('click',()=>applyQuickColor(name));quickColorPicker.append(button);
+}
+document.body.append(quickColorPicker);
+function positionQuickColor(){
+ const bounds=source.getBoundingClientRect(),layer=$('sourceHighlight');
+ const walker=document.createTreeWalker(layer,NodeFilter.SHOW_TEXT);
+ let remaining=source.selectionDirection==='backward'?source.selectionStart:source.selectionEnd,node,anchor;
+ while((node=walker.nextNode())){
+  if(remaining>node.length){remaining-=node.length;continue}
+  const range=document.createRange();range.setStart(node,remaining);range.collapse(true);anchor=range.getClientRects()[0];if(anchor)break;
+ }
+ const box=quickColorPicker.getBoundingClientRect(),margin=8;
+ const left=anchor?anchor.left:bounds.left+20,top=anchor?anchor.bottom:bounds.top+20;
+ quickColorPicker.style.left=Math.max(margin,Math.min(left,window.innerWidth-box.width-margin))+'px';
+ quickColorPicker.style.top=Math.max(margin,Math.min(top+4,window.innerHeight-box.height-margin))+'px';
+}
+function openQuickColor(){
+ diagnosticHover?.hide();
+ quickColorSelection=[source.selectionStart,source.selectionEnd,source.selectionDirection];
+ quickColorPicker.hidden=false;positionQuickColor();quickColorPicker.querySelector('button').focus({preventScroll:true});
+}
+quickColorPicker.addEventListener('keydown',event=>{
+ if(event.isComposing)return;
+ if(event.repeat){event.preventDefault();return}
+ if(event.key==='Escape'){event.preventDefault();event.stopPropagation();closeQuickColor(true);return}
+ const color=quickColorKeys[event.key.toLowerCase()];
+ if(color&&!event.altKey&&!event.metaKey){event.preventDefault();event.stopPropagation();applyQuickColor(color);return}
+ if(event.key==='Tab')closeQuickColor();
+});
+document.addEventListener('pointerdown',event=>{if(!quickColorPicker.hidden&&!quickColorPicker.contains(event.target))closeQuickColor()});
+document.addEventListener('focusin',event=>{if(!quickColorPicker.hidden&&!quickColorPicker.contains(event.target))closeQuickColor()});
+source.addEventListener('scroll',()=>closeQuickColor());
+window.addEventListener('resize',()=>closeQuickColor(true));
 const fontPalette=$('fontPalette');
 function wrapFont(name){
  if(!Object.hasOwn(fontStyles,name))return;
@@ -1498,6 +1547,9 @@ function moveSourceLines(direction,copy=false){
 document.addEventListener('keydown',e=>{
  if(e.key==='Enter'&&e.ctrlKey){e.preventDefault();copyCode();return}
  if(document.activeElement!==source)return;
+ if(e.ctrlKey&&e.shiftKey&&!e.altKey&&!e.metaKey&&!e.isComposing&&e.key.toLowerCase()==='b'){
+  e.preventDefault();openQuickColor();return;
+ }
  if(e.altKey&&!e.ctrlKey&&!e.metaKey&&!e.isComposing&&['ArrowUp','ArrowDown'].includes(e.key)){
   e.preventDefault();moveSourceLines(e.key==='ArrowUp'?-1:1,e.shiftKey);return;
  }

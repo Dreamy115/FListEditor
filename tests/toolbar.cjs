@@ -50,6 +50,25 @@ for(const mixed of [true,false]){
 }
 console.log('Mode-aware toolbar checks passed');
 
+// The color shortcut is editor-only and leaves modified variants and the previous Space shortcut alone.
+let keyHandler,colorCalls=0;
+const shortcutDocument={activeElement:source,addEventListener(type,handler){keyHandler=handler}};
+const shortcutContext=vm.createContext({source,document:shortcutDocument,wrapInline:tag=>{assert.equal(tag,'b')},openQuickColor:()=>{colorCalls++}});
+vm.runInContext(app.slice(app.indexOf("document.addEventListener('keydown',e=>{"),app.indexOf("source.addEventListener('dragover'")),shortcutContext);
+function colorKey(overrides={}){
+ let prevented=false;
+ keyHandler({key:'B',code:'KeyB',ctrlKey:true,shiftKey:true,altKey:false,metaKey:false,isComposing:false,preventDefault(){prevented=true},...overrides});
+ return prevented;
+}
+assert.equal(colorKey(),true);assert.equal(colorCalls,1);
+assert.equal(colorKey({key:' ',code:'Space'}),false);
+assert.equal(colorKey({shiftKey:false}),true);
+assert.equal(colorKey({ctrlKey:false}),false);
+assert.equal(colorKey({altKey:true}),false);
+assert.equal(colorKey({isComposing:true}),true);
+shortcutDocument.activeElement={};assert.equal(colorKey(),false);assert.equal(colorCalls,1);
+console.log('Color shortcut routing checks passed');
+
 data.mixed=true;
 reset('First\n\nSecond');context.wrapInline('quote');
 assert.equal(source.value,'> First\n> \n> Second');
@@ -83,3 +102,35 @@ for(const mixed of [true,false]){
   assert.equal(source.value,image+'after','Following source text is unchanged');
  }
 }
+const {parseHTML}=require('linkedom');
+const {document:pickerDocument,window:pickerWindow}=parseHTML('<html><body></body></html>');
+let pickerApplied=[],restoredSelection;
+const pickerSource={selectionStart:3,selectionEnd:8,selectionDirection:'backward',focus(){},setSelectionRange(...args){restoredSelection=args},addEventListener(){}};
+const pickerContext=vm.createContext({document:pickerDocument,window:pickerWindow,source:pickerSource,diagnosticHover:null,wrapColor:name=>pickerApplied.push(name)});
+vm.runInContext(app.slice(app.indexOf('const quickColorKeys='),app.indexOf('const fontPalette=')),pickerContext);
+vm.runInContext('positionQuickColor=()=>{}',pickerContext);
+const popup=pickerDocument.querySelector('.quick-color-picker');
+function pickerKey(key,extra={}){
+ const event=new pickerWindow.Event('keydown',{bubbles:true,cancelable:true});Object.assign(event,{key,...extra});popup.dispatchEvent(event);return event.defaultPrevented;
+}
+pickerContext.openQuickColor();assert.equal(popup.hidden,false);assert.equal(pickerApplied.length,0);
+assert.equal(pickerKey('g'),true);assert.deepEqual(pickerApplied,['green']);assert.deepEqual(restoredSelection,[3,8,'backward']);assert.equal(popup.hidden,true);
+pickerContext.openQuickColor();pickerKey('Escape');assert.equal(pickerApplied.length,1);assert.equal(popup.hidden,true);
+for(const button of popup.querySelectorAll('button')){
+ pickerContext.openQuickColor();const key=button.textContent[0].toLowerCase();pickerKey(key);assert.equal(popup.hidden,true);
+}
+assert.equal(new Set(pickerApplied.slice(1)).size,12);
+pickerContext.openQuickColor();pickerKey('b',{repeat:true});assert.equal(popup.hidden,false);pickerContext.closeQuickColor(true);
+pickerContext.openQuickColor();popup.querySelector('button').click();assert.equal(pickerApplied.at(-1),'red');assert.equal(popup.hidden,true);
+console.log('Quick color picker immediate choices, cancellation and selection preservation passed');
+context.colorSafe=()=>true;
+vm.runInContext(app.slice(app.indexOf('function wrapColor('),app.indexOf('colorNames.forEach(name=>')),context);
+for(const mixed of [true,false]){
+ data.mixed=mixed;reset('selected');context.wrapColor('green');
+ assert.equal(source.value,mixed?'{color:green|selected}':'[color=green]selected[/color]');
+ assert.equal(source.value.slice(...selection),'selected');
+ reset();context.wrapColor('cyan');assert.equal(source.value.slice(...selection),'your text');
+ reset('First\nSecond');context.wrapColor('red');
+ assert.equal(source.value,mixed?':::color red\nFirst\nSecond\n:::':'[color=red]First\nSecond[/color]');
+}
+console.log('Quick color insertion syntax and placeholder checks passed');
