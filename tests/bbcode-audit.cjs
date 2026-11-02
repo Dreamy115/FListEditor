@@ -64,7 +64,7 @@ vm.runInContext(fs.readFileSync('src/feature-showcase.js', 'utf8'), context);
 assert.equal(context.FolioShowcase, showcase, 'Browser welcome profile must match the Markdown source');
 const welcomeDOM = context.FolioHorizon.render(showcaseBB);
 assert.ok(welcomeDOM.textContent.includes('Folio / Editor reference'));
-assert.equal(welcomeDOM.querySelectorAll('.bbcode-collapse').length, 13);
+assert.equal(welcomeDOM.querySelectorAll('.bbcode-collapse').length, 14);
 assert.equal(welcomeDOM.querySelectorAll('.bbcode-collapse:not(.collapsed)').length, 0);
 // Check the real initial draft and stored-data loading path without starting the UI.
 for (const stored of [null, {drafts:[{id:'saved',name:'Existing character',content:'Keep my work',mixed:false}],active:'saved'}]) {

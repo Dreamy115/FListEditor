@@ -12,8 +12,6 @@ assert.match(advice('[url]', 'Invalid URL in [url]: use a complete http(s) URL')
 assert.match(advice('{user:Bad!Name}', 'Invalid name in [user]: invalid').help, /name/);
 assert.equal(advice('[b=ignored]', 'Unexpected parameter on [b]: invalid').fix.text, '[b]');
 assert.match(advice('{big|', 'Unsupported nesting: [big] inside [big]').help, /outside/);
-assert.match(advice('{right|','Nested text alignment: right inside center').help,/innermost alignment takes precedence/);
-assert.equal(advice('{right|','Nested text alignment: right inside center').fix,null);
 assert.equal(advice(':::centre','Unknown block macro: :::centre').fix.text,':::center');
 assert.equal(advice('::','Malformed block macro closing marker: ::').fix.text,':::');
 assert.equal(advice(':::center bad','Invalid block macro: :::center bad').fix.text,':::center');

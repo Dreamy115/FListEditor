@@ -536,12 +536,6 @@ function bbcodeToMarkdown(input,escapePlain=true){
  const normalized=normalizeColorTags(input),tree=parseBBCode(normalized);
  let preserveLayout=false,editableLayout=false;
  const blockTags=new Set(['center','left','right','justify','indent','quote','collapse']);
- function markNestedAlignments(node,inside=false){
-  const aligned=['center','left','right','justify'].includes(node.tag);
-  node.suppressAlignment=aligned&&inside;
-  for(const child of node.children||[])markNestedAlignments(child,inside||aligned);
- }
- markNestedAlignments(tree);
  const raw=node=>node.text!==undefined?node.text:node.tag==='hr'?'[hr]':node.open+node.children.map(raw).join('')+(node.unclosed?'':'[/'+node.tag+']');
  const children=node=>node.children.map(convert).join('');
  const hasBlocks=node=>node.children.some(child=>child.tag&&(blockTags.has(child.tag)||child.tag==='heading'||hasBlocks(child)));
@@ -564,7 +558,7 @@ function bbcodeToMarkdown(input,escapePlain=true){
    if(tag==='hr')return '{hr}';
    if(['b','i','u','s','sup','sub','big','small','heading'].includes(tag))return '{'+tag+'|'+body+'}';
    if(tag==='color')return '{color:'+node.param+'|'+body+'}';
-   if(blockTags.has(tag))return '{'+tag+(tag==='collapse'?':'+node.param:node.suppressAlignment?':!':'')+'|'+body+'}';
+   if(blockTags.has(tag))return '{'+tag+(tag==='collapse'?':'+node.param:'')+'|'+body+'}';
   }
   if(tag==='hr')return boundaries('---');
   if(tag==='heading'){
@@ -590,7 +584,7 @@ function bbcodeToMarkdown(input,escapePlain=true){
   if(tag==='quote'&&!editableLayout)return boundaries(content.split('\n').map(line=>'> '+line).join('\n'));
   if(blockTags.has(tag)){
    if(tag==='collapse'&&(!node.param||/[\[\]\n]/.test(node.param)))return raw(node);
-   return block(tag,tag==='collapse'?node.param:node.suppressAlignment?'!':'',content);
+   return block(tag,tag==='collapse'?node.param:'',content);
   }
   if(tag==='url'){
    if(!node.param)return safeUrl(plain)&&!/[<>\s]/.test(plain)?'<'+plain+'>':raw(node);
@@ -784,33 +778,6 @@ function tagContentWarnings(compiled){
  }
  return issues;
 }
-function nestedAlignmentWarnings(text,mixed){
- if(!mixed)return [];
- const searchable=warningSource(text,mixed),alignments=new Set(['left','right','center','justify']),blocks=[],inline=[],issues=[];
- const open=(name,start,end,stack,suppressed=false)=>{
-  const parent=[...blocks,...inline].reverse().find(item=>alignments.has(item.name));
-  if(alignments.has(name)&&parent&&!suppressed)issues.push({message:'Nested text alignment: '+name+' inside '+parent.name+'; the innermost alignment takes precedence. In Markdown+, add ! to the inner block (:::'+name+' !) to suppress this warning',start,end,line:text.slice(0,start).split('\n').length});
-  stack.push({name});
- };
- for(let index=0;index<searchable.length;index++){
-  const literal=inline.some(item=>item.literal);
-  if(!literal&&(index===0||searchable[index-1]==='\n')){
-   const marker=searchable.slice(index).match(/^[ \t]*(?:>[ \t]*)*:::(?:([a-z]+)(?:[ \t]+([^\n]*))?)?[ \t]*(?=\n|$)/i);
-   if(marker){
-    if(marker[1]){const name=marker[1].toLowerCase(),arg=marker[2]?.trim(),suppressed=alignments.has(name)&&arg==='!';open(alignments.has(name)&&arg&&!suppressed?undefined:name,index,index+marker[0].length,blocks,suppressed)}
-    else blocks.pop();
-    index+=marker[0].length-1;continue;
-   }
-  }
-  if(searchable[index]==='\\'){index++;continue}
-  if(searchable[index]==='}'){inline.pop();continue}
-  if(searchable[index]!=='{')continue;
-  const header=searchable.slice(index).match(/^\{([a-z]+)(?::([^|{}\n]*))?\|/i),name=header?.[1].toLowerCase();
-  if(literal||name==='noparse')inline.push({name,literal:true});
-  else open(name,index,index+(header?.[0].length||1),inline,alignments.has(name)&&header?.[2]?.trim()==='!');
- }
- return issues;
-}
 function nestedFontWarnings(text){
  const searchable=warningSource(text,true),stack=[],blocks=[],issues=[];
  const message='Nested font macros are not supported; use one font macro per text span';
@@ -836,7 +803,7 @@ function nestedFontWarnings(text){
 }
 function macroWarnings(text){
  const issues=[];markdownToBB(text,issues);
- return [...new Set([...issues.filter(message=>!message.includes('block macro')),...blockMacroWarnings(text).map(issue=>issue.message),...nestedFontWarnings(text).map(issue=>issue.message),...nestedAlignmentWarnings(text,true).map(issue=>issue.message)])];
+ return [...new Set([...issues.filter(message=>!message.includes('block macro')),...blockMacroWarnings(text).map(issue=>issue.message),...nestedFontWarnings(text).map(issue=>issue.message)])];
 }
 function blockMacroWarnings(text){
  const searchable=warningSource(text,true),stack=[],issues=[];
@@ -914,8 +881,7 @@ function locatedWarnings(text,mixed,compiled){
    }
   }
  }
- const messages=[...countWarnings(compiled),...colorWarnings(text,mixed),...(mixed?macroWarnings(text).filter(message=>!message.includes('block macro')&&!message.startsWith('Nested font macros')):[])].filter(message=>!message.startsWith('Nested text alignment:'));
- records.push(...nestedAlignmentWarnings(text,mixed));
+ const messages=[...countWarnings(compiled),...colorWarnings(text,mixed),...(mixed?macroWarnings(text).filter(message=>!message.includes('block macro')&&!message.startsWith('Nested font macros')):[])];
  if(mixed)records.push(...blockMacroWarnings(text),...nestedFontWarnings(text));
  for(const message of messages){
   if(contentMessages.has(message))continue;

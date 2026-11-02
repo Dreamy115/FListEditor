@@ -100,12 +100,26 @@
       const midpoint = (box.left + box.right) / 2;
       for (const element of [header, host.querySelector('.card-body')]) {
         const elementBounds = element.getBoundingClientRect();
-        check(Math.abs(elementBounds.width - box.width + parseFloat(boxStyle.borderLeftWidth) + parseFloat(boxStyle.borderRightWidth)) < 1, scheme + ' centered content uses full box width');
+        const inset = element.classList.contains('card-body') ? 50 : 0;
+        check(Math.abs(elementBounds.width + inset - box.width + parseFloat(boxStyle.borderLeftWidth) + parseFloat(boxStyle.borderRightWidth)) < 1, scheme + ' centered content preserves body margins');
         const range = document.createRange();
         range.selectNodeContents(element);
         const bounds = range.getBoundingClientRect();
         check(Math.abs((bounds.left + bounds.right) / 2 - midpoint) < 1, scheme + ' centered collapse ' + element.className);
       }
+    }
+    for (const scheme of Object.keys(palettes)) {
+      host.className = 'previewpage ' + scheme;
+      host.innerHTML = '<div class="description"></div>';
+      host.querySelector('.description').append(FolioHorizon.render('[center][collapse=OOC][left]Left-aligned content[/left][/collapse][/center]'));
+      host.querySelector('.bbcode-collapse-header').click();
+      const box = host.querySelector('.bbcode-collapse').getBoundingClientRect();
+      const text = host.querySelector('.leftText');
+      const range = document.createRange();
+      range.selectNodeContents(text);
+      const border = parseFloat(getComputedStyle(host.querySelector('.bbcode-collapse')).borderLeftWidth);
+      check(getComputedStyle(text).textAlign === 'left', scheme + ' explicit left body alignment');
+      check(Math.abs(range.getBoundingClientRect().left - box.left - border - 25) < 1, scheme + ' left body retains collapse inset');
     }
     host.className = 'previewpage horizon-moon-prism';
     host.innerHTML = '<div class="description"></div>';

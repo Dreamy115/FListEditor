@@ -102,6 +102,7 @@ The toolbar color picker applies a preset to the selection. **Profile appearance
 
 :::collapse 04 / Alignment, indentation, quotes & lists
 **Alignment blocks:** `:::left`, `:::center`, `:::right`, `:::justify`. Close each with `:::`.
+Nested alignment is supported; the innermost alignment takes precedence.
 **Inline equivalents:** `{left|Text}`, `{center|Text}`, `{right|Text}`, `{justify|Text}`.
 
 :::left
@@ -189,6 +190,16 @@ Section content
 
 ```
 Click the preview header to expand or collapse. Nested sections have independent states. Sections can contain formatting, lists, quotes, images, and additional blocks.
+
+Wrap a section in `:::center` to center its title. Use `:::left` inside the section to explicitly left-align its body. In F-List preview themes, the body retains side margins inside the panel.
+
+:::center
+:::collapse Centered title
+:::left
+This content is left-aligned inside the section margins.
+:::
+:::
+:::
 
 :::collapse Level 1
 {color:cyan|**Formatted content**}
