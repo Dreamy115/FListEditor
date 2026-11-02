@@ -1547,7 +1547,7 @@ function moveSourceLines(direction,copy=false){
 document.addEventListener('keydown',e=>{
  if(e.key==='Enter'&&e.ctrlKey){e.preventDefault();copyCode();return}
  if(document.activeElement!==source)return;
- if(e.ctrlKey&&e.shiftKey&&!e.altKey&&!e.metaKey&&!e.isComposing&&e.key.toLowerCase()==='b'){
+ if(e.ctrlKey&&!e.shiftKey&&!e.altKey&&!e.metaKey&&!e.isComposing&&e.key.toLowerCase()==='d'){
   e.preventDefault();openQuickColor();return;
  }
  if(e.altKey&&!e.ctrlKey&&!e.metaKey&&!e.isComposing&&['ArrowUp','ArrowDown'].includes(e.key)){

@@ -57,15 +57,15 @@ const shortcutContext=vm.createContext({source,document:shortcutDocument,wrapInl
 vm.runInContext(app.slice(app.indexOf("document.addEventListener('keydown',e=>{"),app.indexOf("source.addEventListener('dragover'")),shortcutContext);
 function colorKey(overrides={}){
  let prevented=false;
- keyHandler({key:'B',code:'KeyB',ctrlKey:true,shiftKey:true,altKey:false,metaKey:false,isComposing:false,preventDefault(){prevented=true},...overrides});
+ keyHandler({key:'d',code:'KeyD',ctrlKey:true,shiftKey:false,altKey:false,metaKey:false,isComposing:false,preventDefault(){prevented=true},...overrides});
  return prevented;
 }
 assert.equal(colorKey(),true);assert.equal(colorCalls,1);
 assert.equal(colorKey({key:' ',code:'Space'}),false);
-assert.equal(colorKey({shiftKey:false}),true);
+assert.equal(colorKey({shiftKey:true}),false);
 assert.equal(colorKey({ctrlKey:false}),false);
 assert.equal(colorKey({altKey:true}),false);
-assert.equal(colorKey({isComposing:true}),true);
+assert.equal(colorKey({isComposing:true}),false);
 shortcutDocument.activeElement={};assert.equal(colorKey(),false);assert.equal(colorCalls,1);
 console.log('Color shortcut routing checks passed');
 
