@@ -487,7 +487,11 @@ function inlineMarkdown(text,protectedParts=[],issues=[]){
   .replace(/(?<!\w)_([^_\n]+)_(?!\w)/g,'[i]$1[/i]');
  let revealed=text;for(let n=0;n<16&&revealed.includes('\uE000');n++){const next=revealed.replace(/\uE000(\d+)\uE001/g,(_,id)=>protectedParts[+id]??'');if(next===revealed)break;revealed=next}return revealed;
 }
-function markdownToBB(input,issues=[]){
+// Protect physical line-edge spaces without changing newlines or word spacing.
+function preserveBBCodeWhitespace(text){return text.replace(/^[ \t\u00a0]+|[ \t\u00a0]+$/gm,space=>space.replace(/ /g,'\u00a0'))}
+function restoreBBCodeWhitespace(text){return text.replace(/^[ \t\u00a0]+|[ \t\u00a0]+$/gm,space=>space.replace(/\u00a0/g,' '))}
+function markdownToBB(input,issues=[]){return preserveBBCodeWhitespace(markdownToBBSource(input,issues))}
+function markdownToBBSource(input,issues=[]){
  const lines=input.replace(/\r\n?/g,'\n').split('\n'),parts=[],stack=[];
  // Only content lines contribute breaks. Macro/fence delimiters attach to their
  // contents: pretty-printing BBCode tags would create visible F-List spacing.
@@ -531,7 +535,7 @@ function markdownToBB(input,issues=[]){
      body.push(next);
     }
     if(depth)issues.push('Unclosed block macro: :::font; closing marker added on export');
-    out.open(applyFont(markdownToBB(body.join('\n'),issues),arg.toLowerCase()));out.close('');continue;
+    out.open(applyFont(markdownToBBSource(body.join('\n'),issues),arg.toLowerCase()));out.close('');continue;
    }
    if(macroBlockNames.has(tag)){
     if(tag==='color'&&!resolvedColor(arg)){stack.push('');continue;}
@@ -556,7 +560,7 @@ function markdownToBB(input,issues=[]){
   if(quote){
    const body=[quote[1]];
    while(index+1<lines.length){const next=lines[index+1].match(/^[ \t]*>[ \t]?(.*)$/);if(!next)break;body.push(next[1]);index++}
-   out.push('[quote]'+markdownToBB(body.join('\n'),issues)+'[/quote]');continue;
+   out.push('[quote]'+markdownToBBSource(body.join('\n'),issues)+'[/quote]');continue;
   }
   const bullet=line.match(/^([ \t]*)([-*+])([ \t]+)(.*)$/);
   if(bullet){out.push(bullet[1]+({'-':'-','*':'•','+':'▪'}[bullet[2]])+bullet[3]+inlineMarkdown(bullet[4],[],issues));continue}
@@ -603,7 +607,10 @@ function escapePlainMarkdown(text){
  return text.replace(/&(?:#(?:x[0-9a-f]+|[0-9]+)|[a-z][a-z0-9]+);/gi,reference=>decodeCharacterReference(reference)===null?reference:'&#x26;'+reference.slice(1)).replace(/([\\*_{}`~+])/g,'\\$1')
   .replace(/^(\s*)(#{1,6}\s|>\s|[-*+]\s|(?:-{3,}|\*{3,}|_{3,})\s*$)/gm,(_,indent,lead)=>indent+'\\'+lead);
 }
-function bbcodeToMarkdown(input,escapePlain=true){
+function bbcodeToMarkdown(input,escapePlain=true){return bbcodeToMarkdownSource(restoreBBCodeWhitespace(input),escapePlain)}
+function bbcodeToMarkdownSource(input,escapePlain=true){
+ // Compare editable layouts before the final output whitespace encoding.
+ const markdownToBB=markdownToBBSource;
  const normalized=normalizeColorTags(input),tree=parseBBCode(normalized);
  let preserveLayout=false,editableLayout=false;
  const blockTags=new Set(['center','left','right','justify','indent','quote','collapse']);

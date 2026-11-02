@@ -152,7 +152,7 @@ Indent level 2
 :::
 
 :::collapse 05 / Line breaks, spacing & dividers
-Ordinary source newlines produce visible line breaks. Blank lines and leading indentation are preserved.
+Ordinary source newlines produce visible line breaks. Blank lines and leading indentation are preserved. Markdown compilation converts leading and trailing spaces on each BBCode line to non-breaking space characters, including nested list indentation. Switching back to Markdown restores ordinary editable spaces.
 Block markers, heading boundaries, and standalone dividers absorb their adjacent source newline. Add a blank line beside a boundary for a visible break.
 
 **Join source lines:** end a line with a backslash to join the next line with one space.
