@@ -59,6 +59,21 @@ const showcase = fs.readFileSync('docs/feature-showcase.md', 'utf8').replace(/\r
 const showcaseBB = context.markdownToBB(showcase);
 assert.deepEqual(warnings(showcaseBB), [], 'Showcase literal diagnostics must export balanced noparse wrappers');
 assert.equal(context.locatedWarnings(showcaseBB, false, showcaseBB).length, 0);
+assert.equal(context.locatedWarnings(showcase, true, showcaseBB).length, 0, 'Welcome profile should open without warnings');
+vm.runInContext(fs.readFileSync('src/feature-showcase.js', 'utf8'), context);
+assert.equal(context.FolioShowcase, showcase, 'Browser welcome profile must match the Markdown source');
+const welcomeDOM = context.FolioHorizon.render(showcaseBB);
+assert.ok(welcomeDOM.textContent.includes('Folio / Editor reference'));
+assert.equal(welcomeDOM.querySelectorAll('.bbcode-collapse').length, 13);
+assert.equal(welcomeDOM.querySelectorAll('.bbcode-collapse:not(.collapsed)').length, 0);
+// Check the real initial draft and stored-data loading path without starting the UI.
+for (const stored of [null, {drafts:[{id:'saved',name:'Existing character',content:'Keep my work',mixed:false}],active:'saved'}]) {
+ const startup = vm.createContext({globalThis:{FolioTemplates:{},FolioShowcase:showcase},
+  STORAGE:'test', $:()=>({options:[{value:'flist-blue'}]}),makeId:()=> 'new',parsePreviewFontSize:()=>null,
+  localStorage:{getItem:()=>JSON.stringify(stored)}});
+ vm.runInContext(app.slice(app.indexOf('const templates='), app.indexOf('let saveTimer='))+';globalThis.initialData=data;', startup);
+ assert.equal(startup.globalThis.initialData.drafts[0].content, stored?'Keep my work':showcase);
+}
 const located = Array.from(context.locatedWarnings(native, false, native));
 assert.equal(located.length, 1);
 assert.equal(located[0].start, native.lastIndexOf('[url]'));

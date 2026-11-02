@@ -1,463 +1,355 @@
 :::center
-# {color:cyan|Folio Feature Showcase}
-
-{big|The Observatory of Small Wonders}
-{small|A Markdown+ specimen and hands-on editor acceptance checklist.}
+# {color:cyan|Folio / Editor reference}
+{small|Markdown+ · BBCode · Live preview · Local drafts · Export}
 :::
 
-Import this .md file or paste its contents into a blank character in Markdown+ mode. This document uses Folio's Markdown+ dialect; a generic Markdown viewer will not render the macros. The main specimen should report No obvious issues. Error samples near the end are literal until you copy them out of their code fences.
+**Source pane:** edit Markdown+ or BBCode. **Preview pane:** rendered output, updated as you type.
+Select text to format it with the toolbar. Toolbar insertions use the current source mode. Expand a section below for syntax, controls, and behavior.
 
 ---
 
-## 1. Headings and inline typography
+:::collapse 01 / Source modes & syntax
+**Markdown+** accepts Markdown, inline macros, and block macros. **BBCode** edits native profile tags. Switching modes converts the current source in either direction and participates in undo/redo.
 
-# Level 1: heading plus large text
+**Inline macro**
+`{color:cyan|Text}` → {color:cyan|Text}
+Macros can contain other formatting: `{color:purple|**Bold** and *italic*}` → {color:purple|**Bold** and *italic*}.
 
-## Level 2: standard profile heading
+**Block macro**
+```text
 
-### Level 3: same exported heading size
-
-#### Level 4: same exported heading size
-
-##### Level 5: same exported heading size
-
-###### Level 6: same exported heading size
-
-**Bold**, __alternate bold__, *italic*, _alternate italic_, ***bold italic***, ++underline++, and ~~strikethrough~~.
-{b|Explicit bold}, {i|explicit italic}, {u|explicit underline}, {underline|underline alias}, and {s|explicit strike}.
-{big|Large inline text}, {small|small inline text}, H{sub|2}O, and x{sup|2}.
-{heading|An explicit inline heading}
-
-Nested formatting: {color:purple|{b|Bright {i|ideas} with {u|depth}}}.
-Bracket text stays literal in Markdown+: [b]not a bold tag[/b], [i]not an italic tag[/i], and [there]. Use **Markdown bold** or {color:cyan|a color macro} for formatting.
-
-## 2. All twelve profile colors
-
-{color:red|Red} / {color:orange|Orange} / {color:yellow|Yellow} / {color:green|Green}
-{color:cyan|Cyan} / {color:purple|Purple} / {color:blue|Blue} / {color:pink|Pink}
-{color:black|Black} / {color:brown|Brown} / {color:white|White} / {color:gray|Gray}
-Switch profile appearances to inspect contrast, including black and white. Color names should survive BBCode export.
-
-:::color cyan
-Block color, first line.
-Block color, second line with **bold emphasis**.
+:::center
+Centered text
 :::
 
-## 3. Alignment, indentation, and block formatting
+```
+Open with three colons and a macro name; close with three colons. Blocks can contain Markdown, inline macros, and other blocks.
+
+**Native BBCode**
+```text
+
+[b]Bold[/b]
+[color=cyan]Colored text[/color]
+[collapse=Section title]Section body[/collapse]
+
+```
+Enter these tags in **BBCode** mode. In Markdown+, square-bracket text is literal.
+
+**Examples & macros:** open the cookbook, search or filter by category, then insert an example at the cursor. Insertions can be undone.
+:::
+
+:::collapse 02 / Text formatting & headings
+**Bold** · *Italic* · ***Bold italic*** · ++Underline++ · ~~Strikethrough~~
+{big|Large text} · {small|Small text} · x{sup|2} · H{sub|2}O
+
+**Inline syntax**
+```text
+
+**Bold** or __Bold__ or {b|Bold}
+*Italic* or _Italic_ or {i|Italic}
+***Bold italic***
+++Underline++ or {u|Underline} or {underline|Underline}
+~~Strikethrough~~ or {s|Strikethrough}
+{big|Large text} / {small|Small text}
+x{sup|2} / H{sub|2}O
+
+```
+
+**Heading syntax**
+`# Heading` → large heading; `## Heading` through `###### Heading` → standard heading.
+Toolbar **H1 / H2** inserts the corresponding heading syntax.
+
+# H1 output
+
+## H2–H6 output
+
+**Multiline formatting**
+Use block names `b`, `i`, `u`, `s`, `big`, `small`, or `heading`.
+```text
+
+:::b
+Bold line 1
+Bold line 2
+:::
+
+```
+
+:::b
+Bold line 1
+Bold line 2
+:::
+
+**Toolbar:** bold, italic, underline, strike, H1/H2, larger/smaller text, superscript, and subscript. Select text before clicking to wrap it.
+:::
+
+:::collapse 03 / Colors
+**Color presets**
+{color:red|red} · {color:orange|orange} · {color:yellow|yellow} · {color:green|green}
+{color:cyan|cyan} · {color:blue|blue} · {color:purple|purple} · {color:pink|pink}
+{color:black|black} · {color:brown|brown} · {color:white|white} · {color:gray|gray}
+
+**Inline:** `{color:purple|Text}`
+**Block:** open with `:::color purple`, close with `:::`.
+
+:::color purple
+Colored line 1
+Colored line 2 with **bold** and ++underline++.
+:::
+
+The toolbar color picker applies a preset to the selection. **Profile appearance** changes the preview theme; exported color names remain the same.
+:::
+
+:::collapse 04 / Alignment, indentation, quotes & lists
+**Alignment blocks:** `:::left`, `:::center`, `:::right`, `:::justify`. Close each with `:::`.
+**Inline equivalents:** `{left|Text}`, `{center|Text}`, `{right|Text}`, `{justify|Text}`.
 
 :::left
-Left aligned: the western telescope.
+Left-aligned output
 :::
 
 :::center
-Centered: the central observatory.
+Centered output
 :::
 
 :::right
-Right aligned: the eastern telescope.
+Right-aligned output
 :::
 
 :::justify
-Justified text needs enough words to wrap across several lines. Narrow the preview pane and watch this paragraph spread across the available width while the final line follows the renderer's normal justification behavior.
+Justified output distributes spacing across wrapped lines. Resize the preview pane to inspect alignment at different widths. The final line retains its normal spacing.
 :::
+
+**Indentation:** `:::indent` blocks can be nested.
 
 :::indent
-One structural indent.
+Indent level 1
 :::indent
-Two structural indents, with {small|a small annotation}.
+Indent level 2
 :::
 :::
 
-:::big
-Large multiline text.
-Its second line stays large.
-:::
+**Quotes:** prefix consecutive source lines with `>`. Use `> >` for a nested quote. An explicit `:::quote` block is also available.
 
-:::small
-Small multiline text.
-Its second line stays small.
-:::
-
-:::b
-Bold across two lines.
-Still bold here.
-:::
-
-:::i
-Italic across two lines.
-Still italic here.
-:::
-
-:::u
-Underline across two lines.
-Still underlined here.
-:::
-
-:::s
-Strike across two lines.
-Still struck here.
-:::
-
-:::heading
-A multiline heading
-with {color:purple|a colored second line}
-:::
-
-## 4. Quotes and lists
-
-> The first line of one quote.
-> The second line stays in that quote.
+> Quote line 1
+> Quote line 2
 >
-> A blank line separates these thoughts.
-> > A nested quote with **emphasis**.
-> Back in the outer quote.
+> Separate paragraph within the quote.
+> > Nested quote.
 
-:::quote
-An explicit quote block for layouts that need macro boundaries.
+**Lists:** use `-`, `*`, `+`, or numbered prefixes. Indent nested items and continuation lines. Explicit list numbers are retained.
+
+- Dash item
+  - Nested item
+* Star item
++ Plus item
+
+1. Numbered item
+4. Explicit number 4
+   - Nested bullet
+     Continuation line
 :::
 
-- A dash bullet
-* A star bullet
-+ A plus bullet
-  - A nested bullet
-    3. A nested numbered item
-    7. A deliberately nonconsecutive number
-       A continuation line with preserved indentation.
+:::collapse 05 / Line breaks, spacing & dividers
+Ordinary source newlines produce visible line breaks. Blank lines and leading indentation are preserved.
+Block markers, heading boundaries, and standalone dividers absorb their adjacent source newline. Add a blank line beside a boundary for a visible break.
 
-1. The first numbered item
-4. The fourth numbered item: numbers must not be rewritten.
-   - A bullet inside a numbered item
+**Join source lines:** end a line with a backslash to join the next line with one space.
+```text
 
-> - A quoted bullet
->   - A nested quoted bullet
+Source line 1\
+continues on line 2.
 
-:::indent
-- A list inside a structural indent
-  2. A nested numbered observation
-:::
+```
 
-## 5. Collapsible sections and deep nesting
+**Explicit break:** `{br}` → before{br}after
+**Inline divider:** `{hr}`
+**Standalone divider:** `---` on its own line, or use the toolbar divider button.
 
-:::collapse Field notes
-Open this section, then edit an unrelated sentence. It should remain open and the preview should retain its scroll position.
+```text
+
+Text before the block.
 
 :::center
-:::color purple
-{b|Nested {i|inline {u|formatting}}} inside nested blocks.
-Place the source caret here to inspect the active section tint and matching markers.
-:::
+Centered text.
 :::
 
-:::collapse Instruments
-- Brass telescope
-- Weather notebook
-:::collapse Calibration details
-The innermost section has an independent open state.
+Text after the block.
+
+```
+:::
+
+:::collapse 06 / Collapsible sections & nesting
+**Syntax**
+```text
+
+:::collapse Section title
+Section content
+:::
+
+```
+Click the preview header to expand or collapse. Nested sections have independent states. Sections can contain formatting, lists, quotes, images, and additional blocks.
+
+:::collapse Level 1
+{color:cyan|**Formatted content**}
+
+:::collapse Level 2
+Nested section content.
+
+:::collapse Level 3
+{small|Third-level section content.}
 :::
 :::
 :::
 
-:::collapse Field notes
-A second section with the same title tests occurrence-based view-state matching. Open only one of the two Field notes sections, edit elsewhere, and check that each keeps its own state.
+Editing retains preview scroll and expansion state. Each character and template has its own preview state during the session.
 :::
 
-## 6. Links, images, characters, and icons
+:::collapse 07 / Links, character references & images
+**Links**
+`[Link label](https://www.f-list.net/)` → [Link label](https://www.f-list.net/)
+`<https://www.f-list.net/>` → <https://www.f-list.net/>
+`{link:https://www.f-list.net/|Link label}` → {link:https://www.f-list.net/|Link label}
+The link toolbar button inserts a labeled link.
 
-[A labeled HTTPS link](https://example.com)
-[Visit the observatory](https://example.com/observatory)
-<https://example.com/autolink>
-{link:https://example.com/macro|A macro link with a plain text label}
+**Reference syntax and insertion controls**
+- `{user:Character Name}` — **@ Character link**
+- `{icon:Character Name}` — **Avatar icon**
+- `{eicon:smile}` — **Eicon**
+- `{img:12345|Image alias}` — **Insert inline**
+- `{image:12345|Image alias}` — alternate image macro spelling
+- `{img:12345}` — image without a label
 
-Numeric images intentionally show placeholders without profile image metadata:
-{img:12345|Labeled observatory portrait}
-{image:12346|Image alias label}
-{img:12347}
+**Insert inline:** choose a mapped thumbnail or enter a numeric image ID. Selected text becomes the image label; otherwise a saved alias is used when available. Cancel leaves the source unchanged.
 
-Character link: {user:Example Character}
-Character avatar: {icon:Example Character}
-Eicon: {eicon:smile}
-These are sample names and URLs; remote assets may be unavailable or require a connection. A missing remote image does not indicate a conversion failure.
-If a character avatar fails to load, its linked image should show a local silhouette placeholder while retaining the character name and profile link. This fallback also works offline; eicons and inline images have separate loading behavior.
+**Image mappings**
+1. Enter the numeric image ID.
+2. Attach a local PNG, JPEG, GIF, or WebP file (up to 8 MB), or attach an HTTP(S) image URL.
+3. Enter an optional alias; **Save alias** updates it separately.
+4. Use the mappings table to review, replace, or remove attachments.
 
-## 7. Literal content, escapes, and whitespace
-
-Inline literal: `**not bold** {color:teal|not interpreted} [table]not a tag here[/table]`.
-Explicit literal macro: {noparse|**also literal** {typo|not a warning here}}.
-Escaped backticks stay ordinary text: \`one backtick pair\` and \`\`\`.
-Double-backtick code can contain a single backtick: ``code ` inside``.
-Backticks inside a literal macro stay literal: {noparse|`not another code span`}.
-
-````text
-This longer fence contains literal triple backticks:
-```
-{unknown|still literal, with no warning}
-```
-````
-
-Switch to BBCode and back: literal backticks, code contents, and visible line breaks should survive. Decompilation may choose a longer delimiter or a noparse macro to preserve the same exported BBCode.
-
-```text
-**Literal bold markers**
-{unknown|literal macro}
-:::unknown
-[table]literal unsupported BBCode[/table]
-  Two leading spaces remain.
-
-A blank line remains, too.
-```
-
-```text
-Literal block: **literal** {unknown|literal}.
-[noparse] is ordinary bracket text in Markdown+ mode.
-```
-
-Escaped syntax: \*asterisks\*, \_underscores\_, \{b|literal braces\}, \[b\]literal brackets\[/b\].
-
-This is ordinary line one.
-This is ordinary line two: it should start a new visible line.
-
-This follows one blank source line.
-This sentence is joined\
-to its next source line with one space.
-Before explicit break.{br}After explicit break.
-Before inline divider.{hr}After inline divider.
-
-Before a packed block boundary.
-:::center
-The block markers add no line breaks of their own.
-:::
-After the packed block boundary.
-
-Before a spaced block boundary.
-
-:::center
-
-This has an intentional break inside each boundary.
-
+Click an image or image placeholder in the preview to edit its mapping. Keyboard: focus the image and press **Enter / Space**.
+Mappings persist locally and are shared across characters and templates. Mapping edits preserve source text and image IDs. Local files are embedded in HTML exports.
 :::
 
-After the spaced block boundary.
+:::collapse 08 / Unicode fonts, symbols & references
+**Font picker:** applies a Unicode alphabet to selected text. Multiline selections use font blocks.
 
-Unicode: café, zażółć gęślą jaźń, 日本語, ★, →, 🌙.
-A deliberately long line for wrapping and gutter alignment: the astronomer records every star, checks every instrument, labels every notebook, and leaves a careful trail of observations so the next reader can retrace the entire night without losing the source line number when the editor pane becomes narrow.
+{font:smallcaps|Small caps} — `smallcaps`
+{font:bold|Bold 123} — `bold`
+{font:doublestruck|Double struck 123} — `doublestruck`
+{font:italic|Italic} — `italic`
+{font:bolditalic|Bold italic} — `bolditalic`
+{font:sans|Sans serif 123} — `sans`
+{font:sansbold|Sans bold 123} — `sansbold`
+{font:fraktur|Fraktur} — `fraktur`
+{font:monospace|Monospace 123} — `monospace`
+{font:fullwidth|Fullwidth 123} — `fullwidth`
 
----
-
-## 8. Editor and workflow acceptance checklist
-
-These are manual checks; importing source cannot exercise application controls automatically. Use a disposable character and template for replacement checks.
-
-1. Live preview: edit a word and verify the preview, word/character counts, and local save status update.
-2. Formatting: select disposable text and try every toolbar formatting, H1/H2, center/right/justify alignment, Sup/Sub, quote, color, font, link, numeric image, collapse, and divider action. Test Ctrl+B, Ctrl+I, and Ctrl+U. Undo each insertion.
-3. History: type, format, and switch modes; use Undo/Redo and Ctrl+Z, Ctrl+Y, or Ctrl+Shift+Z. Verify each action restores the expected source and mode.
-4. Conversion: switch Markdown+ to BBCode and back. Compare rendered content, significant whitespace, nested blocks, literal text, numeric image labels, and list numbers. Equivalent source spelling may change.
-5. Export: compare Copy BBCode with Export .bbcode. Export .md from both modes; exporting from BBCode should leave the current draft and mode unchanged. Import the downloaded Markdown into a disposable character.
-6. Import: import an existing single-profile backup into a disposable draft. Verify its name, source, and mode are restored. Reload to check local draft persistence.
-7. Characters: create and rename a disposable character, switch between characters, and verify independent source, mode, cursor, and session undo history. Clone a character and edit the clone; verify the original stays unchanged. Exercise deletion with the disposable copy.
-8. Templates: open a built-in template, then a custom template. Create New blank, save, rename, and resume through My templates or Manage templates. Create a template from a character. Verify saving the template does not modify that character.
-9. Template application: apply displayed unsaved template edits to a disposable target and confirm replacement, including an empty target and targets in both source modes. Verify applying does not implicitly save the template. Use New from this template and verify it creates a separate character. Clone both a built-in and custom template and verify independent copies.
-10. Editor isolation: switch between a character and an unsaved template; verify separate source, mode, cursor, history, preview scroll, and collapse states. Check the unsaved-template leave-page prompt using a disposable edit.
-11. Cookbook: open Examples & macros, search for a feature, switch categories, and insert an example into disposable source. Undo the insertion.
-12. Syntax: inspect Markdown, literal bracket text, nested inline macros, and block colors in Markdown+; inspect native tags in BBCode mode. Move the caret between nested sections; check the active full-width tint. Scroll and resize to check wrapped-line gutter alignment. Temporarily remove a closing marker to inspect unmatched-marker highlighting, then undo.
-13. App appearance: try Folio, Graphite dark, Paper light, and Verdant in character and template editors. Check editor text, caret, gutter, syntax, and warnings; reload to verify the choice persists.
-14. Profile appearance: try F-List Blue, Dark, Light, Midnight lilac, Light parchment, and Obsidian. Inspect all twelve colors, links, quotes, and collapses. Changing appearance should not change exported BBCode.
-15. Preview size: try 1, 16, 16.5, and 200 pixels, then clear the field for Site default. Verify persistence after reload and unchanged exported BBCode.
-16. Layout: drag the source/preview divider, focus it and use arrows, Shift+arrows, Home, and End; double-click to reset. Reload to check the saved split. Narrow the window to inspect stacked panes, toolbar access, and warning popup placement.
-17. Preview state: open nested and duplicate-title sections above, edit elsewhere, rename a collapse title, and switch editors. Check open states and scroll retention. Make a source-only change that preserves compiled BBCode and check that preview state remains stable.
-18. Preview note: dismiss the note and reload to verify its dismissal persists.
-
-## 9. Opt-in diagnostic specimens
-
-Copy ONE fenced specimen into active source, outside any literal block. Check the footer warning, its source line, wavy underline, and warning navigation. Hover the underline or place the caret there and press Alt+Enter or Ctrl+. Inspect guidance, apply a suggested fix when offered, and undo it. Escape should dismiss the popup. Remove the specimen before trying another. Some fixes require a manual edit.
-
-Misspelled macro: expect a suggestion for bold.
+**Inline:** `{font:smallcaps|Text}`
+**Multiline:**
 ```text
-{bb|Fix this typo}
-```
-
-Invalid color: expect a supported-color suggestion; hex red should normalize to red on export.
-```text
-{color:#ff0000|Legacy red}
-{color:teal|Unsupported named color}
-{color:|Missing color value}
-```
-
-Malformed nested opener: expect the error at the malformed opener without a cascade of unmatched closers.
-```text
-:::center
-:::right unexpected
-Nested content
-:::
-:::
-```
-
-Malformed closing marker: expect a replacement with exactly three colons.
-```text
-:::center
-Centered text
-::::
-```
-
-Extra closing marker: expect a removal suggestion.
-```text
-:::
-```
-
-Unclosed constructs: test each line or block independently.
-```text
-{b|Missing closing brace
-```
-```text
-:::center
-Missing closing marker
-```
-In BBCode mode only:
-```text
-[b]Missing closing tag
-```
-
-Unsupported and misnested BBCode: paste these into **BBCode mode** to check supported formatting and tag order. In Markdown+ they are literal text.
-```text
-[table]Unsupported profile tag[/table]
-[b][i]Wrong closing order[/b][/i]
-[/u]
-```
-
-Invalid link and image arguments: expect inline macro warnings.
-```text
-{link:invalid|Missing HTTP URL}
-{img:invalid}
-{user:Example Character|Unexpected body}
-```
-
-Repeat the same bad macro on two separate lines and verify both warning locations are available. Repeat raw BBCode errors in BBCode mode to check native-mode diagnostics. Literal examples in this saved showcase should remain warning-free.
-
-Invalid native URLs: paste into **BBCode mode**. Expect an Invalid URL warning on each opening tag, with guidance to use a complete HTTP(S) address. Unsafe schemes must not create clickable links.
-```text
-[url]example.com[/url]
-[url=javascript:alert(1)]Unsafe link[/url]
-[url][/url]
-```
-
-Unexpected native arguments: paste into **BBCode mode**. Expect a warning on the opening tag and a Remove tag argument quick fix. The fix should preserve the body and closing tag; undo should restore the argument.
-```text
-[b=ignored]Keep this text[/b]
-```
-
-Invalid character and eicon names: activate in Markdown+. Expect Invalid name guidance on each macro; these names cannot render as character links or images.
-```text
-{user:Bad!Name}
-{icon:Bad!Name}
-{eicon:Bad!Name}
-```
-
-Unsupported formatting combinations: activate in Markdown+. Expect the warning on the inner color macro. The preview displays the unsupported inner tags literally; the guidance should suggest moving the formatting outside the superscript or removing the inner wrapper.
-```text
-{sup|{color:red|Unsupported inner color}}
-```
-
-Nested size warning locations: activate this whole specimen in Markdown+. Expect two Unsupported nesting warnings, one on each inner `{big|` opener. Check their source lines, underlines, and warning navigation. The preceding heading also exports a big tag, and the literal example contains macro spellings; neither should shift the warnings to another line or receive a warning itself.
-```text
-# A heading before the size examples
-
-`{big|A literal example}`
-
-{big|Outer text with {big|First inner size}}
-
-{big|Another outer span with {big|Second inner size}}
-```
-
-Mixed block and inline size nesting: activate in Markdown+. Expect the warning on the inner macro line, rather than the block opener or first line of the source.
-```text
-Introductory text.
-:::big
-{big|Inner size}
-:::
-```
-
-Compatibility controls: paste into **BBCode mode**. These should produce no warnings: blank collapse titles remain valid, alignment nesting is supported in native mode, and noparse keeps its contents literal.
-```text
-[collapse]A deliberately blank title[/collapse]
-[center][right]The inner alignment takes precedence[/right][/center]
-[noparse][big][big]Literal size tags[/big][/big][url]invalid[/url][/noparse]
-```
-
-## 10. Unicode font verification
-
-{font:smallcaps|ABCDabcd your text}
-{font:bold|Bold 123}
-{font:doublestruck|Lucas CHNPQRZ 123}
-{font:italic|Italic h}
-{font:bolditalic|Bold italic}
-{font:sans|Sans serif 123}
-{font:sansbold|Sans serif bold 123}
-{font:fraktur|Fraktur CHIRZ}
-{font:monospace|Monospace 123}
-{font:fullwidth|Fullwidth 123}
-
-:::font bold
-first line
-second line
-:::
 
 :::font smallcaps
-your text
-extra examples
+Text line 1
+Text line 2
 :::
 
-Plain boundaries: prefix{font:smallcaps|a}suffix and x{font:smallcaps|a}x.
-Preserved middle characters: {font:smallcaps|aXXXb} and {font:italic|a 123 b}.
-Different styles: {font:bold|First} {font:italic|Second}.
-Literal Unicode: `ʏᴏᴜʀ ᴛᴇxᴛ` and `{font:bold|literal macro}`.
+```
+Font blocks accept Markdown and formatting macros. Mode conversion recovers recognized styled text as editable font macros.
 
-Switch to BBCode and back. The visible characters and whitespace should remain
-identical. Only recognizable styled runs become font macros; unchanged interior
-characters may join matching font runs. Multiline styled text should use font
-blocks. Font choices that do not change the text cannot be recovered.
+**Symbol picker (Ω):** search by name, then click a symbol to insert it at the cursor.
+✦ ◆ ♡ ☾ ☀ → ∞ Ω ♫ ⚜
 
-Intentional nested-font warning: copy this out of its fence to activate it.
-```text
-:::font bold
-{font:italic|Nested font}
+**Unicode text:** café · zażółć gęślą jaźń · 日本語
+**Named references:** `&mdash;` → &mdash; / `&copy;` → &copy;
+**Hexadecimal:** `&#x25C6;` → &#x25C6;
+**Decimal:** `&#9670;` → &#9670;
+**Supplementary-plane:** `&#x1F319;` → &#x1F319;
+References can be formatted: {color:purple|**&#x2726;**}.
+
+**Prefer literals:** checked displays Unicode glyphs; unchecked displays hexadecimal references. Toggling converts Markdown+ source, preserves preview and compiled output, and can be undone. Code and macro syntax stay intact. Convertible glyphs have an outline; entity codes have distinct syntax highlighting. The preference persists locally.
 :::
-```
 
-External image warning: activate this specimen in Markdown+.
+:::collapse 09 / Literal text & escapes
+**Inline code:** backticks preserve syntax as text.
+`**Not bold** {color:cyan|Not processed} [b]Literal tags[/b]`
+
+**Backticks inside code:** use double-backtick delimiters.
+``code containing ` a backtick``
+
+**Literal macro:** `{noparse|**Literal text**}` → {noparse|**Literal text**}
+**Escapes:** `\*text\*` → \*text\* / `\{text\}` → \{text\}
+
+**Fenced code:** preserves line breaks, blank lines, indentation, and formatting syntax.
 ```text
-![Portrait](https://example.com/portrait.png)
-{img:https://example.com/portrait.png}
+
+**Literal bold markers**
+{color:cyan|Literal macro}
+  Indented line
+
+After a blank line
+
 ```
 
-## 11. Full-app backup and purge checks
+Use a longer fence to include shorter fences:
+````text
 
-Use disposable local data for these checks. Save template edits first. Export all
-data using the footer, change characters/templates and appearance settings, then
-import the full-app JSON and confirm replacement. Verify all saved characters,
-templates and settings return. Existing single-profile backups can be loaded with the action-bar Import
-and are not full-app import files.
+```
+Text inside triple backticks.
+```
 
-Cancel Purge data first and verify nothing changes. After retaining a full-app
-backup, confirm Purge data and verify characters/templates are cleared and
-settings reset. Import the saved full-app backup to restore them. Undo history,
-cursor positions, unsaved template edits and preview expansion state are not
-included in a full-app backup.
+````
+:::
 
-## 12. HTML Unicode references
+:::collapse 10 / Editor controls, documents & export
+**Editing and diagnostics**
+- Preview updates as you type; the footer shows word/character counts and local save status.
+- Syntax highlighting distinguishes Markdown, inline macros, block macros, native BBCode, and literal content.
+- Wrapped line numbers track source scrolling. The caret highlights its enclosing section and matching boundaries; unmatched markers are marked.
+- Warnings identify source lines. Hover an underline or press **Alt+Enter / Ctrl+.** at the caret to open guidance and available fixes. **Escape** dismisses the popup. Fixes can be undone.
+- **Undo / Redo** covers typing, toolbar actions, source-mode conversion, and Unicode-reference conversion.
 
-Named references: &mdash; &copy; &eacute; &NotEqualTilde;
-Named styled letter: &Aopf;
-Hexadecimal diamond: &#x25C6;
-Decimal diamond: &#9670;
-Star and arrow: &#x2605; &#x2192;
-Supplementary-plane symbol: &#x1F600;
-Formatted symbol: {color:purple|**&#x25C6;**}
-Literal reference text: `&#x25C6;`.
+**Keyboard shortcuts**
+- **Ctrl+B / Ctrl+I / Ctrl+U:** bold / italic / underline
+- **Ctrl+Z:** undo
+- **Ctrl+Y / Ctrl+Shift+Z:** redo
 
-Switch to BBCode to inspect the actual Unicode characters, then back to Markdown+
-to check readable Unicode symbols and recovered font macros. The literal example must remain literal.
+**Layout and appearance**
+- Drag the source/preview divider. With divider focus: arrows resize; **Shift+arrows** use larger steps; **Home / End** set limits; double-click resets. Narrow windows stack the panes.
+- **App appearance:** Folio, Graphite dark, Paper light, Verdant.
+- **Profile appearance:** F-List Default (Blue), F-List Dark, F-List Light, Horizon Default, Horizon Moon Prism, Horizon Light, Horizon Dark.
+- **Text size:** 1–200 px, including decimals. Clear the field for **Site default**.
+- Appearance, size, pane split, and preview-note dismissal persist locally. Preview settings do not alter exported BBCode.
 
-Toggle **Prefer literals** above the source editor. The references in this section
-should switch to readable Unicode; uncheck it to show hexadecimal codes. Preview
-and compiled BBCode should stay identical. Undo the source conversion. Code
-examples and macro syntax must remain intact. Check entity highlighting against
-each app appearance, including Paper, and reload to verify preference persistence.
+**Characters**
+- **New character:** creates a blank document. Edit the header field to rename it.
+- Click a sidebar entry to switch documents. Each retains its source, mode, cursor, session undo history, preview scroll, and section states.
+- **Clone:** duplicates the current character or template, including current edits, and opens an independent copy with a unique name.
+- **Delete:** removes the current character after confirmation.
+
+**Templates**
+- Built-in templates: Dossier, Narrative, Compact, Archive. Click one to open its template editor.
+- **My templates / Manage templates:** open saved custom templates.
+- **New blank:** starts an empty template. **New template from → Create template:** copies the selected character into a template.
+- **Save template:** saves the template independently of characters. Custom templates can be renamed, cloned, and deleted.
+- **New from this template:** creates a separate character from the displayed template contents and mode.
+- **Apply template to → Apply:** replaces the selected character after confirmation, respecting its source mode. Uses displayed edits without implicitly saving the template.
+- Unsaved template edits remain available while switching editors. Leaving the page prompts when template edits are unsaved.
+
+**Copy and file export**
+- **Copy BBCode:** copies compiled output to the clipboard.
+- **Export .bbcode:** downloads profile code.
+- **Export .md:** downloads editable Markdown+ from either mode, preserving the active document and mode.
+- **Import:** opens `.md`, `.bbcode`, `.txt`, and single-profile JSON backups.
+- **Export screenshot (.png):** downloads the full card, including its name, current appearance, and text size; all nested sections are expanded for capture.
+- **Copy screenshot:** copies the expanded card as a PNG image to the clipboard.
+- **Export .html:** downloads a responsive page with embedded styles, selectable text, and interactive sections. Sections start collapsed; click or press **Enter / Space** to toggle them.
+- Screenshot capture preserves the current preview scroll and expansion state.
+
+**Local storage and backups**
+- Character drafts save automatically in this browser. Template edits are saved with **Save template**.
+- **Export all data:** downloads saved characters, custom templates, active character, and persisted settings as full-app JSON.
+- **Import all data:** validates a full-app backup and confirms replacement of local data.
+- Full-app backups contain saved document data and settings. Session undo history, cursors, preview state, unsaved template edits, and image attachments are separate; retain image files alongside backups.
+- **Purge data:** confirms deletion of local characters, templates, settings, and image attachments, then resets the app.
+:::

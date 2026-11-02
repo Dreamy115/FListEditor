@@ -10,6 +10,8 @@ For a local server, run `python -m http.server 8000` from this directory and vis
 
 ## Standalone build
 
+New installations open with the welcome profile authored in `docs/feature-showcase.md`. After editing that file, run `python build.py` to refresh both the checked-in browser asset `src/feature-showcase.js` and the standalone editor. Existing saved characters are retained.
+
 In VS Code, press **Ctrl+Shift+B** to build. Use **Terminal → Run Task → Folio: Build and open locally** to build, start a localhost server, and open the standalone editor in your default browser. Stop the preview with **Terminal → Terminate Task**. After edits, build again and refresh the browser.
 
 These tasks require `python` on your PATH. You can also run `python serve.py --open` after building; use `--port 8001` to choose another port (default: 8000).

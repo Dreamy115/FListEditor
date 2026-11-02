@@ -15,5 +15,13 @@ for(const modify of [b=>b.version=2,b=>b.data.drafts.push({...b.data.drafts[0]})
 }
 vm.runInContext(app.slice(app.indexOf("$('purgeData').addEventListener"),app.indexOf("$('importBtn').addEventListener")),context);
 handlers['purgeData:click']();assert.equal(stored,'old');assert.equal(applied,undefined);
-confirmation();assert.equal(stored,null);assert.equal(applied.drafts[0].content,'');assert.equal(applied.customTemplates.length,0);assert.equal(applied.editorTheme,'folio');
-console.log('Full-app backup validation and confirmed purge checks passed');
+let finishClearing,reloads=0;
+context.FolioLocalImages={clear:()=>new Promise(resolve=>{finishClearing=resolve})};
+context.location={reload:()=>{reloads++}};
+const purged=confirmation();assert.equal(stored,null);assert.equal(applied.drafts[0].content,'');assert.equal(applied.customTemplates.length,0);assert.equal(applied.editorTheme,'folio');
+assert.equal(reloads,0,'Wait for image storage to clear before reloading');
+finishClearing();
+purged.then(()=>{
+ assert.equal(reloads,1,'Reload after confirmed purge finishes');
+ console.log('Full-app backup validation and confirmed purge/reload checks passed');
+}).catch(error=>{console.error(error);process.exitCode=1});

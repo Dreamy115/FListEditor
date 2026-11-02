@@ -1,7 +1,11 @@
 """Build the standalone editor using only Python's standard library."""
 from pathlib import Path
 import base64
+import json
 root = Path(__file__).resolve().parent
+# Keep the browser-ready welcome profile in sync with its editable Markdown source.
+showcase = '/* Generated from docs/feature-showcase.md by build.py. */\nglobalThis.FolioShowcase = ' + json.dumps((root / 'docs/feature-showcase.md').read_text(encoding='utf-8-sig'), ensure_ascii=False) + ';\n'
+(root / 'src/feature-showcase.js').write_text(showcase, encoding='utf-8')
 page = (root / "index.html").read_text(encoding="utf-8")
 css = (root / "src/styles.css").read_text(encoding="utf-8")
 templates = (root / "src/templates.js").read_text(encoding="utf-8")
@@ -13,6 +17,7 @@ preview_state = (root / "src/preview-state.js").read_text(encoding="utf-8")
 renderer_css = (root / "src/horizon-preview.css").read_text(encoding="utf-8")
 page = page.replace('<link rel="stylesheet" href="src/styles.css">', '<style>' + css + '</style>', 1)
 page = page.replace('<script src="src/templates.js"></script>', '<script>' + templates + '</script>', 1)
+page = page.replace('<script src="src/feature-showcase.js"></script>', '<script>' + showcase + '</script>', 1)
 page = page.replace('<script src="src/app.js"></script>', '<script>' + js + '</script>', 1)
 page = page.replace('<script src="src/horizon-renderer.js"></script>', '<script>' + renderer + '</script>', 1)
 page = page.replace('<script src="src/syntax.js"></script>', '<script>' + syntax + '</script>', 1)
