@@ -768,6 +768,7 @@ function tagContentWarnings(compiled){
     if(tag==='url'){
      const value=(parent.param||content).trim();
      if(!safeUrl(value)||(globalThis.FolioHorizon?.validURL&&!globalThis.FolioHorizon.validURL(value)))add('Invalid URL in [url]: use a complete http(s) URL',parent.match);
+     if(/\[(?:b|i|u|s|color|big|small|sup|sub|heading|noparse)(?:=[^\]]*)?\]/i.test(content))add('Formatting inside link labels is not supported by F-List; use plain text for link labels',parent.match);
     }else if(['user','icon','eicon'].includes(tag)&&!(/^[a-zA-Z0-9_\-\s]+$/.test(content)&&content.trim()))add('Invalid name in ['+tag+']: use letters, numbers, spaces, underscores or hyphens',parent.match);
     stack.pop();
    }
@@ -906,7 +907,10 @@ function locatedWarnings(text,mixed,compiled){
    if(position<0||probe.slice(0,position)+probe.slice(position+marker.length)!==compiled)continue;
    const opening=probe.lastIndexOf('[',position);
    if(opening===issue.start&&new RegExp('^\\['+issue.tag+'(?:=[^\\]]*)?\\]$','i').test(probe.slice(opening,position))){
-    add(issue.message,candidate.index,candidate.index+candidate[0].length);break;
+    const label=issue.message.startsWith('Formatting inside link labels')&&text.slice(candidate.index).match(/^\[([^\]\n]*)\]\(https?:\/\/[^\s)]+\)/i);
+    if(label)add(issue.message,candidate.index+1,candidate.index+1+label[1].length);
+    else add(issue.message,candidate.index,candidate.index+candidate[0].length);
+    break;
    }
   }
  }

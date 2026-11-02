@@ -25,11 +25,11 @@
       if (emphasis) {
         const mark = emphasis[1];
         const format = {'*':'italic', '_':'italic', '**':'bold', '__':'bold', '***':'bold-italic', '~~':'strike', '++':'underline'}[mark];
-        tokens.push({text: mark, kind: 'emphasis', format});
+        tokens.push({text: mark, kind: 'emphasis', format, emphasisMarker: true});
         for (const token of lex(emphasis[2], mixed)) {
           tokens.push({...token, kind: token.kind || 'emphasis', format: token.kind ? token.format : format});
         }
-        tokens.push({text: mark, kind: 'emphasis', format});
+        tokens.push({text: mark, kind: 'emphasis', format, emphasisMarker: true});
         last = match.index + value.length;
         continue;
       }
@@ -84,6 +84,17 @@
       } else stack.push({name, token});
     }
     for (const stack of Object.values(stacks)) for (const open of stack) open.token.unmatched = true;
+    if (!mixed) {
+      const active = {b: 0, i: 0};
+      for (const token of tokens) {
+        const tag = token.kind === 'tag' && token.text.match(/^\[(\/?)(b|i)\]$/i);
+        const name = tag && tag[2].toLowerCase();
+        const paired = tag && token.partner !== undefined;
+        if (paired && !tag[1]) active[name]++;
+        if (token.kind !== 'tag' && (active.b || active.i)) token.format = active.b && active.i ? 'bold-italic' : active.b ? 'bold' : 'italic';
+        if (paired && tag[1]) active[name]--;
+      }
+    }
     return tokens;
   }
   function isEntityTextToken(token){return ['', 'entity', 'emphasis'].includes(token.kind)}
@@ -131,11 +142,12 @@
         if (i) { fragment.appendChild(document.createTextNode('\n')); anchor(); }
         if (!pieces[i]) continue;
         const markGlyphs=mixed&&options.preferLiterals&&isEntityTextToken(token)&&/[^\x00-\x7f]/u.test(pieces[i]);
-        if (!markGlyphs && !token.kind && !token.diagnostics.length) { fragment.appendChild(document.createTextNode(pieces[i])); continue; }
+        if (!markGlyphs && !token.kind && !token.format && !token.diagnostics.length) { fragment.appendChild(document.createTextNode(pieces[i])); continue; }
         const span = document.createElement('span');
         span.className = token.kind ? 'syntax-' + token.kind : '';
         if (token.marker) span.classList.add('syntax-marker-' + token.marker);
         if (token.format) span.classList.add('syntax-emphasis-' + token.format);
+        if (token.emphasisMarker) span.classList.add('syntax-emphasis-marker');
         if (token.depth !== undefined) span.classList.add('syntax-depth-' + token.depth % 5);
         if (token.unmatched && problems === undefined) { span.classList.add('syntax-unmatched'); span.title = 'Unmatched delimiter'; }
         if (token.diagnostics.length) {
@@ -155,6 +167,26 @@
             const word = document.createElement('span');
             word.className = 'syntax-color-value'; word.dataset.color = token.color; word.textContent = match[2];
             span.appendChild(word); span.appendChild(document.createTextNode(match[3]));
+          } else span.textContent = pieces[i];
+        } else if (token.kind === 'link') {
+          const link = pieces[i].match(/^(!?\[)([^\]\n]*)(\]\()(https?:\/\/[^\s)]+)(\))$/i);
+          if (link) {
+            const label = document.createElement('span');
+            label.className = 'syntax-link-label';
+            const display = document.createElement('span');
+            display.className = 'syntax-link-display'; display.textContent = link[2];
+            const target = document.createElement('span');
+            target.className = 'syntax-link-target';
+            const url = document.createElement('span');
+            url.className = 'syntax-link-url'; url.textContent = link[4];
+            const punctuation = text => {
+              const mark = document.createElement('span');
+              mark.className = 'syntax-link-punctuation'; mark.textContent = text;
+              return mark;
+            };
+            label.appendChild(punctuation(link[1])); label.appendChild(display); label.appendChild(punctuation(']'));
+            target.appendChild(punctuation('(')); target.appendChild(url); target.appendChild(punctuation(link[5]));
+            span.appendChild(label); span.appendChild(target);
           } else span.textContent = pieces[i];
         } else if (token.collapseTitle) {
           const title = document.createElement('span');

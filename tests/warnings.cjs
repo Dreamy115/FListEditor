@@ -62,6 +62,19 @@ const invalidMacro = '{link:invalid|text}';
 assert.equal(context.markdownToBB(invalidMacro), invalidMacro);
 console.log('Invalid macro warning checks passed');
 const locate = (text, mixed = true) => Array.from(context.locatedWarnings(text, mixed, context.normalizeColorTags(mixed ? context.markdownToBB(text) : text)));
+const linkWarning = 'Formatting inside link labels is not supported by F-List; use plain text for link labels';
+for(const text of ['[A formatted **link label**](https://example.com/observatory)', '[An *italic* label](https://example.com)', '{link:https://example.com|{color:red|label}}']) {
+ assert.ok(warnings(context.markdownToBB(text)).includes(linkWarning), text);
+ assert.equal(locate(text).filter(issue=>issue.message===linkWarning).length,1,text);
+}
+const formattedLabel='A formatted **link label**';
+const formattedLink='['+formattedLabel+'](https://example.com/observatory)';
+const labelIssue=locate(formattedLink).find(issue=>issue.message===linkWarning);
+assert.equal(formattedLink.slice(labelIssue.start,labelIssue.end),formattedLabel);
+assert.ok(locate('[url=https://example.com][b]Label[/b][/url]',false).some(issue=>issue.message===linkWarning));
+for(const text of ['[Plain label](https://example.com)', '**[Plain label](https://example.com)**', '`[**literal**](https://example.com)`', '![**image**](https://example.com/image.png)']) {
+ assert.ok(!locate(text).some(issue=>issue.message===linkWarning),text);
+}
 let located = locate('Good\n{typo|bad}\n\n{typo|bad}');
 assert.deepEqual(located.map(item => item.line), [2,4]);
 assert.equal(located[0].start, 5);

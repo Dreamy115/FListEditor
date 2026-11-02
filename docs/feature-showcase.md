@@ -164,9 +164,9 @@ A second section with the same title tests occurrence-based view-state matching.
 ## 6. Links, images, characters, and icons
 
 [A labeled HTTPS link](https://example.com)
-[A formatted **link label**](https://example.com/observatory)
+[Visit the observatory](https://example.com/observatory)
 <https://example.com/autolink>
-{link:https://example.com/macro|A macro link with {i|an italic label}}
+{link:https://example.com/macro|A macro link with a plain text label}
 
 Numeric images intentionally show placeholders without profile image metadata:
 {img:12345|Labeled observatory portrait}

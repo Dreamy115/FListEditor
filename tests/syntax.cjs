@@ -60,6 +60,17 @@ assert.equal(valueLayer.textContent, '{macro:xyz}\n');
 console.log('Syntax highlighting checks passed');
 
 assert.equal(tokenize('[Visit](https://example.com)', true)[0].kind, 'link');
+for (const prefix of ['', '!']) {
+  const layer = document.createElement('pre');
+  const source = prefix + '[Visit](https://example.com)';
+  highlight(layer, source, true);
+  assert.equal(layer.querySelector('.syntax-link-label').textContent, prefix + '[Visit]');
+  assert.equal(layer.querySelector('.syntax-link-target').textContent, '(https://example.com)');
+  assert.equal(layer.querySelector('.syntax-link-display').textContent, 'Visit');
+  assert.equal(layer.querySelector('.syntax-link-url').textContent, 'https://example.com');
+  assert.equal([...layer.querySelectorAll('.syntax-link-punctuation')].map(span => span.textContent).join(''), prefix + '[]()');
+  assert.equal(layer.textContent, source + '\n');
+}
 
 for (const marks of ['*', '**', '***', '_', '__', '~~', '++']) {
   const text = marks + '{color:cyan|{big|Name}}' + marks;
@@ -84,9 +95,30 @@ for (const [marks, format] of Object.entries({'*':'italic', '_':'italic', '**':'
   const layer = document.createElement('pre');
   highlight(layer, marks + 'Text' + marks, true);
   assert.ok(layer.querySelector('.syntax-emphasis-' + format));
+  assert.deepEqual([...layer.querySelectorAll('.syntax-emphasis-marker')].map(span => span.textContent), [marks, marks]);
+  assert.ok(![...layer.querySelectorAll('.syntax-emphasis-marker')].some(span => span.textContent === 'Text'));
   assert.equal(layer.textContent, marks + 'Text' + marks + '\n');
 }
 const formats = tokenize('**Bold ~~strike~~ {color:cyan|macro}**', true);
+for (const [source, format, body] of [
+  ['[b]Bold[/b]', 'bold', 'Bold'],
+  ['[I]Italic[/I]', 'italic', 'Italic'],
+  ['[b]Bold\n[i]Both[/i][/b]', 'bold-italic', 'Both'],
+  ['[i][b]Both[/b][/i]', 'bold-italic', 'Both']
+]) {
+  const layer = document.createElement('pre');
+  highlight(layer, source + ' plain', false);
+  assert.equal(layer.textContent, source + ' plain\n');
+  assert.ok([...layer.querySelectorAll('.syntax-emphasis-' + format)].some(span => span.textContent === body));
+  assert.ok(!tokenize(source + ' plain', false).at(-1).format);
+}
+assert.ok(tokenize('[noparse][b]literal[/b][/noparse]', false).every(token => !token.format));
+assert.ok(tokenize('[b]unclosed', false).every(token => !token.format));
+assert.ok(tokenize('[b]literal[/b]', true).every(token => !token.format));
+const bbcodeFormatting = tokenize('[b]Bold [i]both[/i] [color=red]colored[/color][/b]', false);
+assert.ok(bbcodeFormatting.filter(token => token.kind === 'tag').every(token => !token.format));
+assert.equal(bbcodeFormatting.find(token => token.text === 'both').format, 'bold-italic');
+assert.equal(bbcodeFormatting.find(token => token.text === 'colored').format, 'bold');
 assert.ok(formats.some(token => token.text === 'Bold ' && token.format === 'bold'));
 assert.ok(formats.some(token => token.text === 'strike' && token.format === 'strike'));
 assert.ok(formats.filter(token => token.kind === 'macro').every(token => !token.format));

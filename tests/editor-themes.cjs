@@ -9,14 +9,15 @@ function luminance(hex) {
     .map(v => v<=0.04045 ? v/12.92 : ((v+0.055)/1.055)**2.4);
   return rgb.reduce((sum,v,i)=>sum+v*[0.2126,0.7152,0.0722][i],0);
 }
-const foregrounds = ['text','number','active-number','marker','structural','bold','italic','bold-italic','underline','strike','link','literal','escape','entity',
+const foregrounds = ['text','number','active-number','marker','structural','emphasis','bold','italic','bold-italic','underline','strike','link','literal','escape','entity','warning',
   ...['block','macro','tag'].flatMap(kind=>[0,1,2,3,4].map(depth=>kind+depth))];
 assert.deepEqual(palettes.map(p=>p.name), ['folio','graphite','forest','paper']);
 for (const {name,vars} of palettes) {
   const bg=luminance(vars.bg);
   for (const key of foregrounds) {
     const fg=luminance(vars[key]);
-    assert.ok((Math.max(bg,fg)+.05)/(Math.min(bg,fg)+.05)>=4.5, `${name}: ${key}`);
+    const minimum = ['text','number','active-number'].includes(key) ? 4.5 : 7;
+    assert.ok((Math.max(bg,fg)+.05)/(Math.min(bg,fg)+.05)>=minimum, `${name}: ${key}`);
   }
   for (const kind of ['block','macro','tag']) assert.equal(new Set([0,1,2,3,4].map(i=>vars[kind+i])).size,5);
   assert.ok(parseInt(vars.section.slice(-2),16)/255<=.05, name + ': subtle section tint');
