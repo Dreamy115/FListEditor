@@ -130,7 +130,7 @@ Indent level 2
 :::
 :::
 
-**Quotes:** prefix consecutive source lines with `>`. Use `> >` for a nested quote. An explicit `:::quote` block is also available.
+**Quotes:** prefix consecutive source lines with `>`. Use `> >` for a nested quote. An explicit `:::quote` block is also available. Horizon appearances display quotes in an inset panel with a **QUOTE:** header and divider. Wrap a quote in `:::center` to center its header and content; inline colors remain available inside quotes.
 
 > Quote line 1
 > Quote line 2

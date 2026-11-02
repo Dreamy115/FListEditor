@@ -164,6 +164,8 @@
       check(css('.description').fontSize === '16px' && css('.description').lineHeight === '24px', scheme+' Horizon typography');
       check(css('h2').fontSize === '18.72px' && css('h2').marginBottom === '8px', scheme+' Horizon heading');
       check(css('blockquote').borderLeftWidth === '0px' && css('blockquote').marginBottom === '16px', scheme+' Horizon quote');
+      check(css('blockquote').paddingTop === '16px' && css('blockquote').backgroundColor === 'rgba(0, 0, 0, 0.2)', scheme+' Horizon quote panel');
+      check(css('.quoteHeader').textTransform === 'uppercase' && css('.quoteHeader').borderBottomWidth === '1px' && css('.quoteHeader').fontWeight === '700', scheme+' Horizon quote header');
       check(css('.bbcode-collapse-header').paddingLeft === '20px', scheme+' Horizon title padding');
       check(css('hr').marginTop === '5px' && css('hr').marginBottom === '5px', scheme+' compact Horizon separators');
       check(css('.bbcode-collapse-body').marginLeft === '8px' && css('.card-body').paddingLeft === '16px', scheme+' Horizon body inset');

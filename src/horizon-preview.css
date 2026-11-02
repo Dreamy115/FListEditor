@@ -34,7 +34,7 @@
 .description .row > div {flex:1;min-width:0}
 @media(prefers-reduced-motion:reduce){.description .bbcode-collapse-body {transition:none}}
 
-/* Horizon character-viewer structure for the three non-site appearances.
+/* Horizon character-viewer structure for the non-site appearances.
  * Sources: upstream _bbcode.scss, _flist_overrides.scss and Bootstrap cards.
  * Keep these scoped: the legacy F-List schemes have different DOM metrics. */
 .previewpage:not(:is(.flist-blue,.flist-dark,.flist-light)) {
@@ -60,7 +60,8 @@
 .previewpage:not(:is(.flist-blue,.flist-dark,.flist-light)) .description strong {font-weight:bolder}
 .previewpage:not(:is(.flist-blue,.flist-dark,.flist-light)) .description a {color:var(--horizon-link);text-underline-offset:auto}
 .previewpage:not(:is(.flist-blue,.flist-dark,.flist-light)) .description a:hover {text-decoration:none}
-.previewpage:not(:is(.flist-blue,.flist-dark,.flist-light)) .description blockquote {padding:0;margin:0 0 var(--horizon-rem,16px);border:0;background:transparent;color:inherit;font-style:normal;box-shadow:none}
+.previewpage:not(:is(.flist-blue,.flist-dark,.flist-light)) .description blockquote {padding:1em;margin:0 0 var(--horizon-rem,16px);border:0;border-radius:3px;background:rgba(0,0,0,.2);color:inherit;font-style:normal;box-shadow:none}
+.previewpage:not(:is(.flist-blue,.flist-dark,.flist-light)) .description .quoteHeader {font-size:.8em;font-weight:700;text-transform:uppercase;border-bottom:1px solid currentColor;opacity:.7}
 .previewpage:not(:is(.flist-blue,.flist-dark,.flist-light)) .description hr {margin:5px 0;border:0;border-top:1px solid currentColor;color:inherit;opacity:.25;background:none}
 .previewpage:not(:is(.flist-blue,.flist-dark,.flist-light)) .description .bbcode-collapse {display:flex;flex-direction:column;position:relative;background-clip:border-box;border:1px solid var(--horizon-border);border-radius:.7em;background:var(--horizon-card);color:inherit;margin:0;overflow:hidden}
 .previewpage:not(:is(.flist-blue,.flist-dark,.flist-light)) .description .bbcode-collapse-header {width:100%;min-height:0;padding:.4em calc(var(--horizon-rem,16px)*1.25);background:var(--horizon-cap);color:inherit;border-bottom:1px solid var(--horizon-border);font-size:inherit;line-height:inherit;border-radius:calc(.7em - 1px) calc(.7em - 1px) 0 0}
