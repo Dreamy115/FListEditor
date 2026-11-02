@@ -105,8 +105,8 @@ for(const mixed of [true,false]){
 const {parseHTML}=require('linkedom');
 const {document:pickerDocument,window:pickerWindow}=parseHTML('<html><body></body></html>');
 let pickerApplied=[],restoredSelection;
-const pickerSource={selectionStart:3,selectionEnd:8,selectionDirection:'backward',focus(){},setSelectionRange(...args){restoredSelection=args},addEventListener(){}};
-const pickerContext=vm.createContext({document:pickerDocument,window:pickerWindow,source:pickerSource,diagnosticHover:null,wrapColor:name=>pickerApplied.push(name)});
+const pickerSource={value:'ordinary text',selectionStart:3,selectionEnd:8,selectionDirection:'backward',focus(){},setSelectionRange(...args){restoredSelection=args},addEventListener(){}};
+const pickerContext=vm.createContext({document:pickerDocument,window:pickerWindow,source:pickerSource,data:{mixed:true},diagnosticHover:null,wrapColor:name=>pickerApplied.push(name)});
 vm.runInContext(app.slice(app.indexOf('const quickColorKeys='),app.indexOf('const fontPalette=')),pickerContext);
 vm.runInContext('positionQuickColor=()=>{}',pickerContext);
 const popup=pickerDocument.querySelector('.quick-color-picker');
@@ -134,3 +134,24 @@ for(const mixed of [true,false]){
  assert.equal(source.value,mixed?':::color red\nFirst\nSecond\n:::':'[color=red]First\nSecond[/color]');
 }
 console.log('Quick color insertion syntax and placeholder checks passed');
+
+vm.runInContext(app.slice(app.indexOf('function selectedColorBody('),app.indexOf('function openQuickColor(')),context);
+for(const [mixed,wrapped,body] of [
+ [true,'{color:red|**Keep** {i|nested} text}','**Keep** {i|nested} text'],
+ [true,'{color:red|{color:blue|nested}}','{color:blue|nested}'],
+ [false,'[color=red][b]Keep[/b] [color=blue]nested[/color][/color]','[b]Keep[/b] [color=blue]nested[/color]'],
+ [true,':::color red\nFirst\n\n:::b\nSecond\n:::\n:::','First\n\n:::b\nSecond\n:::'],
+ [true,'{color:red|}',''],
+ [false,'[color=red][/color]','']
+]){
+ data.mixed=mixed;reset(wrapped);assert.equal(context.unwrapSelectedColor(),true);assert.equal(source.value,body);assert.equal(source.value.slice(...selection),body);
+ if(body&&context.selectedColorBody(body)===null){
+  reset('before\n'+wrapped+'\nafter');source.selectionStart=7+wrapped.indexOf(body);source.selectionEnd=source.selectionStart+body.length;
+  assert.equal(context.unwrapSelectedColor(),true);assert.equal(source.value,'before\n'+body+'\nafter');assert.equal(source.value.slice(...selection),body);
+ }
+}
+for(const [mixed,text] of [[true,'{color:red|a}{color:blue|b}'],[true,'{color:red|unclosed'],[true,'plain'],[false,'[color=red]a[/color][color=blue]b[/color]'],[true,':::color red\na\n:::\nb\n:::']]){
+ data.mixed=mixed;reset(text);assert.equal(context.unwrapSelectedColor(),false);assert.equal(source.value,text);
+}
+data.mixed=true;reset('{color:red|body}');source.selectionStart=source.selectionEnd=12;assert.equal(context.unwrapSelectedColor(),false);
+console.log('Color unwrapping preserves nested formatting, selection and surrounding text');

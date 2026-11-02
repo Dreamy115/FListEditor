@@ -1118,7 +1118,60 @@ function positionQuickColor(){
  quickColorPicker.style.left=Math.max(margin,Math.min(left,window.innerWidth-box.width-margin))+'px';
  quickColorPicker.style.top=Math.max(margin,Math.min(top+4,window.innerHeight-box.height-margin))+'px';
 }
+function selectedColorBody(text){
+ const opening=data.mixed?text.match(/^\{color:[^|{}\n]+\|/i):text.match(/^\[color=[^\]\n]+\]/i);
+ if(opening){
+  if(data.mixed){
+   let depth=1;
+   for(let i=opening[0].length;i<text.length;i++){
+    if(text[i]==='\\'){i++;continue}
+    if(text[i]==='{')depth++;
+    if(text[i]==='}'&&!--depth)return i===text.length-1?text.slice(opening[0].length,i):null;
+   }
+  }else{
+   let depth=1;const tags=/\[color=[^\]\n]+\]|\[\/color\]|\[noparse\][\s\S]*?\[\/noparse\]/gi;
+   tags.lastIndex=opening[0].length;let match;
+   while((match=tags.exec(text))){
+    if(/^\[noparse\]/i.test(match[0]))continue;
+    if(/^\[color=/i.test(match[0]))depth++;
+    else if(!--depth)return tags.lastIndex===text.length?text.slice(opening[0].length,match.index):null;
+   }
+  }
+ }
+ if(data.mixed){
+  const block=text.match(/^:::color[ \t]+[^\n]+\n([\s\S]*)\n:::$/i);
+  if(block){
+   let depth=1;
+   for(const line of block[1].split('\n')){
+    if(/^:::[ \t]*$/.test(line)){if(!--depth)return null}
+    else if(/^:::[a-z]/i.test(line))depth++;
+   }
+   if(depth===1)return block[1];
+  }
+ }
+ return null;
+}
+function unwrapSelectedColor(){
+ const start=source.selectionStart,end=source.selectionEnd;
+ if(start===end)return false;
+ let from=start,to=end,body=selectedColorBody(source.value.slice(from,to));
+ // Also toggle a wrapper when just its entire body is selected, as after insertion.
+ if(body===null){
+  const before=source.value.slice(0,start),after=source.value.slice(end);
+  const opening=data.mixed?before.match(/\{color:[^|{}\n]+\|$/i):before.match(/\[color=[^\]\n]+\]$/i);
+  const closing=data.mixed?after.match(/^\}/):after.match(/^\[\/color\]/i);
+  const blockOpening=data.mixed&&before.match(/(?:^|\n)(:::color[^\n]+\n)$/i);
+  const blockClosing=data.mixed&&after.match(/^\n:::(?=\n|$)/);
+  if(opening&&closing){from-=opening[0].length;to+=closing[0].length}
+  else if(blockOpening&&blockClosing){from-=blockOpening[1].length;to+=blockClosing[0].length}
+  else return false;
+  body=selectedColorBody(source.value.slice(from,to));
+ }
+ if(body===null)return false;
+ replaceRange(body,from,to,from,from+body.length);return true;
+}
 function openQuickColor(){
+ if(unwrapSelectedColor())return;
  diagnosticHover?.hide();
  quickColorSelection=[source.selectionStart,source.selectionEnd,source.selectionDirection];
  quickColorPicker.hidden=false;positionQuickColor();quickColorPicker.querySelector('button').focus({preventScroll:true});

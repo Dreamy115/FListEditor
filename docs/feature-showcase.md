@@ -322,7 +322,7 @@ Text inside triple backticks.
 - **Undo / Redo** covers typing, toolbar actions, source-mode conversion, and Unicode-reference conversion.
 
 **Keyboard shortcuts**
-- **Ctrl+D:** open a color picker at the caret, then press a displayed letter to apply immediately: **R** red, **O** orange, **Y** yellow, **G** green, **C** cyan, **B** blue, **P** purple, **I** pink, **K** black, **N** brown, **W** white, **A** gray. No Enter is needed. Click a color to apply it, or press **Escape** to cancel. The selection is wrapped, or selected placeholder text is inserted. Multiline selections use a color block; BBCode mode inserts native color tags.
+- **Ctrl+D:** select a complete color macro (or its entire body) to remove its outer color wrapper while preserving the text and nested formatting. This also works with color blocks and BBCode color tags, and can be undone. Otherwise, open a color picker at the caret, then press a displayed letter to apply immediately: **R** red, **O** orange, **Y** yellow, **G** green, **C** cyan, **B** blue, **P** purple, **I** pink, **K** black, **N** brown, **W** white, **A** gray. No Enter is needed. Click a color to apply it, or press **Escape** to cancel. The selection is wrapped, or selected placeholder text is inserted. Multiline selections use a color block; BBCode mode inserts native color tags.
 - **Ctrl+B / Ctrl+I / Ctrl+U:** bold / italic / underline
 - **Ctrl+Z:** undo
 - **Shift+Alt+Up / Shift+Alt+Down:** duplicate the selected source lines above / below and keep the copied text selected. With no selection, duplicate the caret's line. A selection ending at the start of a line excludes that line. Copies work at document boundaries and support undo/redo.
