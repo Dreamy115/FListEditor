@@ -12,7 +12,13 @@ const original='[collapse=First]Body[collapse=Nested]Inner[/collapse][/collapse]
 update(original);
 for(const header of [...preview.querySelectorAll('.bbcode-collapse-header')].slice(0,2))header.click();
 frame.scrollTop=140;frame.scrollLeft=7;
+const replaceChildren=preview.replaceChildren.bind(preview);
+preview.replaceChildren=(...nodes)=>{
+ assert.equal(nodes[0].querySelectorAll('.bbcode-collapse:not(.collapsed)').length,2,'Expanded sections are restored before insertion to avoid shrinking the scroll range');
+ replaceChildren(...nodes);
+};
 update(original+'\nEdit');
+preview.replaceChildren=replaceChildren;
 assert.equal(frame.scrollTop,140);assert.equal(frame.scrollLeft,7);
 assert.deepEqual([...preview.querySelectorAll('.bbcode-collapse')].map(el=>el.classList.contains('collapsed')),[false,false,true]);
 assert.equal(preview.querySelector('.bbcode-collapse-body').style.height,'');

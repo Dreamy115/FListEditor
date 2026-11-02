@@ -181,7 +181,7 @@
 }
 .editor-shell{background:var(--editor-bg);color-scheme:var(--editor-scheme)}
 .editor-shell .editor-highlights{color:var(--editor-text)}
-.editor-shell .editor{caret-color:var(--editor-caret);border-color:var(--editor-border)}
+.editor-shell .editor{caret-color:transparent;border-color:var(--editor-border)}
 .editor-shell .editor::placeholder{color:var(--editor-placeholder);-webkit-text-fill-color:var(--editor-placeholder)}
 .editor-shell .editor::selection{background:var(--editor-selection)}
 .editor-shell .source-gutter{background:var(--editor-gutter);border-color:var(--editor-border)}
@@ -220,9 +220,11 @@
 .editor-shell .syntax-literal{color:var(--editor-literal)}
 .editor-shell .syntax-escape{color:var(--editor-escape)}
 .editor-shell .syntax-marker-heading,.editor-shell .syntax-marker-quote{color:var(--editor-structural)}
-.editor-shell .syntax-emphasis-bold{color:inherit;font-weight:bold}
+/* Paint bold without changing glyph metrics: fallback Unicode fonts can have
+   wider bold faces than the plain textarea, shifting wrapped insertion points. */
+.editor-shell .syntax-emphasis-bold{color:inherit;text-shadow:.35px 0 currentColor}
 .editor-shell .syntax-emphasis-italic{color:inherit;font-style:italic}
-.editor-shell .syntax-emphasis-bold-italic{color:inherit;font-weight:bold;font-style:italic}
+.editor-shell .syntax-emphasis-bold-italic{color:inherit;text-shadow:.35px 0 currentColor;font-style:italic}
 .editor-shell .syntax-emphasis-underline{color:inherit;text-decoration-line:underline;text-decoration-color:color-mix(in srgb,currentColor 50%,transparent)}
 .editor-shell .syntax-emphasis-strike{color:inherit;text-decoration-line:line-through;text-decoration-color:color-mix(in srgb,currentColor 50%,transparent)}
 .editor-shell .syntax-emphasis-marker{color:var(--editor-structural);text-decoration-line:none}

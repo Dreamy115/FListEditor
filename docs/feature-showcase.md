@@ -217,7 +217,7 @@ Nested section content.
 :::
 :::
 
-Editing retains preview scroll and expansion state. Each character and template has its own preview state during the session.
+Source edits retain the preview's scroll position and expanded sections, including nested sections. Keep the preview scrolled to the section you are checking while editing the source. Each character and template has its own preview state during the session.
 :::
 
 :::collapse 07 / Links, character references & images
@@ -322,7 +322,7 @@ Text inside triple backticks.
 **Editing and diagnostics**
 - Preview updates as you type; the footer shows word/character counts and local save status.
 - Syntax highlighting distinguishes Markdown, inline macros, block macros, native BBCode, and literal content.
-- Wrapped line numbers track source scrolling. The caret highlights its enclosing section and matching boundaries; unmatched markers are marked.
+- The typing cursor tracks the insertion position in the highlighted source, including at wrapped row boundaries. Wrapped line numbers track source scrolling. The caret highlights its enclosing section and matching boundaries; unmatched markers are marked.
 - Warnings identify source lines. Hover an underline or press **Alt+Enter / Ctrl+.** at the caret to open guidance and available fixes. **Escape** dismisses the popup. Fixes can be undone.
 - **Undo / Redo** covers typing, toolbar actions, source-mode conversion, and Unicode-reference conversion.
 

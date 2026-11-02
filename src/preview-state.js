@@ -17,8 +17,8 @@
     return {top: frame.scrollTop, left: frame.scrollLeft,
       sections: sections(preview).map(({node, key}) => ({key, open: !node.classList.contains('collapsed')}))};
   }
-  function restore(preview, frame, state) {
-    if (!state) { frame.scrollTop = 0; frame.scrollLeft = 0; return; }
+  function restoreSections(preview, state) {
+    if (!state) return;
     const current = sections(preview), previous = new Map(state.sections.map(section => [section.key, section.open]));
     const currentKeys = new Set(current.map(section => section.key));
     current.forEach(({node, key}, index) => {
@@ -37,7 +37,6 @@
         if (icon) { icon.classList.remove('fa-chevron-down'); icon.classList.add('fa-chevron-up'); }
       }
     });
-    frame.scrollTop = state.top; frame.scrollLeft = state.left;
   }
   function update(preview, frame, code, render, key, revision) {
     let entry = previews.get(preview);
@@ -45,9 +44,15 @@
     if (entry.key !== undefined) entry.views.set(entry.key, capture(preview, frame));
     if (entry.key === key && entry.code === code && entry.revision === revision) return;
     const rendered = render(code);
+    const state = entry.views.get(key);
+    // Restore expanded content before mounting it so layout never sees the
+    // temporarily collapsed document and clamps the preview's scroll range.
+    const staging = preview.ownerDocument.createElement('div');
+    staging.appendChild(rendered);
+    restoreSections(staging, state);
     preview.firstElementChild?.cleanup?.();
-    preview.replaceChildren(rendered);
-    restore(preview, frame, entry.views.get(key));
+    preview.replaceChildren(...staging.childNodes);
+    frame.scrollTop = state?.top || 0; frame.scrollLeft = state?.left || 0;
     entry.key = key; entry.code = code; entry.revision = revision;
   }
   globalThis.FolioPreview = {update};

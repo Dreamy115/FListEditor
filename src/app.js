@@ -1012,19 +1012,35 @@ const selectionCaret=document.createElement('div');
 selectionCaret.className='source-selection-caret';selectionCaret.setAttribute('aria-hidden','true');
 selectionCaret.hidden=true;source.parentElement.appendChild(selectionCaret);
 selectionCaret.appendChild(document.createElement('span'));
+let selectionCaretPosition='';
 function updateSelectionCaret(){
- selectionCaret.hidden=document.activeElement!==source||source.selectionStart===source.selectionEnd;
- if(selectionCaret.hidden)return;
+ selectionCaret.hidden=document.activeElement!==source;
+ if(selectionCaret.hidden){selectionCaretPosition='';return}
+ selectionCaret.classList.toggle('is-insertion',source.selectionStart===source.selectionEnd);
  const layer=$('sourceHighlight'),walker=document.createTreeWalker(layer,NodeFilter.SHOW_TEXT);
- let remaining=source.selectionDirection==='backward'?source.selectionStart:source.selectionEnd,node;
+ const offset=source.selectionDirection==='backward'?source.selectionStart:source.selectionEnd;
+ let remaining=offset,node;
  while((node=walker.nextNode())){
   if(remaining>=node.length){remaining-=node.length;continue}
-  const range=document.createRange();range.setStart(node,remaining);range.collapse(true);
+  // A collapsed DOM range can resolve to the preceding visual row at a soft
+  // wrap. Measure the following glyph so the caret marks where typing inserts.
+  const range=document.createRange();range.setStart(node,remaining);range.setEnd(node,remaining+1);
   const rect=range.getClientRects()[0];
   if(!rect){selectionCaret.hidden=true;return}
+  range.collapse(true);
+  const boundary=range.getClientRects()[0];
+  // Preserve the leading edge of right-to-left runs when the boundary belongs
+  // to this glyph, but reject the preceding-row position at a soft wrap.
+  const left=boundary&&Math.abs(boundary.top-rect.top)<1&&boundary.left>=rect.left-1&&boundary.left<=rect.right+1?boundary.left:rect.left;
   const box=selectionCaret.getBoundingClientRect(),bar=selectionCaret.firstElementChild;
-  bar.style.left=(rect.left-box.left)+'px';bar.style.top=(rect.top-box.top)+'px';
-  bar.style.height=rect.height+'px';return;
+  bar.style.left=(left-box.left)+'px';bar.style.top=(rect.top-box.top)+'px';
+  bar.style.height=rect.height+'px';
+  const position=[offset,left,rect.top,source.selectionStart,source.selectionEnd].join(':');
+  if(position!==selectionCaretPosition){
+   selectionCaretPosition=position;
+   for(const animation of bar.getAnimations())animation.currentTime=0;
+  }
+  return;
  }
  selectionCaret.hidden=true;
 }

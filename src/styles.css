@@ -33,8 +33,11 @@
 .source-selection-caret{position:absolute;inset:1px;overflow:hidden;pointer-events:none;z-index:2;border-radius:10px}
 .source-selection-caret[hidden]{display:none}
 .source-selection-caret span{position:absolute;width:1px;background:var(--editor-caret,#f1edff)}
+.source-selection-caret.is-insertion span{animation:source-caret-blink 1s steps(1) infinite}
+@keyframes source-caret-blink{0%,49%{opacity:1}50%,100%{opacity:0}}
+@media(prefers-reduced-motion:reduce){.source-selection-caret.is-insertion span{animation:none}}
 @media(forced-colors:active){.source-selection-caret span{background:CanvasText}}
-@media(forced-colors:active){.editor-highlights{display:none}.editor-shell .editor{color:CanvasText;-webkit-text-fill-color:CanvasText;caret-color:CanvasText}}
+@media(forced-colors:active){.editor-highlights,.source-selection-caret{display:none}.editor-shell .editor{color:CanvasText;-webkit-text-fill-color:CanvasText;caret-color:CanvasText}}
 
 .editor-shell{--gutter-width:36px}
 .editor-shell .editor,.editor-highlights{padding-left:calc(var(--gutter-width) + 18px)}

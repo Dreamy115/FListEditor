@@ -22,7 +22,7 @@
    check(source.value.slice(source.selectionStart,source.selectionEnd)===selected,'Copied text stays selected');
    check(!caret.hidden,'Copied selection retains visible caret');
   }
-  source.setSelectionRange(2,2);await pause();check(caret.hidden,'Collapsed selection uses native caret');
+  source.setSelectionRange(2,2);await pause();check(!caret.hidden&&caret.classList.contains('is-insertion'),'Typing caret uses the highlighted source position');
   source.setSelectionRange(0,3);await pause();source.blur();await pause();check(caret.hidden,'Blur hides selection caret');
   result.passed=true;
  }catch(error){result.error=error.stack}
