@@ -9,10 +9,10 @@ const source={
 };
 const context=vm.createContext({source,rememberSelection:()=>remembered++,syncFromEditor:()=>syncs++,commitEdit:()=>commits++});
 vm.runInContext(app.slice(app.indexOf('function moveSourceLines('),app.indexOf("document.addEventListener('keydown'")),context);
-function check(text,start,end,direction,expected,newStart,newEnd){
+function check(text,start,end,direction,expected,newStart,newEnd,copy=false){
  Object.assign(source,{value:text,selectionStart:start,selectionEnd:end,selectionDirection:'backward'});
  const before=commits;
- context.moveSourceLines(direction);
+ context.moveSourceLines(direction,copy);
  assert.equal(source.value,expected);
  assert.equal(source.selectionStart,newStart);assert.equal(source.selectionEnd,newEnd);
  assert.equal(source.selectionDirection,'backward');
@@ -29,5 +29,13 @@ check('a\n',2,2,-1,'\na',0,0);
 check('a\nb',0,1,-1,'a\nb',0,1);
 check('a\nb',2,3,1,'a\nb',2,3);
 check('',0,0,-1,'',0,0);
+check('aaa\nbb\ncccc',5,6,-1,'aaa\nbb\nbb\ncccc',5,6,true);
+check('aaa\nbb\ncccc',5,6,1,'aaa\nbb\nbb\ncccc',8,9,true);
+check('a\nb\nc',0,4,-1,'a\nb\na\nb\nc',0,4,true);
+check('a\nb\nc',0,4,1,'a\nb\na\nb\nc',4,8,true);
+check('a\nb',2,3,1,'a\nb\nb',4,5,true);
+check('a\nb',0,0,-1,'a\na\nb',0,0,true);
+check('a\n',2,2,1,'a\n\n',3,3,true);
+check('',0,0,-1,'\n',0,0,true);
 assert.equal(commits,syncs);assert.equal(commits,remembered);
 console.log('Source line movement checks passed');

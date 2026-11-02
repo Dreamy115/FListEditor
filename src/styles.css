@@ -30,6 +30,10 @@
 .editor-shell .editor{position:relative;z-index:1;flex:1;min-width:0;background:transparent;color:transparent;caret-color:#f1edff;border-color:#393c50;-webkit-text-fill-color:transparent}
 .editor-shell .editor::placeholder{color:#787d97;-webkit-text-fill-color:#787d97}
 .editor-shell .editor::selection{background:#8b75dc66;color:transparent}
+.source-selection-caret{position:absolute;inset:1px;overflow:hidden;pointer-events:none;z-index:2;border-radius:10px}
+.source-selection-caret[hidden]{display:none}
+.source-selection-caret span{position:absolute;width:1px;background:var(--editor-caret,#f1edff)}
+@media(forced-colors:active){.source-selection-caret span{background:CanvasText}}
 @media(forced-colors:active){.editor-highlights{display:none}.editor-shell .editor{color:CanvasText;-webkit-text-fill-color:CanvasText;caret-color:CanvasText}}
 
 .editor-shell{--gutter-width:36px}

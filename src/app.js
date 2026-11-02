@@ -964,7 +964,28 @@ function syncName(){
  }
  active().name=name;if(templateSession)updateTemplateStatus();renderDrafts();refresh();scheduleSave();
 }
+const selectionCaret=document.createElement('div');
+selectionCaret.className='source-selection-caret';selectionCaret.setAttribute('aria-hidden','true');
+selectionCaret.hidden=true;source.parentElement.appendChild(selectionCaret);
+selectionCaret.appendChild(document.createElement('span'));
+function updateSelectionCaret(){
+ selectionCaret.hidden=document.activeElement!==source||source.selectionStart===source.selectionEnd;
+ if(selectionCaret.hidden)return;
+ const layer=$('sourceHighlight'),walker=document.createTreeWalker(layer,NodeFilter.SHOW_TEXT);
+ let remaining=source.selectionDirection==='backward'?source.selectionStart:source.selectionEnd,node;
+ while((node=walker.nextNode())){
+  if(remaining>=node.length){remaining-=node.length;continue}
+  const range=document.createRange();range.setStart(node,remaining);range.collapse(true);
+  const rect=range.getClientRects()[0];
+  if(!rect){selectionCaret.hidden=true;return}
+  const box=selectionCaret.getBoundingClientRect(),bar=selectionCaret.firstElementChild;
+  bar.style.left=(rect.left-box.left)+'px';bar.style.top=(rect.top-box.top)+'px';
+  bar.style.height=rect.height+'px';return;
+ }
+ selectionCaret.hidden=true;
+}
 function updateActiveSyntax(){
+ updateSelectionCaret();
  FolioSyntax.markActive($('sourceHighlight'),source.selectionStart);
  const line=source.value.slice(0,source.selectionStart).split('\n').length;
  for(const number of $('sourceLineNumbers').children)number.classList.toggle('active',Number(number.dataset.line)===line);
@@ -1003,7 +1024,11 @@ function syncHighlightScroll(){
  layer.scrollTop=source.scrollTop;layer.scrollLeft=source.scrollLeft;
  FolioSyntax.paintActive(layer);
  $('sourceLineNumbers').style.transform='translateY('+(-layer.scrollTop)+'px)';
+ updateSelectionCaret();
 }
+document.addEventListener('selectionchange',updateSelectionCaret);
+source.addEventListener('focus',updateSelectionCaret);
+source.addEventListener('blur',updateSelectionCaret);
 source.addEventListener('scroll',syncHighlightScroll);
 source.addEventListener('select',updateActiveSyntax);
 source.addEventListener('keyup',updateActiveSyntax);
@@ -1437,7 +1462,7 @@ $('fileImport').addEventListener('change',async(e)=>{
  };
  if(source.value.trim())requestConfirmation('Replace this draft with the imported file?',apply);else apply();
 });
-function moveSourceLines(direction){
+function moveSourceLines(direction,copy=false){
  const text=source.value,start=source.selectionStart,end=source.selectionEnd;
  const directionOfSelection=source.selectionDirection;
  const first=text.slice(0,start).lastIndexOf('\n')+1;
@@ -1446,7 +1471,12 @@ function moveSourceLines(direction){
  const newline=text.indexOf('\n',lastPosition);
  const last=newline<0?text.length:newline;
  let from,to,replacement,offset;
- if(direction<0){
+ if(copy){
+  const block=text.slice(first,last);
+  from=to=direction<0?first:last;
+  replacement=direction<0?block+'\n':'\n'+block;
+  offset=direction<0?0:block.length+1;
+ }else if(direction<0){
   if(first===0)return;
   from=text.slice(0,first-1).lastIndexOf('\n')+1;to=last;
   replacement=text.slice(first,last)+'\n'+text.slice(from,first-1);
@@ -1465,8 +1495,8 @@ function moveSourceLines(direction){
 document.addEventListener('keydown',e=>{
  if(e.key==='Enter'&&e.ctrlKey){e.preventDefault();copyCode();return}
  if(document.activeElement!==source)return;
- if(e.altKey&&!e.ctrlKey&&!e.metaKey&&!e.shiftKey&&!e.isComposing&&['ArrowUp','ArrowDown'].includes(e.key)){
-  e.preventDefault();moveSourceLines(e.key==='ArrowUp'?-1:1);return;
+ if(e.altKey&&!e.ctrlKey&&!e.metaKey&&!e.isComposing&&['ArrowUp','ArrowDown'].includes(e.key)){
+  e.preventDefault();moveSourceLines(e.key==='ArrowUp'?-1:1,e.shiftKey);return;
  }
  if((e.ctrlKey||e.metaKey)&&!e.altKey){
   const key=e.key.toLowerCase();

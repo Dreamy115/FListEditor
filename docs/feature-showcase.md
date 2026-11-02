@@ -5,6 +5,7 @@
 
 **Source pane:** edit Markdown+ or BBCode. **Preview pane:** rendered output, updated as you type.
 Select text to format it with the toolbar. Toolbar insertions use the current source mode. Expand a section below for syntax, controls, and behavior.
+Text selections keep a visible caret at the active end while the source editor has focus, including after moving selected lines with Alt+Up / Alt+Down.
 
 ---
 
@@ -312,6 +313,7 @@ Text inside triple backticks.
 **Keyboard shortcuts**
 - **Ctrl+B / Ctrl+I / Ctrl+U:** bold / italic / underline
 - **Ctrl+Z:** undo
+- **Shift+Alt+Up / Shift+Alt+Down:** duplicate the selected source lines above / below and keep the copied text selected. With no selection, duplicate the caret's line. A selection ending at the start of a line excludes that line. Copies work at document boundaries and support undo/redo.
 - **Alt+Up / Alt+Down:** move the selected source lines up / down by one line, keeping the selection. With no selection, move the caret's line. A selection ending at the start of a line excludes that line. Moves stop at the document boundaries and can be undone.
 - **Ctrl+Y / Ctrl+Shift+Z:** redo
 
