@@ -30,8 +30,10 @@ jobs:
           mkdir -p _site
           cp index.html _site/index.html
           cp -R src _site/src
+          cp -R vendor _site/vendor
           test -f _site/index.html
           test -f _site/src/app.js
+          test -s _site/vendor/html2canvas/html2canvas.min.js
 
       - name: Configure GitHub Pages
         uses: actions/configure-pages@v5

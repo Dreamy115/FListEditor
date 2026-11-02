@@ -365,7 +365,7 @@ Text inside triple backticks.
 - **Export screenshot (.png):** downloads the full card, including its name, current appearance, and text size; all nested sections are expanded for capture.
 - **Copy screenshot:** copies the expanded card as a PNG image to the clipboard. Allow clipboard access when your browser asks. If copying is blocked, a permission popup offers **Retry copy**, **Export screenshot (.png)**, and **Cancel**. Allow **Clipboard** in browser site permissions before retrying; retry copies the captured image.
 - **Export .html:** downloads a responsive page with embedded styles, selectable text, and interactive sections. Sections start collapsed; click or press **Enter / Space** to toggle them.
-- Screenshot capture preserves the current preview scroll and expansion state.
+- Screenshot capture preserves the current preview scroll and expansion state. PNG export and copy include the capture library in both the hosted app and standalone build.
 
 **Local storage and backups**
 - Character drafts save automatically in this browser. Template edits are saved with **Save template**.
