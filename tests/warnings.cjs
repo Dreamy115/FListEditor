@@ -217,3 +217,39 @@ for(const outer of ['left','right','center','justify'])for(const inner of ['left
 }
 assert.ok(!context.bbcodeToMarkdown('[right]text[/right]').includes('!'),'Top-level alignment needs no suppression');
 assert.deepEqual(alignmentIssues('{center|{right:!|intentional}}'),[]);
+
+// Severity belongs to diagnostics before any UI rendering.
+for(const [input,mixed,severity] of [
+ ['{typo|text}',true,'error'], ['{b|unfinished',true,'error'],
+ [':::center\ntext',true,'error'], [':::typo\ntext\n:::',true,'error'],
+ ['{font:bold|{font:italic|text}}',true,'error'],
+ ['[b]text[/i]',false,'error'], ['[b=oops]text[/b]',false,'error'],
+ ['[url]bad[/url]',false,'error'], ['[user]Bad!Name[/user]',false,'error'],
+ ['[table]text[/table]',false,'warning'], ['{color:teal|text}',true,'warning'],
+ ['![image](https://example.com/image.png)',true,'warning'],
+ ['<div>text</div>',false,'warning'],
+ ['[**label**](https://example.com)',true,'warning']
+]) {
+ const issues=locate(input,mixed);
+ assert.ok(issues.length,input);
+ assert.ok(issues.every(issue=>issue.severity===severity),JSON.stringify({input,issues}));
+}
+const severityIssues=locate('{typo|text} {color:teal|text}');
+assert.deepEqual(new Set(severityIssues.map(issue=>issue.severity)),new Set(['error','warning']));
+context.updateWarnings(severityIssues);
+assert.equal(document.getElementById('warningDetails').dataset.severity,'error');
+assert.ok(document.querySelector('#warningList li[data-severity="error"]'));
+assert.ok(document.querySelector('#warningList li[data-severity="warning"]'));
+context.updateWarnings(locate('{color:teal|text}'));
+assert.equal(document.getElementById('warningDetails').dataset.severity,'warning');
+console.log('Compiler diagnostic severity checks passed');
+
+context.FolioSyntax.highlight(layer,'{typo|text} {color:teal|text}',true,severityIssues);
+assert.ok(layer.querySelector('.syntax-warning[data-severity="error"]'));
+assert.ok(layer.querySelector('.syntax-warning[data-severity="warning"]'));
+// An overlapping compatibility warning must not hide an error underline.
+context.FolioSyntax.highlight(layer,'bad',true,[
+ {start:0,end:3,message:'Compatibility',severity:'warning'},
+ {start:0,end:3,message:'Invalid source',severity:'error'}
+]);
+assert.equal(layer.querySelector('.syntax-warning').dataset.severity,'error');

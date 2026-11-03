@@ -173,6 +173,7 @@
         if (token.unmatched && problems === undefined) { span.classList.add('syntax-unmatched'); span.title = 'Unmatched delimiter'; }
         if (token.diagnostics.length) {
           span.classList.add('syntax-warning');
+          span.dataset.severity = token.diagnostics.some(problem => problem.severity === 'error') ? 'error' : 'warning';
           span.title = [...new Set(token.diagnostics.map(problem => problem.message))].join('\n');
           span.warningProblems = token.diagnostics;
         }

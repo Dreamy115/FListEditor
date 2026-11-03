@@ -809,29 +809,32 @@ function preferStandardMarkdown(markdown){
  return markdown;
 }
 function renderBB(input){return FolioHorizon.render(input)}
-function countWarnings(compiled){
+function countWarnings(compiled){return compilerWarnings(compiled).map(issue=>issue.message)}
+// Severity is compiler data: error = invalid source, warning = F-List compatibility.
+function compilerWarnings(compiled){
  const issues=[],stack=[];let literal=false;
+ const add=(message,severity='error')=>issues.push({message,severity});
  for(const m of compiled.matchAll(/\[(\/?)([a-z][a-z0-9_-]*|\*)(?:=[^\]\n]*)?\]/gi)){
   const tag=m[2].toLowerCase(),close=!!m[1];
   if(literal){if(close&&tag==='noparse'){literal=false;stack.pop()}continue}
-  if(!allowedTags.has(tag)){issues.push('['+tag+'] is not supported by F-List profiles');continue}
-  if(tag==='color'&&!close){const warning=colorWarning(m[0].match(/^\[color=([^\]]*)\]$/i)?.[1]);if(warning)issues.push(warning)}
-  if(tag==='hr'){if(close)issues.push('Unmatched [/hr]');continue}
+  if(!allowedTags.has(tag)){add('['+tag+'] is not supported by F-List profiles','warning');continue}
+  if(tag==='color'&&!close){const warning=colorWarning(m[0].match(/^\[color=([^\]]*)\]$/i)?.[1]);if(warning)add(warning,'warning')}
+  if(tag==='hr'){if(close)add('Unmatched [/hr]');continue}
   if(close){
    const index=stack.lastIndexOf(tag);
-   if(index<0)issues.push('Unmatched [/'+tag+']');
-   else{if(index!==stack.length-1)issues.push('Misnested [/'+tag+']: close ['+stack.at(-1)+'] first');stack.splice(index,1)}
+   if(index<0)add('Unmatched [/'+tag+']');
+   else{if(index!==stack.length-1)add('Misnested [/'+tag+']: close ['+stack.at(-1)+'] first');stack.splice(index,1)}
   }else{stack.push(tag);if(tag==='noparse')literal=true}
  }
- for(const tag of stack)issues.push('Unclosed ['+tag+']');
+ for(const tag of stack)add('Unclosed ['+tag+']');
  const parsedText=compiled.replace(/\[noparse\][\s\S]*?(?:\[\/noparse\]|$)/gi,'');
- if(/\[img\][\s\S]*?\[\/img\]|\[img=(?!\d+\])[^\]\n]*\]/i.test(parsedText))issues.push('External image URLs are not supported by F-List profiles; use an uploaded profile image ID such as [img=12345] instead');
- if(/<\/?(?:div|span|table|p|br)\b/i.test(parsedText))issues.push('HTML is not supported in descriptions');
- return [...new Set([...issues,...tagContentWarnings(compiled).map(issue=>issue.message)])];
+ if(/\[img\][\s\S]*?\[\/img\]|\[img=(?!\d+\])[^\]\n]*\]/i.test(parsedText))add('External image URLs are not supported by F-List profiles; use an uploaded profile image ID such as [img=12345] instead','warning');
+ if(/<\/?(?:div|span|table|p|br)\b/i.test(parsedText))add('HTML is not supported in descriptions','warning');
+ return [...new Map([...issues,...tagContentWarnings(compiled)].map(issue=>[issue.message,issue])).values()];
 }
 function tagContentWarnings(compiled){
  const issues=[],stack=[],opaque=new Set(['noparse','url','user','icon','eicon','img']);
- const add=(message,m)=>issues.push({message,start:m.index,end:m.index+m[0].length,tag:m[2].toLowerCase()});
+ const add=(message,m,severity='error')=>issues.push({message,severity,start:m.index,end:m.index+m[0].length,tag:m[2].toLowerCase()});
  for(const m of compiled.matchAll(/\[(\/?)([a-z][a-z0-9_-]*)(?:=([^\]\n]*))?\]/gi)){
   const tag=m[2].toLowerCase(),close=!!m[1],parent=stack.at(-1);
   if(parent&&opaque.has(parent.tag)){
@@ -840,7 +843,7 @@ function tagContentWarnings(compiled){
     if(tag==='url'){
      const value=(parent.param||content).trim();
      if(!safeUrl(value)||(globalThis.FolioHorizon?.validURL&&!globalThis.FolioHorizon.validURL(value)))add('Invalid URL in [url]: use a complete http(s) URL',parent.match);
-     if(/\[(?:b|i|u|s|color|big|small|sup|sub|heading|noparse)(?:=[^\]]*)?\]/i.test(content))add('Formatting inside link labels is not supported by F-List; use plain text for link labels',parent.match);
+     if(/\[(?:b|i|u|s|color|big|small|sup|sub|heading|noparse)(?:=[^\]]*)?\]/i.test(content))add('Formatting inside link labels is not supported by F-List; use plain text for link labels',parent.match,'warning');
     }else if(['user','icon','eicon'].includes(tag)&&!(/^[a-zA-Z0-9_\-\s]+$/.test(content)&&content.trim()))add('Invalid name in ['+tag+']: use letters, numbers, spaces, underscores or hyphens',parent.match);
     stack.pop();
    }
@@ -850,7 +853,7 @@ function tagContentWarnings(compiled){
   if(close){const index=stack.map(item=>item.tag).lastIndexOf(tag);if(index>=0)stack.splice(index);continue}
   if(m[3]!==undefined&&!['color','url','img','collapse'].includes(tag))add('Unexpected parameter on ['+tag+']: this tag does not accept an argument',m);
   const restricted=stack.find(item=>globalThis.FolioHorizon?.allowsChild(item.tag,tag)===false);
-  if(restricted)add('Unsupported nesting: ['+tag+'] inside ['+restricted.tag+'] displays literal markup in preview',m);
+  if(restricted)add('Unsupported nesting: ['+tag+'] inside ['+restricted.tag+'] displays literal markup in preview',m,'warning');
   // Blank collapse titles remain valid for legacy-site compatibility.
   if(tag!=='hr')stack.push({tag,param:m[3],end:m.index+m[0].length,match:m});
  }
@@ -865,7 +868,7 @@ function nestedFontWarnings(text){
    if(marker){
     const name=marker[1]?.toLowerCase();
     if(!name)blocks.pop();
-    else{if(name==='font'&&blocks.includes('font'))issues.push({message,start:index,end:index+marker[0].length,line:text.slice(0,index).split('\n').length});blocks.push(name)}
+    else{if(name==='font'&&blocks.includes('font'))issues.push({message,severity:'error',start:index,end:index+marker[0].length,line:text.slice(0,index).split('\n').length});blocks.push(name)}
     index+=marker[0].length-1;continue;
    }
   }
@@ -874,7 +877,7 @@ function nestedFontWarnings(text){
   if(searchable[index]!=='{')continue;
   const header=searchable.slice(index).match(/^\{([a-z]+)(?::[^|{}\n]*)?\|/i);
   const name=header?.[1].toLowerCase(),literal=stack.some(item=>item.literal)||name==='noparse';
-  if(name==='font'&&!literal&&(blocks.includes('font')||stack.some(item=>item.name==='font'&&!item.literal)))issues.push({message,start:index,end:index+header[0].length,line:text.slice(0,index).split('\n').length});
+  if(name==='font'&&!literal&&(blocks.includes('font')||stack.some(item=>item.name==='font'&&!item.literal)))issues.push({message,severity:'error',start:index,end:index+header[0].length,line:text.slice(0,index).split('\n').length});
   stack.push({name,literal});
  }
  return issues;
@@ -885,7 +888,7 @@ function macroWarnings(text){
 }
 function blockMacroWarnings(text){
  const searchable=warningSource(text,true),stack=[],issues=[];
- const report=(message,start,end,priority=0)=>issues.push({message,start,end,line:text.slice(0,start).split('\n').length,priority});
+ const report=(message,start,end,priority=0)=>issues.push({message,severity:'error',start,end,line:text.slice(0,start).split('\n').length,priority});
  for(const match of searchable.matchAll(/^[ \t]*(?:>[ \t]*)*(:{2,}[^\n]*)/gm)){
   const marker=match[1].trim(),start=match.index+match[0].indexOf(match[1]),end=start+marker.length;
   if(marker===':::'){
@@ -932,10 +935,10 @@ function warningSource(text,mixed){
 }
 function locatedWarnings(text,mixed,compiled){
  const searchable=warningSource(text,mixed),records=[];
- const add=(message,start,end)=>{const line=text.slice(0,start).split('\n').length;if(!records.some(item=>item.message===message&&item.start===start))records.push({message,start,end,line})};
+ const add=(message,start,end,severity='error')=>{const line=text.slice(0,start).split('\n').length;if(!records.some(item=>item.message===message&&item.start===start))records.push({message,severity,start,end,line})};
  const contentIssues=tagContentWarnings(compiled),contentMessages=new Set(contentIssues.map(issue=>issue.message));
  for(const issue of contentIssues){
-  if(!mixed){add(issue.message,issue.start,issue.end);continue}
+  if(!mixed){add(issue.message,issue.start,issue.end,issue.severity);continue}
   const aliases={url:'link',img:'(?:img|image)',u:'(?:u|underline)'},name=aliases[issue.tag]||issue.tag;
   const shorthand={big:'|^[ \\t]*#[ \\t]+',heading:'|^[ \\t]*#{1,6}[ \\t]+',b:'|\\*\\*|__',i:'|\\*|_',s:'|~~',u:'|\\+\\+',url:'|\\[(?=[^\\]\\n]*\\]\\(https?:)'};
   const candidates=[...searchable.matchAll(new RegExp('\\{'+name+'(?=[:|}])[^|}\\n]*(?:\\||\\})|^[ \\t]*:::'+name+'(?=[ \\t]|$)[^\\n]*'+(shorthand[issue.tag]||''),'gmi'))];
@@ -953,15 +956,15 @@ function locatedWarnings(text,mixed,compiled){
    const opening=probe.lastIndexOf('[',position);
    if(opening===issue.start&&new RegExp('^\\['+issue.tag+'(?:=[^\\]]*)?\\]$','i').test(probe.slice(opening,position))){
     const label=issue.message.startsWith('Formatting inside link labels')&&text.slice(candidate.index).match(/^\[([^\]\n]*)\]\(https?:\/\/[^\s)]+\)/i);
-    if(label)add(issue.message,candidate.index+1,candidate.index+1+label[1].length);
-    else add(issue.message,candidate.index,candidate.index+candidate[0].length);
+    if(label)add(issue.message,candidate.index+1,candidate.index+1+label[1].length,issue.severity);
+    else add(issue.message,candidate.index,candidate.index+candidate[0].length,issue.severity);
     break;
    }
   }
  }
- const messages=[...countWarnings(compiled),...colorWarnings(text,mixed),...(mixed?macroWarnings(text).filter(message=>!message.includes('block macro')&&!message.startsWith('Nested font macros')):[])];
+ const messages=[...compilerWarnings(compiled),...colorWarnings(text,mixed).map(message=>({message,severity:'warning'})),...(mixed?macroWarnings(text).filter(message=>!message.includes('block macro')&&!message.startsWith('Nested font macros')).map(message=>({message,severity:'error'})):[])];
  if(mixed)records.push(...blockMacroWarnings(text),...nestedFontWarnings(text));
- for(const message of messages){
+ for(const {message,severity} of messages){
   if(contentMessages.has(message))continue;
   let matches=[];
   if(message.startsWith('Color ')){
@@ -978,7 +981,7 @@ function locatedWarnings(text,mixed,compiled){
    const tag=message.match(/\[(\/?[a-z0-9_*-]+)\]/i)?.[1];
    if(tag)matches=[...searchable.matchAll(/\[(\/?[a-z][a-z0-9_-]*|\*)(?:=[^\]\n]*)?\]/gi)].filter(m=>m[1].toLowerCase()===tag.toLowerCase());
   }
-  for(const match of matches)add(message,match.index,match.index+match[0].length);
+  for(const match of matches)add(message,match.index,match.index+match[0].length,severity);
  }
  const priority=issue=>issue.priority??(/^(?:Invalid|Malformed|Unknown|Unclosed inline|Color )/.test(issue.message)?0:1);
  return records.sort((a,b)=>priority(a)-priority(b)||a.start-b.start);
@@ -995,7 +998,8 @@ function updateWarnings(problems){
  count.textContent=problems.length?'\u26a0 '+problems.length+' potential issue'+(problems.length===1?'':'s'):'No obvious issues';
  count.title=problems.length?'Show compiler warnings':'';
  details.classList.toggle('has-issues',problems.length>0);
- list.replaceChildren(...problems.map(problem=>{const item=document.createElement('li');if(typeof problem==='string'){item.textContent=problem;return item}const button=document.createElement('button');button.type='button';button.textContent='Line '+problem.line+': '+problem.message;button.addEventListener('click',()=>jumpToWarning(problem));item.appendChild(button);return item}));
+ details.dataset.severity=problems.some(problem=>problem.severity==='error')?'error':'warning';
+ list.replaceChildren(...problems.map(problem=>{const item=document.createElement('li');item.dataset.severity=problem.severity||'warning';if(typeof problem==='string'){item.textContent=problem;return item}const button=document.createElement('button');button.type='button';button.textContent='Line '+problem.line+': '+problem.message;button.addEventListener('click',()=>jumpToWarning(problem));item.appendChild(button);return item}));
  if(!problems.length)details.open=false;
 }
 document.addEventListener('folio-images-changed',()=>refresh());

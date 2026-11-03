@@ -40,3 +40,8 @@ controller.show(problem,{left:10,top:20,bottom:40});source.value='changed';appli
 controller.popup.querySelector('button').click();
 assert.equal(applied,null,'Do not apply stale fixes');
 console.log('Diagnostic guidance, popup, and quick fix checks passed');
+
+controller.show({...problem,severity:'error'},{left:10,top:20,bottom:40});
+assert.equal(controller.popup.dataset.severity,'error');
+controller.show({...problem,severity:'warning'},{left:10,top:20,bottom:40});
+assert.equal(controller.popup.dataset.severity,'warning');

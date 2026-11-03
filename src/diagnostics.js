@@ -100,9 +100,10 @@
     function show(problem, rect) {
       clearTimeout(showTimer); clearTimeout(hideTimer);
       current = problem;
+      popup.dataset.severity = problem.severity;
       const snapshot = source.value, advice = guidance(problem, snapshot, getConfig());
       const palette = getComputedStyle(source.closest('.editor-shell'));
-      for (const name of ['--editor-bg', '--editor-text', '--editor-warning']) popup.style.setProperty(name, palette.getPropertyValue(name));
+      for (const name of ['--editor-bg', '--editor-text', '--editor-warning', '--editor-compatibility-warning']) popup.style.setProperty(name, palette.getPropertyValue(name));
       const heading = document.createElement('strong'); heading.textContent = 'Warning · Line ' + problem.line;
       const message = document.createElement('p'); message.textContent = problem.message;
       const help = document.createElement('p'); help.className = 'diagnostic-help'; help.textContent = advice.help;

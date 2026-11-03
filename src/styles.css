@@ -170,3 +170,14 @@
 
 .custom-css-tooltip{position:absolute;bottom:calc(100% + 9px);right:0;width:min(310px,75vw);padding:10px 12px;border:1px solid var(--line);border-radius:8px;background:var(--surface);color:var(--text);font-size:12px;font-weight:400;line-height:1.5;white-space:normal;box-shadow:0 5px 18px #0003;z-index:20;visibility:hidden;opacity:0;pointer-events:none}
 .preview-css-menu:not([open]) summary:hover .custom-css-tooltip,.preview-css-menu:not([open]) summary:focus-visible .custom-css-tooltip{visibility:visible;opacity:1}
+
+/* Consume compiler severity without interpreting diagnostic messages. */
+.editor-shell{--editor-compatibility-warning:#e8a640}
+.editor-shell .syntax-warning[data-severity="warning"]{text-decoration-color:var(--editor-compatibility-warning)}
+#warningList li[data-severity="error"]{color:#ffb0b0}
+#warningList li[data-severity="warning"]{color:#ffd078}
+#warningDetails[data-severity="error"].has-issues #warningCount{background:#ffb0b0;color:#401010;box-shadow:0 0 0 1px #d65a5a}
+.source-diagnostic[data-severity="warning"]{--editor-warning:var(--editor-compatibility-warning,#e8a640)!important}
+.editor-shell[data-editor-theme="paper"]{--editor-compatibility-warning:#986900}
+html[data-app-theme="paper"] #warningList li[data-severity="error"]{color:#a32626}
+html[data-app-theme="paper"] #warningList li[data-severity="warning"]{color:#896000}
