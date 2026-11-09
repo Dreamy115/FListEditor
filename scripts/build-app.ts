@@ -3,6 +3,7 @@ import { build } from 'esbuild';
 import { execFileSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import path from 'node:path';
+import { readFile } from 'node:fs/promises';
 
 const root = fileURLToPath(new URL('..', import.meta.url));
 prepareRenderer();
@@ -41,7 +42,17 @@ await build({
     ].map((name) => [name, 'src/' + name + '.ts']),
   ]),
   outdir: 'build',
-  loader: { '.md': 'text' },
+  plugins: [
+    {
+      name: 'normalize-markdown-line-endings',
+      setup(build) {
+        build.onLoad({ filter: /\.md$/ }, async ({ path }) => ({
+          contents: (await readFile(path, 'utf8')).replace(/\r\n?/g, '\n'),
+          loader: 'text',
+        }));
+      },
+    },
+  ],
   bundle: true,
   format: 'iife',
   target: 'es2022',
