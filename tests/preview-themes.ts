@@ -61,19 +61,14 @@ import path from 'node:path';
     assert.equal(await page.locator('#theme').inputValue(), 'custom-css');
     assert.equal(await page.locator('#previewCssStatus').textContent(), 'my-theme.css');
     const png = await page.evaluate(async () => {
-      const screenshot = (window as any).FolioScreenshot;
-      const blob = await screenshot.capture(
-        document.querySelector<HTMLElement>('#previewPage')!,
-      );
+      const screenshot = globalThis.FolioScreenshot;
+      const blob = await screenshot.capture(document.querySelector<HTMLElement>('#previewPage')!);
       return { size: blob.size, type: blob.type };
     });
     assert.equal(png.type, 'image/png');
     assert.ok(png.size > 1000);
     const html = await page.evaluate(() =>
-      (window as any).FolioScreenshot.html(
-        document.querySelector<HTMLElement>('#previewPage')!,
-        'Test',
-      ),
+      globalThis.FolioScreenshot.html(document.querySelector<HTMLElement>('#previewPage')!, 'Test'),
     );
     assert.ok(html.includes('rgb(10, 20, 30)'));
     await page.click('#previewCssMenu summary');

@@ -346,7 +346,7 @@ Text inside triple backticks.
 
 **Characters**
 - Drag entries in **My characters** above or below another entry to rearrange them. The order saves locally and is included in full-app backups. With a character entry focused, **Alt+Up / Alt+Down** moves it one position.
-- **New character:** creates a blank document. Edit the header field to rename it.
+- **New character:** creates a blank document. Edit the header field to rename it. Keep up to 80 characters; delete one before creating or cloning another when at the limit.
 - Click a sidebar entry to switch documents. Each retains its source, mode, cursor, session undo history, preview scroll, and section states.
 - **Clone:** duplicates the current character or template, including current edits, and opens an independent copy with a unique name.
 - **Delete:** removes the current character after confirmation.

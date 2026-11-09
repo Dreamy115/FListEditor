@@ -364,6 +364,10 @@ export function initializeTemplateEditors() {
 
   $('newFromTemplate').addEventListener('click', () => {
     if (!state.templateSession) return;
+    if (state.data.drafts.length >= 80) {
+      toast('Maximum 80 characters. Delete one before creating another.');
+      return;
+    }
     const name = ('New from ' + ($('profileName').value.trim() || 'template')).slice(0, 100);
     const character = {
       id: makeId(),

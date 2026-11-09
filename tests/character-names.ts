@@ -109,3 +109,41 @@ input.value = 'Template';
 handlers.input();
 assert.equal(data.drafts[0].name, 'Template');
 console.log('Character name commit timing checks passed');
+
+// Exercise the bundled handlers at the storage boundary: a rejected creation
+// must preserve every existing character after a complete application reload.
+const { boot } = await import('./helpers/browser.ts');
+const { readFileSync } = await import('node:fs');
+const appCode = readFileSync('build/app.js', 'utf8');
+const initial = boot(appCode);
+const stored = initial.store.get('folio-f-list-studio-v1')!;
+const seed = JSON.parse(stored) as import('../src/app/types').AppData;
+seed.drafts = Array.from({ length: 79 }, (_, index) => ({
+  id: 'limit-' + index,
+  name: 'Character ' + index,
+  content: 'Saved body ' + index,
+  mixed: true,
+}));
+seed.active = seed.drafts[0].id;
+for (const fromTemplate of [false, true]) {
+  const browser = boot(appCode, seed);
+  if (fromTemplate) {
+    browser.click('newTemplate');
+    browser.input('Template body');
+  }
+  browser.click(fromTemplate ? 'newFromTemplate' : 'newDraft');
+  assert.equal(browser.snapshot().names.length, 80, 'Creation at 79 reaches the limit');
+  if (fromTemplate) browser.click('newTemplate');
+  const before = browser.store.get('folio-f-list-studio-v1');
+  const sourceBefore = browser.source.value;
+  browser.click(fromTemplate ? 'newFromTemplate' : 'newDraft');
+  assert.equal(browser.snapshot().names.length, 80, 'Creation at 80 is rejected');
+  assert.match(browser.$('toast').textContent, /Maximum 80 characters/);
+  assert.equal(browser.source.value, sourceBefore, 'Rejection preserves the editor');
+  assert.equal(browser.store.get('folio-f-list-studio-v1'), before);
+  const reopened = boot(appCode, JSON.parse(before!));
+  assert.equal(reopened.snapshot().names.length, 80);
+  for (const draft of seed.drafts)
+    assert.ok(reopened.snapshot().names.includes(draft.name), 'All original characters survive');
+}
+console.log('Character creation limit and reload preservation checks passed');
