@@ -26,9 +26,7 @@ jobs:
         run: npm ci
       - name: Check source formatting
         run: npm run format:check
-      - name: Build standalone HTML
-        run: npm run build
-      - name: Run regression and behavior parity checks
+      - name: Build, type-check, and run regression checks
         run: npm test
       - name: Prepare public site
         if: github.event_name != 'pull_request'

@@ -2,21 +2,27 @@
   "name": "folio-profile-studio",
   "private": true,
   "scripts": {
-    "build:renderer": "node scripts/build-renderer.cjs",
-    "test": "npm run typecheck && node tests/whitespace.cjs && node tests/renderer.cjs && node tests/bbcode-audit.cjs && node tests/syntax.cjs && node tests/flist-colors.cjs && node tests/toolbar.cjs && node tests/templates.cjs && node tests/editor-themes.cjs && node tests/preview-state.cjs && node tests/warnings.cjs && node tests/diagnostics.cjs && node tests/app-data.cjs && node tests/import.cjs && node tests/character-names.cjs && node tests/character-order.cjs && node tests/fonts.cjs && node tests/literals.cjs && node tests/entities.cjs && node tests/undo-preference.cjs && node tests/bbcode-whitespace.cjs && node tests/move-lines.cjs && node tests/refactor-parity.cjs && node tests/build-output.cjs",
+    "build:renderer": "node --import tsx scripts/build-renderer.ts",
+    "test": "npm run build && node --import tsx scripts/test.ts",
     "build": "python build.py",
-    "build:app": "node scripts/build-app.mjs",
-    "typecheck": "tsc --noEmit",
-    "format": "prettier --write \"src/**/*.ts\" scripts/build-app.mjs",
-    "format:check": "prettier --check \"src/**/*.ts\" scripts/build-app.mjs"
+    "build:app": "node --import tsx scripts/build-app.ts",
+    "typecheck": "node --import tsx scripts/build-renderer.ts && tsc --noEmit && tsc -p tsconfig.tools.json",
+    "format": "prettier --write \"src/**/*.ts\" \"scripts/**/*.ts\" \"tests/**/*.ts\"",
+    "format:check": "prettier --check \"src/**/*.ts\" \"scripts/**/*.ts\" \"tests/**/*.ts\"",
+    "test:browser": "npm run build && node --import tsx scripts/test.ts --browser",
+    "test:all": "npm run build && node --import tsx scripts/test.ts --all"
   },
   "devDependencies": {
+    "@types/node": "22.20.5",
     "esbuild": "0.28.2",
     "linkedom": "0.18.12",
+    "playwright": "1.65.0",
     "prettier": "3.9.10",
+    "tsx": "4.23.15",
     "typescript": "5.9.3"
   },
   "engines": {
     "node": ">=22"
-  }
+  },
+  "type": "module"
 }

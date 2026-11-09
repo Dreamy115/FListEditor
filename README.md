@@ -14,7 +14,7 @@ npm test
 
 Open `dist/Folio-Profile-Studio.html` directly in your browser. It contains all application scripts, CSS and bundled image assets. No Node.js installation is required to use the built file.
 
-Edit application logic in the TypeScript modules under `src/`, starting at `src/main.ts`. The folders separate formatting/conversion, editor tools, character management, templates, preview controls, and application state/import/export. See [the source architecture and audit](docs/code-audit.md) for the module map and validation details. Edit the page structure in `index.html`, styles in `src/*.css`, and built-in prompts in `src/templates.js`. The vendored renderer remains documented in `vendor/horizon/README.md`.
+Edit application logic in the TypeScript modules under `src/`, starting at `src/main.ts`. The folders separate formatting/conversion, editor tools, character management, templates, preview controls, and application state/import/export. See [the source architecture and audit](docs/code-audit.md) for the module map and validation details. Edit the page structure in `index.html`, styles in `src/*.css`, and built-in prompts in `src/templates.ts`. The vendored renderer remains documented in `vendor/horizon/README.md`.
 
 `index.html` is the development shell and loads the generated `build/app.js`; build after changing TypeScript. Do not edit the generated JavaScript. `npm run format` formats the TypeScript sources, and `npm run format:check` verifies their formatting.
 
@@ -22,13 +22,13 @@ For a local server, run `python -m http.server 8000` from this directory and vis
 
 ## Standalone build
 
-New installations open with the welcome profile authored in `docs/feature-showcase.md`. After editing that file, run `python build.py` to refresh both the checked-in browser asset `src/feature-showcase.js` and the standalone editor. Existing saved characters are retained.
+New installations open with the welcome profile authored in `docs/feature-showcase.md`. After editing that file, run `npm run build` to refresh the standalone editor. `src/feature-showcase.ts` imports this Markdown directly; no generated source file is checked in. Existing saved characters are retained.
 
 In VS Code, press **Ctrl+Shift+B** to build. Use **Terminal → Run Task → Folio: Build and open locally** to build, start a localhost server, and open the standalone editor in your default browser. Stop the preview with **Terminal → Terminate Task**. After edits, build again and refresh the browser.
 
 These tasks require Node.js and `python` on your PATH, with `npm ci` run once first. You can also run `python serve.py --open` after building; use `--port 8001` to choose another port (default: 8000).
 
-Run `python build.py`. The result is `dist/Folio-Profile-Studio.html`, which embeds the CSS and JavaScript and can be opened directly. The build type-checks TypeScript before bundling; build failures stop HTML generation. Make changes in the source files, then rebuild rather than editing the generated copy.
+Run `python build.py`. The result is `dist/Folio-Profile-Studio.html`, which embeds the CSS and JavaScript and can be opened directly. The build type-checks application code, build scripts, and TypeScript tests before bundling; build failures stop HTML generation. Make changes in the source files, then rebuild rather than editing the generated copy.
 
 ## Start a repository
 
@@ -143,13 +143,24 @@ between browser origins. Unsaved template edits should be saved first.
 
 ## Package provenance
 
-Run `npm ci`, `npm run build`, and `npm test` for type checks, conversion and renderer regressions, startup/editor workflow parity, and standalone artifact validation. Run `npm run format:check` to check source formatting. The committed lockfile makes local and CI installations reproducible.
+Run `npm ci` and `npm test` for a build, type checks, conversion and renderer regressions, startup/editor workflow parity, and standalone artifact validation. Tests and build scripts execute directly through the `tsx` runtime (`node --import tsx`), with no emitted test JavaScript. Run `npm run format:check` to check source formatting. The committed lockfile makes local and CI installations reproducible.
 
-Refresh the offline HTML5 entity table in `src/formatting/named-references.json` with `python scripts/build-entities.py` when needed. Regenerate the checked-in renderer with `npm run build:renderer` after editing its adapter or vendored sources. Ordinary builds require npm dependencies but do not rebuild the vendored renderer.
+Refresh the offline HTML5 entity table in `src/formatting/named-references.json` with `python scripts/build-entities.py` when needed. Every build adapts the vendored renderer sources into ignored `build/horizon.ts`, type-checks them, and bundles `build/horizon-renderer.js`. `npm run build:renderer` only prepares that intermediate. The vendored files remain unchanged. All owned application JavaScript is generated under `build/` from `src/**/*.ts` and inlined into the standalone HTML.
 
 Pull requests run formatting, build, and regression checks. Pushes to `main` run those same checks and deploy the resulting **single HTML file** to GitHub Pages.
 
-On Windows with Microsoft Edge installed, run `python tests/check_template_editor.py` for the full template editing lifecycle at desktop, tablet, and mobile widths.
+The test commands discover the TypeScript test programs automatically:
+
+| Command | Coverage |
+| --- | --- |
+| `npm test` | 23 DOM, conversion, state, and build/parity programs; includes the build |
+| `npm run test:browser` | Six existing Playwright browser programs; includes the build |
+| `npm run test:all` | All 29 TypeScript test programs; includes the build |
+| `npm run typecheck` | Application, test, and build-script type checks without JavaScript output |
+
+For browser checks, install Chromium once with `npx playwright install chromium` (on Linux, `npx playwright install --with-deps chromium` also installs system dependencies). Browser checks use Chromium by default; set `PLAYWRIGHT_CHANNEL=msedge` to use an installed Edge instead. Existing Windows/Python fixture launchers remain available as manual visual checks.
+
+In VS Code, choose **Terminal → Run Task → Folio: Test all** or **Tasks: Run Test Task**. The default test task runs `npm run test:all`, reports failures, and uses the TypeScript problem matcher. To run one test directly after a build, use `node --import tsx tests/toolbar.ts`.
 
 Source extracted from the latest supplied `Folio-Profile-Studio-2026-10-31.html`. The editor has since gained whitespace-aware conversion, local preview tasks, and a Horizon-based renderer.
 

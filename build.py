@@ -1,30 +1,14 @@
 """Type-check and bundle TypeScript, then embed assets in one standalone HTML."""
 from pathlib import Path
 import base64
-import json
 import subprocess
+import re
 root = Path(__file__).resolve().parent
-subprocess.run(["node", str(root / "scripts/build-app.mjs")], cwd=root, check=True)
-# Keep the browser-ready welcome profile in sync with its editable Markdown source.
-showcase = '/* Generated from docs/feature-showcase.md by build.py. */\nglobalThis.FolioShowcase = ' + json.dumps((root / 'docs/feature-showcase.md').read_text(encoding='utf-8-sig'), ensure_ascii=False) + ';\n'
-(root / 'src/feature-showcase.js').write_text(showcase, encoding='utf-8')
+subprocess.run(["node", "--import", "tsx", str(root / "scripts/build-app.ts")], cwd=root, check=True)
 page = (root / "index.html").read_text(encoding="utf-8")
 css = (root / "src/styles.css").read_text(encoding="utf-8")
-templates = (root / "src/templates.js").read_text(encoding="utf-8")
-js = (root / "build/app.js").read_text(encoding="utf-8")
-renderer = (root / "src/horizon-renderer.js").read_text(encoding="utf-8")
-syntax = (root / "src/syntax.js").read_text(encoding="utf-8")
-diagnostics = (root / "src/diagnostics.js").read_text(encoding="utf-8")
-preview_state = (root / "src/preview-state.js").read_text(encoding="utf-8")
 renderer_css = (root / "src/horizon-preview.css").read_text(encoding="utf-8")
 page = page.replace('<link rel="stylesheet" href="src/styles.css">', '<style>' + css + '</style>', 1)
-page = page.replace('<script src="src/templates.js"></script>', '<script>' + templates + '</script>', 1)
-page = page.replace('<script src="src/feature-showcase.js"></script>', '<script>' + showcase + '</script>', 1)
-page = page.replace('<script src="build/app.js"></script>', '<script>' + js + '</script>', 1)
-page = page.replace('<script src="src/horizon-renderer.js"></script>', '<script>' + renderer + '</script>', 1)
-page = page.replace('<script src="src/syntax.js"></script>', '<script>' + syntax + '</script>', 1)
-page = page.replace('<script src="src/diagnostics.js"></script>', '<script>' + diagnostics + '</script>', 1)
-page = page.replace('<script src="src/preview-state.js"></script>', '<script>' + preview_state + '</script>', 1)
 page = page.replace('<link rel="stylesheet" href="src/horizon-preview.css">', '<style>' + renderer_css + '</style>', 1)
 theme_css = (root / "src/flist-themes.css").read_text(encoding="utf-8")
 for asset in (root / "src/assets/flist").glob("*.png"):
@@ -35,9 +19,10 @@ page = page.replace('<link rel="stylesheet" href="src/editor-themes.css">', '<st
 app_css = (root / "src/app-themes.css").read_text(encoding="utf-8")
 page = page.replace('<link rel="stylesheet" href="src/app-themes.css">', '<style>' + app_css + '</style>', 1)
 output = root / "dist/Folio-Profile-Studio.html"
-for script_path in ("vendor/html2canvas/html2canvas.min.js", "src/screenshot.js", "src/local-images.js", "src/preview-themes.js"):
-    script = (root / script_path).read_text(encoding="utf-8")
-    page = page.replace('<script src="' + script_path + '"></script>', '<script>' + script + '</script>', 1)
+def inline_script(match):
+    script = (root / match.group(1)).read_text(encoding="utf-8")
+    return '<script>' + script + '</script>'
+page = re.sub(r'<script src="([^"]+)"></script>', inline_script, page)
 output.parent.mkdir(exist_ok=True)
 output.write_text(page, encoding="utf-8")
 print(output)

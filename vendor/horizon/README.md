@@ -3,10 +3,9 @@
 Upstream: https://github.com/Fchat-Horizon/Horizon
 Revision: `a832077900e5c5b4ef9a12af136e8af773be8302`.
 
-The files in `bbcode/` are unmodified upstream sources. They are compiled into
-`src/horizon-renderer.js` with TypeScript by `scripts/build-renderer.cjs`.
-Run `npm ci` then `npm run build:renderer` after changing the adapter or sources.
-The checked-in generated renderer lets normal Python builds run without npm.
+The files in `bbcode/` are unmodified upstream TypeScript sources. Every application build runs `scripts/build-renderer.ts` to prepare an ignored `build/horizon.ts` intermediate with Folio's browser-service imports. The build then type-checks it and bundles `src/horizon-renderer.ts` into `build/horizon-renderer.js`, which is embedded in the standalone HTML.
+
+The browser services live in `src/horizon-adapter.ts`. Run `npm ci` once and `npm run build` after changing the adapter or vendored sources. `npm run build:renderer` prepares only the intermediate. No generated JavaScript is checked into `src/`.
 
 Horizon is licensed under MPL-2.0; see LICENSE.md. The original F-Chat code's
 MIT notice is retained in LICENSE.old (Copyright 2018–2026 Dragonfruit Ventures,

@@ -47,6 +47,11 @@ declare var FolioPreview: {
   ): void;
 };
 declare var FolioDiagnostics: {
+  guidance(
+    problem: FolioDiagnostic,
+    text: string,
+    config: FolioDiagnosticConfig,
+  ): { help: string; example: string; fix: (FolioFix & { label: string }) | null };
   attach(options: {
     source: HTMLTextAreaElement;
     layer: HTMLElement;
@@ -61,7 +66,7 @@ declare var FolioScreenshot: {
 declare var FolioLocalImages: {
   readonly revision: number;
   ready: Promise<void>;
-  get(id: string): { url: string; alias: string } | undefined;
+  get(id: string): { url: string; alias: string; kind: string } | undefined;
   pick(): Promise<string | null>;
   clear(): Promise<void>;
 };
@@ -74,4 +79,19 @@ declare var FolioTemplates: Record<string, string>;
 declare var FolioShowcase: string;
 interface HTMLElement {
   activeSyntaxRange?: { start: number; end: number };
+}
+
+interface ComponentElement extends HTMLElement {
+  cleanup?(): void;
+}
+interface HTMLElement {
+  cleanup?(): void;
+}
+declare var html2canvas: (
+  element: HTMLElement,
+  options: Record<string, unknown>,
+) => Promise<HTMLCanvasElement>;
+declare module '*.md' {
+  const text: string;
+  export default text;
 }

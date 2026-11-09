@@ -35,7 +35,7 @@ The application controller was `src/app.js` (1,890 lines, approximately 173 KB),
 | `src/templates/` | Reusable template sessions, save/clone/delete, target selection and application |
 | `src/browser-globals.d.ts` | Contracts for the existing companion scripts |
 
-The existing renderer, syntax painter, diagnostic popup, image mapping, screenshot and preview companion scripts keep their established browser APIs. Vendored code is unchanged. The HTML still loads these scripts before the app bundle.
+The renderer, syntax painter, diagnostic popup, image mapping, screenshot, catalogue and preview companions are now TypeScript. They retain their established browser APIs. The build emits their JavaScript under `build/`, and the HTML keeps their load order before the app bundle. Vendored code is unchanged.
 
 UI feature modules coordinate through imported functions and shared state. Some function-only import cycles remain because character/template switching, preview refresh and undo interact; cross-feature UI calls run after ordered initialization begins. DOM lookups and pure preference parsing are independent modules to avoid initialization cycles. TypeScript checks the public conversion functions, shared state and browser contracts; `strict` remains disabled for this incremental migration, so some parser internals and JSON validation paths retain inferred `any` types. Tightening these types is follow-up work, not a claim of runtime JSON safety.
 
@@ -43,7 +43,7 @@ UI feature modules coordinate through imported functions and shared state. Some 
 
 No profile syntax, storage keys, defaults, source transformations, controls or persistence formats were intentionally changed. In particular, this refactor preserves existing behavior even where old assertions or documentation were stale:
 
-- Public compilation converts physical line-edge spaces to nonbreaking spaces. Old whitespace tests asserted source-level spaces against that encoded boundary; those checks now target `markdownToBBSource`, while `bbcode-whitespace.cjs` covers the public encoding.
+- Public compilation converts physical line-edge spaces to nonbreaking spaces. Old whitespace tests asserted source-level spaces against that encoded boundary; those checks now target `markdownToBBSource`, while `bbcode-whitespace.ts` covers the public encoding.
 - Dash bullets currently compile to literal hyphens. A stale assertion expected an en dash. The expectation now records current output; the compiler is unchanged.
 - The template sidebar test lacked a drag-handler stub and already failed on the baseline. Its test host now supplies that collaborator.
 - Stored-draft loading and full-backup validation are separate code paths with different validation rules. A null draft in saved storage can throw during the initial filter and fall back to defaults through the existing catch. That behavior is preserved and should receive a separate data-recovery change.
@@ -65,4 +65,12 @@ npm run build
 npm test
 ```
 
-The build runs TypeScript checking, bundles ES modules with esbuild into readable `build/app.js`, and then embeds the bundle and existing assets into `dist/Folio-Profile-Studio.html`. Generated build directories are ignored. Python and VS Code entry points continue to use `build.py`, which invokes the same TypeScript pipeline.
+The build runs TypeScript checking, bundles all application TypeScript entries with esbuild into readable `build/*.js`, and then embeds the bundles and existing assets into `dist/Folio-Profile-Studio.html`. Generated build directories are ignored. Python and VS Code entry points continue to use `build.py`, which invokes the same TypeScript pipeline.
+
+## Follow-up: complete source and test migration
+
+All owned `src/*.js` files are now TypeScript, including the Horizon bridge and adapter. The generated Horizon implementation is an ignored, type-checked TypeScript intermediate derived from the unmodified vendor files. The welcome-profile entry imports Markdown directly. No generated JavaScript remains in `src/`.
+
+All `.cjs` tests and their helpers are now `.ts` ES modules. TypeScript checks both the application and a separate tools/test project. Build scripts and tests run with `node --import tsx`; only browser application entries are emitted for inclusion in HTML. Isolated VM tests still evaluate compiled application code because their DOM/state stubs live in separate VM contexts. The fixture hashes and expected behavior remain unchanged.
+
+`scripts/test.ts` runs each test in a separate process, discovers added TypeScript programs automatically, aggregates failures, and supports DOM-only, browser-only, or all-suite execution. `Folio: Test all` is the default VS Code test task. The six Playwright hosts now use cross-platform Chromium by default instead of requiring Windows Edge; the browser payload `.browser.js` files and Windows/Python visual fixture launchers are retained.

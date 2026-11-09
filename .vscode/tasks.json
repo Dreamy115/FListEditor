@@ -5,29 +5,68 @@
       "label": "Folio: Build",
       "type": "process",
       "command": "python",
-      "args": ["build.py"],
-      "options": { "cwd": "${workspaceFolder}" },
-      "group": { "kind": "build", "isDefault": true },
+      "args": [
+        "build.py"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "group": {
+        "kind": "build",
+        "isDefault": true
+      },
       "problemMatcher": []
     },
     {
       "label": "Folio: Build and open locally",
       "type": "process",
       "command": "python",
-      "args": ["-u", "serve.py", "--open"],
-      "options": { "cwd": "${workspaceFolder}" },
+      "args": [
+        "-u",
+        "serve.py",
+        "--open"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
       "dependsOn": "Folio: Build",
       "isBackground": true,
       "problemMatcher": {
-        "pattern": { "regexp": "^$" },
+        "pattern": {
+          "regexp": "^$"
+        },
         "background": {
           "activeOnStart": true,
           "beginsPattern": "^Starting Folio preview",
           "endsPattern": "^Folio preview ready:"
         }
       },
-      "presentation": { "reveal": "always", "panel": "dedicated" },
-      "runOptions": { "instanceLimit": 1 }
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated"
+      },
+      "runOptions": {
+        "instanceLimit": 1
+      }
+    },
+    {
+      "label": "Folio: Test all",
+      "type": "npm",
+      "script": "test:all",
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "group": {
+        "kind": "test",
+        "isDefault": true
+      },
+      "problemMatcher": [
+        "$tsc"
+      ],
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated"
+      }
     }
   ]
 }

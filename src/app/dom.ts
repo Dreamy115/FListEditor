@@ -85,7 +85,7 @@ interface AppElements {
   warningDetails: HTMLDetailsElement;
   warningCount: HTMLElement;
   warningList: HTMLUListElement;
-  inlineImagePicker: HTMLElement;
+  inlineImagePicker: HTMLDialogElement;
   cancelInlineImage: HTMLButtonElement;
   manageInlineImageMappings: HTMLButtonElement;
   mappedImageChoices: HTMLDivElement;
@@ -93,7 +93,7 @@ interface AppElements {
   customInlineImageId: HTMLInputElement;
   customInlineImageHelp: HTMLElement;
   inlineImagePickerStatus: HTMLElement;
-  localImagePanel: HTMLElement;
+  localImagePanel: HTMLDialogElement;
   closeImageMappings: HTMLButtonElement;
   localImageHelp: HTMLElement;
   localImageIdHelp: HTMLDivElement;
