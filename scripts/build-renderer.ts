@@ -19,7 +19,7 @@ export function prepareRenderer(): void {
       "import { Utils, InlineDisplayMode, normalizeCharacterName, core, setImmediate, IconView, UrlTagView } from '../src/horizon-adapter';\n" +
       "import type { InlineImage, ComponentView as Vue } from '../src/horizon-adapter';\n" +
       sources.join('\n') +
-      '\nexport {StandardBBCodeParser, BBCodeTextTag, analyzeUrlTag};\n',
+      '\nexport {StandardBBCodeParser, BBCodeTextTag, analyzeUrlTag, truncateBBCode};\n',
   );
 }
 if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url))

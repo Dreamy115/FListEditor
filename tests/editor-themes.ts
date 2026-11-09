@@ -10,7 +10,7 @@ const palettes = [...css.matchAll(/\.editor-shell(?:\[data-editor-theme="([^"]+)
     ),
   }))
   .filter((p) => p.vars.bg);
-function luminance(hex) {
+function luminance(hex: string) {
   const rgb = [1, 3, 5]
     .map((i) => parseInt(hex.slice(i, i + 2), 16) / 255)
     .map((v) => (v <= 0.04045 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4));
@@ -33,7 +33,9 @@ const foregrounds = [
   'escape',
   'entity',
   'warning',
-  ...['block', 'macro', 'tag'].flatMap((kind) => [0, 1, 2, 3, 4].map((depth) => kind + depth)),
+  ...['block', 'macro', 'tag'].flatMap((kind: string) =>
+    [0, 1, 2, 3, 4].map((depth) => kind + depth),
+  ),
 ];
 assert.deepEqual(
   palettes.map((p) => p.name),
@@ -60,10 +62,10 @@ for (const { name, vars } of palettes) {
 console.log('Editor theme palette and contrast checks passed');
 
 // Named source colors must remain legible without borrowing the preview palette.
-function rgb(hex) {
+function rgb(hex: string) {
   return [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16));
 }
-function composite(foreground, background) {
+function composite(foreground: string, background: string) {
   const alpha = foreground.length === 9 ? parseInt(foreground.slice(7), 16) / 255 : 1;
   return (
     '#' +
@@ -76,7 +78,7 @@ function composite(foreground, background) {
       .join('')
   );
 }
-function contrast(a, b) {
+function contrast(a: string, b: string) {
   const x = luminance(a),
     y = luminance(b);
   return (Math.max(x, y) + 0.05) / (Math.min(x, y) + 0.05);

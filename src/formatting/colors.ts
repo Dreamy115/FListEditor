@@ -1,5 +1,5 @@
 // F-List accepts exactly these twelve named colors, not arbitrary CSS hex codes.
-export const presetColors = {
+export const presetColors: Record<string, string> = {
   red: '#f00',
   orange: '#f60',
   yellow: '#ff0',
@@ -16,7 +16,7 @@ export const presetColors = {
 
 export const colorNames = Object.keys(presetColors);
 
-export function colorSafe(param: string) {
+export function colorSafe(param: string | undefined) {
   const name = String(param || '')
     .trim()
     .toLowerCase();
@@ -38,8 +38,8 @@ export function closestPreset(hex: string) {
   let best = null,
     dist = Infinity;
   for (const name of colorNames) {
-    const candidate = hexRGB(presetColors[name]);
-    const d = rgb.reduce((sum, part, i) => sum + Math.pow(part - candidate[i], 2), 0);
+    const candidate = hexRGB(presetColors[name])!;
+    const d = rgb.reduce((sum, part: number, i) => sum + Math.pow(part - candidate[i], 2), 0);
     if (d < dist) {
       dist = d;
       best = name;
@@ -49,7 +49,7 @@ export function closestPreset(hex: string) {
 }
 
 export function resolvedColor(value: string) {
-  return colorSafe(value) || closestPreset(value);
+  return colorSafe(value) || closestPreset(value ?? '');
 }
 
 // Existing drafts may contain old hex colors or arbitrary [color=...] tags.
@@ -86,24 +86,24 @@ export function normalizeColorTags(text: string) {
   return out + text.slice(last);
 }
 
-export function colorWarning(value: string) {
+export function colorWarning(value: string | undefined) {
   if (colorSafe(value)) return null;
   const label = String(value || '').trim() || '(missing value)',
-    preset = closestPreset(value);
+    preset = closestPreset(value ?? '');
   return preset
     ? 'Color ' + label + ' is not supported by F-List profiles; exported as ' + preset
     : 'Color ' + label + ' is not supported by F-List profiles; formatting is stripped on export';
 }
 
 export function colorWarnings(text: string, mixed: boolean = true) {
-  const issues = [];
+  const issues: string[] = [];
   // Literal examples are not color definitions.
   if (!mixed) text = text.replace(/\[noparse\][\s\S]*?(?:\[\/noparse\]|$)/gi, '');
   if (mixed)
     text = text
       .replace(/^\s*```[^\n]*\n[\s\S]*?(?:^\s*```[^\n]*(?:\n|$)|(?![\s\S]))/gm, '')
       .replace(/`[^`\n]+`/g, '');
-  const check = (value) => {
+  const check = (value: string) => {
     const warning = colorWarning(value);
     if (warning) issues.push(warning);
   };

@@ -1,10 +1,27 @@
-interface SyntaxToken {
+/** Lexical span before offsets and delimiter pairing are assigned. */
+interface LexToken {
   text: string;
+  kind: string;
+  marker?: string;
+  color?: string;
+  format?: string;
+  emphasisMarker?: boolean;
+}
+/** Source token offsets refer to the original editor text, never painted fragments. */
+export interface SyntaxToken extends LexToken {
   start: number;
   end: number;
-  kind: string;
   partner?: number;
+  depth?: number;
+  pair?: number;
+  unmatched?: boolean;
+  collapseTitle?: boolean;
 }
+interface OpenDelimiter {
+  name: string;
+  token: SyntaxToken;
+}
+/** Non-editable paint layer metadata; source text remains in the textarea. */
 interface SyntaxElement extends HTMLElement {
   syntaxTokens?: SyntaxToken[];
   syntaxText?: string;
@@ -14,11 +31,11 @@ interface SyntaxElement extends HTMLElement {
 (() => {
   'use strict';
   // Highlight source without parsing it into editable HTML or changing whitespace.
-  function lex(text, mixed) {
+  function lex(text: string, mixed: boolean): LexToken[] {
     const pattern = mixed
       ? /^[ \t]*(`{3,})[^`\n]*(?:\n[\s\S]*?(?:\n[ \t]*\1`*[ \t]*(?=\n|$)|(?![\s\S])))?|\{noparse\|[^}\n]*\}|(`+)(?!`)[^\n]+?\2(?!`)|\\[^\n]|\\$|^[ \t]*>[^\n]*|^[ \t]*:::[^\n]*|^[ \t]*#{1,6}[ \t]+|^[ \t]*(?:-{3,}|\*{3,}|_{3,})[ \t]*$|^[ \t]*(?:>[ \t]?|[-*+][ \t]+|\d+\.[ \t]+)|!?\[[^\]\n]*\]\(https?:\/\/[^\s)]+\)|\[\/?[a-z]+(?:=[^\]\n]*)?\]|&(?:#(?:x[0-9a-f]+|[0-9]+)|[a-z][a-z0-9]+);|\{[a-z]+(?::[^|}\n]*)?(?:\||\})|\}|\*{1,3}[^*\n]+\*{1,3}|__[^_\n]+__|_[^_\n]+_|~~[^~\n]+~~|\+\+[^+\n]+\+\+/gim
       : /\[noparse\][\s\S]*?(?:\[\/noparse\]|(?![\s\S]))|\[\/?[a-z]+(?:=[^\]\n]*)?\]/gi;
-    const tokens = [];
+    const tokens: LexToken[] = [];
     let last = 0;
     for (const match of text.matchAll(pattern)) {
       if (match.index > last) tokens.push({ text: text.slice(last, match.index), kind: '' });
@@ -86,9 +103,9 @@ interface SyntaxElement extends HTMLElement {
     if (last < text.length) tokens.push({ text: text.slice(last), kind: '' });
     return tokens;
   }
-  function tokenize(text, mixed) {
-    const tokens = lex(text, mixed),
-      stacks = { block: [], macro: [], tag: [] };
+  function tokenize(text: string, mixed: boolean) {
+    const tokens: SyntaxToken[] = lex(text, mixed).map((token) => ({ ...token, start: 0, end: 0 }));
+    const stacks: Record<string, OpenDelimiter[]> = { block: [], macro: [], tag: [] };
     let offset = 0;
     for (const token of tokens) {
       token.start = offset;
@@ -136,23 +153,23 @@ interface SyntaxElement extends HTMLElement {
     for (const stack of Object.values(stacks))
       for (const open of stack) open.token.unmatched = true;
     if (!mixed) {
-      const active = { b: 0, i: 0 };
+      const active: Record<string, number> = { b: 0, i: 0 };
       for (const token of tokens) {
         const tag = token.kind === 'tag' && token.text.match(/^\[(\/?)(b|i)\]$/i);
         const name = tag && tag[2].toLowerCase();
         const paired = tag && token.partner !== undefined;
-        if (paired && !tag[1]) active[name]++;
+        if (paired && !tag[1]) active[String(name)]++;
         if (token.kind !== 'tag' && (active.b || active.i))
           token.format = active.b && active.i ? 'bold-italic' : active.b ? 'bold' : 'italic';
-        if (paired && tag[1]) active[name]--;
+        if (paired && tag[1]) active[String(name)]--;
       }
     }
     return tokens;
   }
-  function isEntityTextToken(token) {
+  function isEntityTextToken(token: Pick<LexToken, 'kind'>) {
     return ['', 'entity', 'emphasis'].includes(token.kind);
   }
-  function appendEntityGlyphs(parent, text) {
+  function appendEntityGlyphs(parent: HTMLElement, text: string) {
     let last = 0;
     for (const match of text.matchAll(/[^\x00-\x7f]/gu)) {
       parent.appendChild(document.createTextNode(text.slice(last, match.index)));
@@ -164,7 +181,13 @@ interface SyntaxElement extends HTMLElement {
     }
     parent.appendChild(document.createTextNode(text.slice(last)));
   }
-  function highlight(element, text, mixed, problems, options: { preferLiterals?: boolean } = {}) {
+  function highlight(
+    element: SyntaxElement,
+    text: string,
+    mixed: boolean,
+    problems?: FolioDiagnostic[],
+    options: { preferLiterals?: boolean } = {},
+  ) {
     const fragment = document.createDocumentFragment();
     const tokens = tokenize(text, mixed);
     // Split only the painted spans. Original tokens retain their pairing and
@@ -176,8 +199,8 @@ interface SyntaxElement extends HTMLElement {
       const titleStart = token.start + collapse[1].length;
       // Keep structural pairing intact. Only font macros work in titles;
       // their bodies and every other syntax form remain plain title text.
-      const paintedTitle = [{ ...token, text: collapse[1], end: titleStart }];
-      const append = (value, offset, kind = 'block') => {
+      const paintedTitle: SyntaxToken[] = [{ ...token, text: collapse[1], end: titleStart }];
+      const append = (value: string, offset: number, kind = 'block') => {
         if (value)
           paintedTitle.push({
             text: value,
@@ -226,7 +249,7 @@ interface SyntaxElement extends HTMLElement {
           ]),
         ]),
       ].sort((a, b) => a - b);
-      return boundaries.slice(0, -1).map((start, i) => {
+      return boundaries.slice(0, -1).map((start: number, i) => {
         const end = boundaries[i + 1];
         return {
           ...token,
@@ -316,7 +339,7 @@ interface SyntaxElement extends HTMLElement {
             const url = document.createElement('span');
             url.className = 'syntax-link-url';
             url.textContent = link[4];
-            const punctuation = (text) => {
+            const punctuation = (text: string) => {
               const mark = document.createElement('span');
               mark.className = 'syntax-link-punctuation';
               mark.textContent = text;
@@ -357,10 +380,13 @@ interface SyntaxElement extends HTMLElement {
     const tokens = element.syntaxTokens || [];
     const byStart = new Map(tokens.map((token) => [token.start, token]));
     const sections = tokens
-      .filter((t) => t.partner > t.start)
+      .filter(
+        (t): t is SyntaxToken & { partner: number } =>
+          t.partner !== undefined && t.partner > t.start,
+      )
       .map((open) => ({
         start: open.start,
-        end: byStart.get(open.partner).end,
+        end: byStart.get(open.partner)!.end,
       }));
     const active = sections
       .filter((section) => position >= section.start && position < section.end)
@@ -374,7 +400,7 @@ interface SyntaxElement extends HTMLElement {
     }
     paintActive(element);
   }
-  function paintActive(element) {
+  function paintActive(element: SyntaxElement) {
     const viewport = document.getElementById('sourceSectionTint');
     if (!viewport) return;
     const active = element.activeSyntaxRange;
@@ -383,7 +409,7 @@ interface SyntaxElement extends HTMLElement {
     const text = element.syntaxText || '';
     const firstLine = text.slice(0, active.start).split('\n').length - 1;
     const lastLine = text.slice(0, Math.max(active.start, active.end - 1)).split('\n').length - 1;
-    const anchors = element.querySelectorAll('.source-line-anchor');
+    const anchors = element.querySelectorAll<HTMLElement>('.source-line-anchor');
     const first = anchors[firstLine],
       next = anchors[lastLine + 1];
     if (!first) {

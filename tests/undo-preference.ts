@@ -1,8 +1,7 @@
+import type { TestControl, TestHandler } from './helpers/types';
 import { createContext } from './helpers/typescript';
 import * as units from './helpers/typescript.ts';
 import assert from './helpers/assert';
-import fs from 'node:fs';
-import vm from 'node:vm';
 
 const source = {
   value: 'literal',
@@ -11,18 +10,20 @@ const source = {
   scrollTop: 200,
   scrollLeft: 0,
   focus() {},
-  setSelectionRange(start, end) {
+  setSelectionRange(start: number, end: number) {
     this.selectionStart = start;
     this.selectionEnd = end;
   },
 };
 const data = { active: 'one', mixed: true, preferLiterals: true },
-  elements = new Map(),
-  handlers = {};
-const $ = (id) => {
+  elements = new Map<string, TestControl>(),
+  handlers: Record<string, TestHandler> = {};
+const $ = (id: string) => {
   if (!elements.has(id))
-    elements.set(id, { addEventListener: (type, fn) => (handlers[id + ':' + type] = fn) });
-  return elements.get(id);
+    elements.set(id, {
+      addEventListener: (type: string, fn: TestHandler) => (handlers[id + ':' + type] = fn),
+    });
+  return elements.get(id)!;
 };
 const context = createContext({
   source,
@@ -40,7 +41,7 @@ const context = createContext({
   requestAnimationFrame: () => {},
   refresh: () => {},
   persist: () => {},
-  convertEntityPreference: (text, literals) => (literals ? 'literal' : 'code'),
+  convertEntityPreference: (_text: string, literals: boolean) => (literals ? 'literal' : 'code'),
 });
 units.load(context, 'app/state', { names: ['MAX_UNDO_STATES'], effects: [] });
 units.load(context, 'editor/history', {
@@ -56,7 +57,7 @@ units.load(context, 'editor/history', {
   ],
   effects: ["$('undoEdit')", "$('redoEdit')"],
 });
-context.replaceRange = (text) => {
+context.replaceRange = (text: string) => {
   context.rememberSelection();
   source.value = text;
   context.commitEdit('action');
@@ -74,7 +75,7 @@ assert.equal(source.value, 'code');
 assert.equal(data.preferLiterals, false);
 assert.equal($('preferLiterals').checked, false);
 // Preference-only changes must also have an undo step.
-context.convertEntityPreference = (text) => text;
+context.convertEntityPreference = (text: string) => text;
 handlers['preferLiterals:change']({ target: { checked: true } });
 assert.equal(source.value, 'code');
 assert.equal(data.preferLiterals, true);

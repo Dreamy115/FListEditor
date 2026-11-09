@@ -36,21 +36,21 @@ import path from 'node:path';
           const mirror = layer.cloneNode(false) as HTMLElement;
           mirror.removeAttribute('id');
           mirror.textContent = text;
-          layer.parentElement.append(mirror);
+          layer.parentElement!.append(mirror);
           const origin = layer.getBoundingClientRect(),
             expectedOrigin = mirror.getBoundingClientRect();
           const walker = document.createTreeWalker(layer, NodeFilter.SHOW_TEXT);
           let node,
             offset = 0;
           while ((node = walker.nextNode())) {
-            for (let i = 0; i < node.length; i++, offset++) {
+            for (let i = 0; i < node.textContent!.length; i++, offset++) {
               if (offset >= text.length) break;
               const actual = document.createRange(),
                 expected = document.createRange();
               actual.setStart(node, i);
               actual.setEnd(node, i + 1);
-              expected.setStart(mirror.firstChild, offset);
-              expected.setEnd(mirror.firstChild, offset + 1);
+              expected.setStart(mirror.firstChild!, offset);
+              expected.setEnd(mirror.firstChild!, offset + 1);
               const a = actual.getBoundingClientRect(),
                 e = expected.getBoundingClientRect();
               if (
@@ -91,8 +91,8 @@ import path from 'node:path';
               offset = 0,
               lastTop;
             while ((node = walker.nextNode()))
-              for (let i = 0; i < node.length; i++, offset++) {
-                if (/[\uDC00-\uDFFF]/.test(node.data[i])) continue;
+              for (let i = 0; i < node.textContent!.length; i++, offset++) {
+                if (/[\uDC00-\uDFFF]/.test(node.textContent![i])) continue;
                 const range = document.createRange();
                 range.setStart(node, i);
                 range.setEnd(node, i + 1);
@@ -130,8 +130,8 @@ import path from 'node:path';
             const caret = await page.evaluate(() => {
               document.dispatchEvent(new Event('selectionchange'));
               const caret = document.querySelector<HTMLElement>('.source-selection-caret'),
-                rect = caret.firstElementChild.getBoundingClientRect();
-              return { hidden: caret.hidden, left: rect.left, top: rect.top };
+                rect = caret!.firstElementChild!.getBoundingClientRect();
+              return { hidden: caret!.hidden, left: rect.left, top: rect.top };
             });
             assert.equal(caret.hidden, false);
             assert.ok(
@@ -171,7 +171,7 @@ import path from 'node:path';
   } finally {
     await browser.close();
   }
-})().catch((error) => {
+})().catch((error: unknown) => {
   console.error(error);
   process.exitCode = 1;
 });

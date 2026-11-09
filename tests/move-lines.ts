@@ -1,8 +1,6 @@
 import { createContext } from './helpers/typescript';
 import * as units from './helpers/typescript.ts';
 import assert from './helpers/assert';
-import fs from 'node:fs';
-import vm from 'node:vm';
 
 let commits = 0,
   syncs = 0,
@@ -15,10 +13,10 @@ const source: {
   setRangeText(text: string, start: number, end: number): void;
   setSelectionRange(start: number, end: number, direction: string): void;
 } = {
-  setRangeText(text, start, end) {
-    this.value = this.value.slice(0, start) + text + this.value.slice(end);
+  setRangeText(text: string, start: number, end: number) {
+    this.value = this.value!.slice(0, start) + text + this.value!.slice(end);
   },
-  setSelectionRange(start, end, direction) {
+  setSelectionRange(start: number, end: number, direction) {
     this.selectionStart = start;
     this.selectionEnd = end;
     this.selectionDirection = direction;
@@ -31,7 +29,16 @@ const context = createContext({
   commitEdit: () => commits++,
 });
 units.load(context, 'editor/shortcuts', { names: ['moveSourceLines'], effects: [] });
-function check(text, start, end, direction, expected, newStart, newEnd, copy = false) {
+function check(
+  text: string,
+  start: number,
+  end: number,
+  direction: number,
+  expected: string,
+  newStart: number,
+  newEnd: number,
+  copy = false,
+) {
   Object.assign(source, {
     value: text,
     selectionStart: start,

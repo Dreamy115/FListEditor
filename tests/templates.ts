@@ -7,7 +7,8 @@ import * as importedDOM from 'linkedom';
 
 const context = createContext({});
 units.load(context, 'app/state', { names: ['validateCustomTemplates'], effects: [] });
-const validate = (value) => JSON.parse(JSON.stringify(context.validateCustomTemplates(value)));
+const validate = (value: unknown) =>
+  JSON.parse(JSON.stringify(context.validateCustomTemplates(value)));
 assert.deepEqual(validate(undefined), []);
 assert.deepEqual(validate({}), []);
 assert.deepEqual(
@@ -42,8 +43,8 @@ const renderContext = createContext({
   document,
   data: { drafts, active: 'one' },
   templateSession: null,
-  $: (id) => document.getElementById(id),
-  loadDraft: (id) => {
+  $: (id: string) => document.getElementById(id),
+  loadDraft: (id: string) => {
     selected = id;
   },
   renderTemplateTargets: () => {},

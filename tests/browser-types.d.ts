@@ -3,5 +3,5 @@ interface Window {
   originalClipboardWrite?: Clipboard['write'];
 }
 interface HTMLElement {
-  syntaxTokens?: { kind: string; [key: string]: unknown }[];
+  syntaxTokens?: import('../src/syntax').SyntaxToken[];
 }

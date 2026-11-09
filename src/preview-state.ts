@@ -1,22 +1,35 @@
+/** Preview sections are keyed by title, ancestry and sibling occurrence. */
+type SectionPath = [string, number][];
+interface PreviewState {
+  top: number;
+  left: number;
+  sections: { key: string; open: boolean }[];
+}
+interface PreviewEntry {
+  views: Map<string, PreviewState>;
+  key?: string;
+  code?: string;
+  revision?: number;
+}
 (() => {
   'use strict';
-  const previews = new WeakMap();
-  function sections(preview) {
-    const paths = new Map(),
-      counts = new Map();
-    return [...preview.querySelectorAll('.bbcode-collapse')].map((node) => {
+  const previews = new WeakMap<HTMLElement, PreviewEntry>();
+  function sections(preview: HTMLElement) {
+    const paths = new Map<Element, SectionPath>(),
+      counts = new Map<string, number>();
+    return [...preview.querySelectorAll<HTMLElement>('.bbcode-collapse')].map((node) => {
       const parent = node.parentElement?.closest('.bbcode-collapse');
-      const parentPath = paths.get(parent) || [];
+      const parentPath = (parent ? paths.get(parent) : undefined) || [];
       const title = node.querySelector('.bbcode-collapse-header')?.textContent || '';
       const group = JSON.stringify([parentPath, title]),
         occurrence = counts.get(group) || 0;
       counts.set(group, occurrence + 1);
-      const path = [...parentPath, [title, occurrence]];
+      const path: SectionPath = [...parentPath, [title, occurrence]];
       paths.set(node, path);
       return { node, key: JSON.stringify(path) };
     });
   }
-  function capture(preview, frame) {
+  function capture(preview: HTMLElement, frame: Element): PreviewState {
     return {
       top: frame.scrollTop,
       left: frame.scrollLeft,
@@ -26,7 +39,7 @@
       })),
     };
   }
-  function restoreSections(preview, state) {
+  function restoreSections(preview: HTMLElement, state: PreviewState | undefined) {
     if (!state) return;
     const current = sections(preview),
       previous = new Map(state.sections.map((section) => [section.key, section.open]));
@@ -44,7 +57,7 @@
       if (open !== true) return;
       node.classList.remove('collapsed');
       const header = node.querySelector('.bbcode-collapse-header');
-      const body = node.querySelector('.bbcode-collapse-body');
+      const body = node.querySelector<HTMLElement>('.bbcode-collapse-body');
       if (body) body.style.height = '';
       if (header) {
         header.classList.remove('bbcode-collapse-header-down');
@@ -57,7 +70,14 @@
       }
     });
   }
-  function update(preview, frame, code, render, key, revision) {
+  function update(
+    preview: HTMLElement,
+    frame: Element,
+    code: string,
+    render: (input: string) => HTMLElement,
+    key: string,
+    revision?: number,
+  ) {
     let entry = previews.get(preview);
     if (!entry) {
       entry = { views: new Map() };
@@ -72,7 +92,7 @@
     const staging = preview.ownerDocument.createElement('div');
     staging.appendChild(rendered);
     restoreSections(staging, state);
-    preview.firstElementChild?.cleanup?.();
+    (preview.firstElementChild as HTMLElement | null)?.cleanup?.();
     preview.replaceChildren(...staging.childNodes);
     frame.scrollTop = state?.top || 0;
     frame.scrollLeft = state?.left || 0;

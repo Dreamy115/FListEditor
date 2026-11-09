@@ -18,7 +18,7 @@ for (const source of [
   assert.equal(tokens[0].kind, 'literal', source);
   assert.equal(tokens[0].text, source);
 }
-assert.ok(!tokenize('\\`literal\\`', true).some((token) => token.kind === 'literal'));
+assert.ok(!tokenize('\\`literal\\`', true).some((token: FolioToken) => token.kind === 'literal'));
 const sample = ':::center\n# Heading\n{color:cyan|**Name**}\n[hr]\n\n<script>alert(1)</script>\n';
 for (const mixed of [true, false]) {
   assert.equal(
@@ -43,7 +43,8 @@ for (const [source, kind] of [
 ] as const) {
   assert.ok(
     tokenize(source, true).some(
-      (token) => token.kind === kind && token.text.startsWith(kind === 'macro' ? '{' : '['),
+      (token: FolioToken) =>
+        token.kind === kind && token.text.startsWith(kind === 'macro' ? '{' : '['),
     ),
   );
 }
@@ -73,9 +74,9 @@ for (const color of [
       '.syntax-color-value[data-color="' + color + '"]',
     );
     assert.ok(value, color + ' color-name highlight');
-    assert.equal(value.textContent.toLowerCase(), color);
+    assert.equal(value!.textContent.toLowerCase(), color);
     assert.equal(
-      value.parentElement.classList.contains(
+      value!.parentElement!.classList.contains(
         source.trim().startsWith(':::') ? 'syntax-block' : mixed ? 'syntax-macro' : 'syntax-tag',
       ),
       true,
@@ -119,7 +120,9 @@ for (const color of [
   );
 }
 const valueLayer = document.createElement('pre');
-highlight(valueLayer, '{macro:xyz}', true, [{ start: 8, end: 9, message: 'Example warning' }]);
+highlight(valueLayer, '{macro:xyz}', true, [
+  { line: 1, start: 8, end: 9, message: 'Example warning' },
+]);
 assert.equal(
   [...valueLayer.querySelectorAll<HTMLElement>('.syntax-macro-value')]
     .map((span) => span.textContent)
@@ -134,7 +137,7 @@ for (const title of ['{font:smallcaps|SUBJECT DOCUMENTATION}', 'Prefix {font:bol
   const layer = document.createElement('pre');
   const warningStart = source.indexOf('font:') + 5;
   highlight(layer, source, true, [
-    { start: warningStart, end: warningStart + 2, message: 'Title warning' },
+    { line: 1, start: warningStart, end: warningStart + 2, message: 'Title warning' },
   ]);
   assert.equal(layer.textContent, source + '\n');
   assert.ok(layer.querySelector<HTMLElement>('.syntax-macro'));
@@ -147,10 +150,10 @@ for (const title of ['{font:smallcaps|SUBJECT DOCUMENTATION}', 'Prefix {font:bol
   assert.ok(layer.querySelector<HTMLElement>('.syntax-warning .syntax-macro-value'));
   assert.ok(layer.querySelector<HTMLElement>('.syntax-collapse-title'));
   assert.ok(!layer.querySelector<HTMLElement>('.syntax-unmatched'));
-  assert.equal(layer.syntaxTokens.filter((token) => token.kind === 'block').length, 2);
+  assert.equal(layer.syntaxTokens!.filter((token: FolioToken) => token.kind === 'block').length, 2);
   context.FolioSyntax.markActive(layer, source.indexOf('Body'));
   assert.ok(layer.querySelector<HTMLElement>('.syntax-active-delimiter'));
-  assert.equal(layer.activeSyntaxRange.start, 0);
+  assert.equal(layer.activeSyntaxRange!.start, 0);
 }
 console.log('Collapse title inline macro highlighting and diagnostics passed');
 
@@ -193,16 +196,16 @@ for (const prefix of ['', '!']) {
   const source = prefix + '[Visit](https://example.com)';
   highlight(layer, source, true);
   assert.equal(
-    layer.querySelector<HTMLElement>('.syntax-link-label').textContent,
+    layer.querySelector<HTMLElement>('.syntax-link-label')!.textContent,
     prefix + '[Visit]',
   );
   assert.equal(
-    layer.querySelector<HTMLElement>('.syntax-link-target').textContent,
+    layer.querySelector<HTMLElement>('.syntax-link-target')!.textContent,
     '(https://example.com)',
   );
-  assert.equal(layer.querySelector<HTMLElement>('.syntax-link-display').textContent, 'Visit');
+  assert.equal(layer.querySelector<HTMLElement>('.syntax-link-display')!.textContent, 'Visit');
   assert.equal(
-    layer.querySelector<HTMLElement>('.syntax-link-url').textContent,
+    layer.querySelector<HTMLElement>('.syntax-link-url')!.textContent,
     'https://example.com',
   );
   assert.equal(
@@ -273,23 +276,41 @@ for (const [source, format, body] of [
       (span) => span.textContent === body,
     ),
   );
-  assert.ok(!tokenize(source + ' plain', false).at(-1).format);
+  assert.ok(!tokenize(source + ' plain', false).at(-1)!.format);
 }
-assert.ok(tokenize('[noparse][b]literal[/b][/noparse]', false).every((token) => !token.format));
-assert.ok(tokenize('[b]unclosed', false).every((token) => !token.format));
-assert.ok(tokenize('[b]literal[/b]', true).every((token) => !token.format));
+assert.ok(
+  tokenize('[noparse][b]literal[/b][/noparse]', false).every((token: FolioToken) => !token.format),
+);
+assert.ok(tokenize('[b]unclosed', false).every((token: FolioToken) => !token.format));
+assert.ok(tokenize('[b]literal[/b]', true).every((token: FolioToken) => !token.format));
 const bbcodeFormatting = tokenize('[b]Bold [i]both[/i] [color=red]colored[/color][/b]', false);
-assert.ok(bbcodeFormatting.filter((token) => token.kind === 'tag').every((token) => !token.format));
-assert.equal(bbcodeFormatting.find((token) => token.text === 'both').format, 'bold-italic');
-assert.equal(bbcodeFormatting.find((token) => token.text === 'colored').format, 'bold');
-assert.ok(formats.some((token) => token.text === 'Bold ' && token.format === 'bold'));
-assert.ok(formats.some((token) => token.text === 'strike' && token.format === 'strike'));
-assert.ok(formats.filter((token) => token.kind === 'macro').every((token) => !token.format));
+assert.ok(
+  bbcodeFormatting
+    .filter((token: FolioToken) => token.kind === 'tag')
+    .every((token: FolioToken) => !token.format),
+);
+assert.equal(
+  bbcodeFormatting.find((token: FolioToken) => token.text === 'both')!.format,
+  'bold-italic',
+);
+assert.equal(
+  bbcodeFormatting.find((token: FolioToken) => token.text === 'colored')!.format,
+  'bold',
+);
+assert.ok(formats.some((token: FolioToken) => token.text === 'Bold ' && token.format === 'bold'));
+assert.ok(
+  formats.some((token: FolioToken) => token.text === 'strike' && token.format === 'strike'),
+);
+assert.ok(
+  formats
+    .filter((token: FolioToken) => token.kind === 'macro')
+    .every((token: FolioToken) => !token.format),
+);
 
 const deep = ':::center\n:::color cyan\n*{color:cyan|{big|[b][i]Nested[/i][/b]}}*\n:::\n:::';
 const deepTokens = tokenize(deep, true);
 assert.equal(deepTokens.map((t) => t.text).join(''), deep);
-assert.equal(deepTokens.find((t) => t.text === ':::center').kind, 'block');
+assert.equal(deepTokens.find((t) => t.text === ':::center')!.kind, 'block');
 for (const kind of ['block', 'macro']) {
   const containers = deepTokens.filter((t) => t.kind === kind);
   assert.ok(
@@ -302,8 +323,8 @@ for (const kind of ['block', 'macro']) {
   );
   for (const token of containers) {
     const partner = containers.find((other) => other.start === token.partner);
-    assert.equal(partner.depth, token.depth);
-    assert.equal(partner.pair, token.pair);
+    assert.equal(partner!.depth, token.depth);
+    assert.equal(partner!.pair, token.pair);
   }
 }
 const deepLayer = document.createElement('pre');
@@ -316,21 +337,21 @@ for (const kind of ['block', 'macro']) {
   assert.ok(deepLayer.querySelector<HTMLElement>('.syntax-' + kind + '.syntax-depth-0'));
   assert.ok(deepLayer.querySelector<HTMLElement>('.syntax-' + kind + '.syntax-depth-1'));
 }
-for (const open of deepTokens.filter((t) => t.partner > t.start)) {
+for (const open of deepTokens.filter((t) => t.partner! > t.start)) {
   const pair = [...deepLayer.querySelectorAll<HTMLElement>('[data-pair]')].filter(
     (span) => span.dataset.pair === String(open.pair),
   );
   assert.equal(pair.length, 2);
-  assert.ok(pair.every((span) => span.classList.contains('syntax-depth-' + (open.depth % 5))));
+  assert.ok(pair.every((span) => span.classList.contains('syntax-depth-' + (open.depth! % 5))));
 }
 context.FolioSyntax.markActive(deepLayer, deep.indexOf('{big|') + 2);
 assert.equal(
-  deep.slice(deepLayer.activeSyntaxRange.start, deepLayer.activeSyntaxRange.end),
+  deep.slice(deepLayer.activeSyntaxRange!.start, deepLayer.activeSyntaxRange!.end),
   '{big|[b][i]Nested[/i][/b]}',
 );
 context.FolioSyntax.markActive(deepLayer, deep.indexOf('Nested') + 2);
 assert.equal(
-  deep.slice(deepLayer.activeSyntaxRange.start, deepLayer.activeSyntaxRange.end),
+  deep.slice(deepLayer.activeSyntaxRange!.start, deepLayer.activeSyntaxRange!.end),
   '{big|[b][i]Nested[/i][/b]}',
 );
 assert.equal(
@@ -344,7 +365,7 @@ assert.equal(deepLayer.activeSyntaxRange, null);
 assert.equal(deepLayer.querySelectorAll<HTMLElement>('.syntax-active-delimiter').length, 0);
 context.FolioSyntax.markActive(deepLayer, deep.indexOf(':::color') + 5);
 assert.equal(
-  deep.slice(deepLayer.activeSyntaxRange.start, deepLayer.activeSyntaxRange.end),
+  deep.slice(deepLayer.activeSyntaxRange!.start, deepLayer.activeSyntaxRange!.end),
   ':::color cyan\n*{color:cyan|{big|[b][i]Nested[/i][/b]}}*\n:::',
 );
 assert.equal(deepLayer.textContent, deep + '\n');
@@ -358,8 +379,8 @@ for (const input of [
   '> Outer\n> > Inner\n> Outer again',
 ]) {
   const tokens = tokenize(input, true);
-  assert.equal(tokens.map((token) => token.text).join(''), input);
-  const markers = tokens.filter((token) => token.marker === 'quote');
+  assert.equal(tokens.map((token: FolioToken) => token.text).join(''), input);
+  const markers = tokens.filter((token: FolioToken) => token.marker === 'quote');
   assert.equal(markers.length, (input.match(/>/g) || []).length);
   const layer = document.createElement('pre');
   highlight(layer, input, true);
@@ -381,9 +402,14 @@ for (const literal of [
   '\\> > literal',
   'text > > comparison',
 ]) {
-  assert.ok(!tokenize(literal, true).some((token) => token.marker === 'quote'), literal);
+  assert.ok(
+    !tokenize(literal, true).some((token: FolioToken) => token.marker === 'quote'),
+    literal,
+  );
 }
-assert.ok(!tokenize('> > plain BBCode', false).some((token) => token.marker === 'quote'));
+assert.ok(
+  !tokenize('> > plain BBCode', false).some((token: FolioToken) => token.marker === 'quote'),
+);
 console.log('Nested quote highlighting checks passed');
 
 const glyphLayer = document.createElement('pre');

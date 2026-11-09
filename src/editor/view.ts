@@ -21,8 +21,8 @@ export function updateSelectionCaret() {
   let remaining = offset,
     node;
   while ((node = walker.nextNode())) {
-    if (remaining >= node.length) {
-      remaining -= node.length;
+    if (remaining >= node.textContent!.length) {
+      remaining -= node.textContent!.length;
       continue;
     }
     // A collapsed DOM range can resolve to the preceding visual row at a soft
@@ -74,7 +74,7 @@ export function updateLineNumbers() {
     numbers = $('sourceLineNumbers');
   const anchors = layer.querySelectorAll<HTMLElement>('.source-line-anchor');
   layer.style.paddingBottom = getComputedStyle(source).paddingBottom;
-  source.parentElement.style.setProperty(
+  source.parentElement!.style.setProperty(
     '--gutter-width',
     Math.max(36, String(anchors.length).length * 7 + 15) + 'px',
   );
@@ -83,7 +83,7 @@ export function updateLineNumbers() {
   for (const anchor of anchors) {
     const number = document.createElement('span');
     number.className = 'source-line-number';
-    number.textContent = anchor.dataset.line;
+    number.textContent = anchor.dataset.line ?? '';
     (number as HTMLElement).dataset.line = anchor.dataset.line;
     number.style.top = anchor.offsetTop + 'px';
     fragment.appendChild(number);
@@ -124,7 +124,7 @@ export function initializeEditorView() {
   selectionCaret.setAttribute('aria-hidden', 'true');
 
   selectionCaret.hidden = true;
-  source.parentElement.appendChild(selectionCaret);
+  source.parentElement!.appendChild(selectionCaret);
 
   selectionCaret.appendChild(document.createElement('span'));
 

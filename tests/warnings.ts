@@ -6,9 +6,9 @@ import vm from 'node:vm';
 import { parseHTML } from 'linkedom';
 
 const { document } = parseHTML(fs.readFileSync('index.html', 'utf8'));
-const context = createContext({ URL, document, $: (id) => document.getElementById(id) });
+const context = createContext({ URL, document, $: (id: string) => document.getElementById(id) });
 units.formatting(context);
-const warnings = (input) => Array.from(context.countWarnings(input));
+const warnings = (input: string) => Array.from(context.countWarnings(input));
 assert.deepEqual(warnings('[b]Valid[/b][hr][img=123]Label[/img]'), []);
 for (const tag of [
   'list',
@@ -52,7 +52,7 @@ assert.match(
   /1 potential issue/,
 );
 assert.equal(
-  document.querySelector<HTMLElement>('#warningList li').textContent,
+  document.querySelector<HTMLElement>('#warningList li')!.textContent,
   '[table] is not supported by F-List profiles',
 );
 context.updateWarnings([]);
@@ -67,7 +67,8 @@ assert.ok(
 );
 assert.equal(document.querySelectorAll<HTMLElement>('#warningList li').length, 0);
 console.log('Compiler warning checks passed');
-const colorWarnings = (text, mixed = true) => Array.from(context.colorWarnings(text, mixed));
+const colorWarnings = (text: string, mixed = true) =>
+  Array.from(context.colorWarnings(text, mixed));
 for (const color of [
   'red',
   'orange',
@@ -105,7 +106,7 @@ assert.equal(colorWarnings('`[color=teal]`', false).length, 1);
 assert.deepEqual(colorWarnings('{color:teal|plain text}', false), []);
 assert.equal(colorWarnings('[color=teal]a[/color][color=teal]b[/color]', false).length, 1);
 console.log('Unsupported color warning checks passed');
-const macroWarnings = (text) => Array.from(context.macroWarnings(text));
+const macroWarnings = (text: string) => Array.from(context.macroWarnings(text));
 for (const input of [
   '{typo|text}',
   '{b}',
@@ -141,7 +142,7 @@ for (const input of [
 const invalidMacro = '{link:invalid|text}';
 assert.equal(context.markdownToBB(invalidMacro), invalidMacro);
 console.log('Invalid macro warning checks passed');
-const locate = (text, mixed = true) =>
+const locate = (text: string, mixed = true) =>
   Array.from(
     context.locatedWarnings(
       text,
@@ -162,7 +163,7 @@ for (const text of [
 const formattedLabel = 'A formatted **link label**';
 const formattedLink = '[' + formattedLabel + '](https://example.com/observatory)';
 const labelIssue = locate(formattedLink).find((issue) => issue.message === linkWarning);
-assert.equal(formattedLink.slice(labelIssue.start, labelIssue.end), formattedLabel);
+assert.equal(formattedLink.slice(labelIssue!.start, labelIssue!.end), formattedLabel);
 assert.ok(
   locate('[url=https://example.com][b]Label[/b][/url]', false).some(
     (issue) => issue.message === linkWarning,
@@ -194,7 +195,7 @@ assert.deepEqual(locate('`{typo|bad}`\n[noparse][table][/noparse]'), []);
 located = locate('Hello\n:::center\ntext');
 assert.equal(located[0].line, 2);
 context.updateWarnings(located);
-assert.match(document.querySelector<HTMLElement>('#warningList button').textContent, /^Line 2:/);
+assert.match(document.querySelector<HTMLElement>('#warningList button')!.textContent, /^Line 2:/);
 console.log('Warning source location checks passed');
 let focused = false,
   selection = null,
@@ -204,7 +205,7 @@ context.source = {
   focus() {
     focused = true;
   },
-  setSelectionRange(start, end) {
+  setSelectionRange(start: number, end: number) {
     selection = [start, end];
   },
   clientHeight: 100,
@@ -216,7 +217,7 @@ context.syncHighlightScroll = () => {
 context.updateActiveSyntax = () => {
   activeUpdated = true;
 };
-document.querySelector<HTMLElement>('#warningList button').click();
+document.querySelector<HTMLElement>('#warningList button')!.click();
 assert.equal(focused, true);
 assert.deepEqual(selection, [located[0].start, located[0].end]);
 assert.equal(synced, true);
@@ -261,9 +262,9 @@ assert.equal(
 );
 const plain = 'before a bad value after';
 context.FolioSyntax.highlight(layer, plain, true, [
-  { start: 9, end: 12, message: 'Example diagnostic' },
+  { line: 1, start: 9, end: 12, message: 'Example diagnostic' },
 ]);
-assert.equal(layer.querySelector<HTMLElement>('.syntax-warning').textContent, 'bad');
+assert.equal(layer.querySelector<HTMLElement>('.syntax-warning')!.textContent, 'bad');
 assert.equal(layer.textContent, plain + '\n');
 context.FolioSyntax.highlight(layer, plain, true, []);
 assert.equal(layer.querySelectorAll<HTMLElement>('.syntax-warning').length, 0);
@@ -278,7 +279,7 @@ for (const closing of ['::', '::::']) {
   const malformed = diagnostics.find((issue) =>
     issue.message.includes('Malformed block macro closing marker'),
   );
-  assert.equal(malformed.line, 4);
+  assert.equal(malformed!.line, 4);
 }
 
 for (const input of [
@@ -288,7 +289,7 @@ for (const input of [
 ]) {
   const compiled = context.markdownToBB(input);
   assert.ok(
-    warnings(compiled).some((message) => message.startsWith('External image URLs ')),
+    warnings(compiled).some((message: string) => message.startsWith('External image URLs ')),
     input,
   );
   const located = Array.from(
@@ -296,8 +297,8 @@ for (const input of [
   );
   const issue = located.find((issue) => issue.message.startsWith('External image URLs '));
   assert.ok(issue, input);
-  assert.equal(issue.line, 2);
-  assert.equal(issue.start, 6);
+  assert.equal(issue!.line, 2);
+  assert.equal(issue!.start, 6);
 }
 assert.deepEqual(warnings('[noparse][img]https://example.com/image.png[/img][/noparse]'), []);
 assert.deepEqual(warnings(context.markdownToBB('`{img:https://example.com/image.png}`')), []);
@@ -309,7 +310,7 @@ for (const input of [
   '{font:bold|{color:purple|{font:monospace|inner}}}',
 ]) {
   assert.ok(
-    Array.from(context.macroWarnings(input)).some((message) =>
+    Array.from(context.macroWarnings(input)).some((message: string) =>
       message.startsWith('Nested font macros'),
     ),
   );
@@ -317,8 +318,8 @@ for (const input of [
     context.locatedWarnings('Intro\n' + input, true, context.markdownToBB('Intro\n' + input)),
   ).find((issue) => issue.message.startsWith('Nested font macros'));
   assert.ok(issue);
-  assert.equal(issue.line, 2);
-  assert.ok(issue.start > 6);
+  assert.equal(issue!.line, 2);
+  assert.ok(issue!.start > 6);
 }
 for (const input of [
   '{font:bold|First} {font:smallcaps|Second}',
@@ -327,7 +328,7 @@ for (const input of [
   '{font:bold|{noparse|{font:smallcaps|literal}}}',
 ]) {
   assert.ok(
-    !Array.from(context.macroWarnings(input)).some((message) =>
+    !Array.from(context.macroWarnings(input)).some((message: string) =>
       message.startsWith('Nested font macros'),
     ),
     input,
@@ -348,13 +349,13 @@ assert.ok(
   locate(':::font invalid\nText\n:::').some((issue) => issue.message.includes('supported font')),
 );
 
-const alignmentIssues = (text, mixed = true) =>
+const alignmentIssues = (text: string, mixed = true) =>
   Array.from(
     context.locatedWarnings(text, mixed, mixed ? context.markdownToBB(text) : text),
   ).filter((issue) => issue.message.startsWith('Nested text alignment:'));
 for (const outer of ['left', 'right', 'center', 'justify'])
   for (const inner of ['left', 'right', 'center', 'justify']) {
-    for (const [text, mixed, marker] of [
+    for (const [text, mixed, _marker] of [
       [`{${outer}|before {${inner}|nested}}`, true, `{${inner}|`],
       [`:::${outer}\n:::b\n:::${inner}\nnested\n:::\n:::\n:::`, true, `:::${inner}`],
       [`:::${outer}\n{${inner}|nested}\n:::`, true, `{${inner}|`],
@@ -464,7 +465,7 @@ assert.ok(layer.querySelector<HTMLElement>('.syntax-warning[data-severity="error
 assert.ok(layer.querySelector<HTMLElement>('.syntax-warning[data-severity="warning"]'));
 // An overlapping compatibility warning must not hide an error underline.
 context.FolioSyntax.highlight(layer, 'bad', true, [
-  { start: 0, end: 3, message: 'Compatibility', severity: 'warning' },
-  { start: 0, end: 3, message: 'Invalid source', severity: 'error' },
+  { line: 1, start: 0, end: 3, message: 'Compatibility', severity: 'warning' },
+  { line: 1, start: 0, end: 3, message: 'Invalid source', severity: 'error' },
 ]);
-assert.equal(layer.querySelector<HTMLElement>('.syntax-warning').dataset.severity, 'error');
+assert.equal(layer.querySelector<HTMLElement>('.syntax-warning')!.dataset.severity, 'error');

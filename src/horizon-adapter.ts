@@ -6,23 +6,23 @@ export const Utils = {
   settings: { inlineDisplayMode: 0, animateEicons: false, smoothMosaics: false },
 };
 export const InlineDisplayMode = { DISPLAY_ALL: 0, DISPLAY_SFW: 1, DISPLAY_NONE: 2 };
-export const normalizeCharacterName = (name) => name.trim();
+export const normalizeCharacterName = (name: string) => name.trim();
 export const core = {
   connection: { isOpen: false },
   state: { settings: { animatedEicons: true } },
-  characters: { get: (name) => ({ name }) },
+  characters: { get: (name: string) => ({ name }) },
 };
-export const setImmediate = (callback) => setTimeout(callback, 0);
-export function safeURL(value) {
+export const setImmediate = (callback: () => void) => setTimeout(callback, 0);
+export function safeURL(value: string | undefined) {
   try {
-    const url = new URL(value);
+    const url = new URL(value ?? '');
     return ['http:', 'https:'].includes(url.protocol) ? url.href : null;
   } catch {
     return null;
   }
 }
 export class IconView {
-  constructor({ el, propsData }) {
+  constructor({ el, propsData }: { el: HTMLElement; propsData: { character: { name: string } } }) {
     const name = propsData.character.name;
     const a = document.createElement('a');
     a.href = Utils.siteDomain + 'c/' + encodeURIComponent(name);
@@ -51,10 +51,16 @@ export class IconView {
   $destroy() {}
 }
 export class UrlTagView {
-  constructor({ el, propsData }) {
+  constructor({
+    el,
+    propsData,
+  }: {
+    el: HTMLElement;
+    propsData: { url?: string; text?: string; domain?: string };
+  }) {
     const url = safeURL(propsData.url);
     if (!url) {
-      el.textContent = propsData.text;
+      el.textContent = propsData.text ?? '';
       return;
     }
     const a = document.createElement('a');
@@ -62,10 +68,10 @@ export class UrlTagView {
     a.target = '_blank';
     a.rel = 'noopener noreferrer';
     a.className = 'profile-url-link user-link';
-    a.textContent = propsData.text;
+    a.textContent = propsData.text ?? '';
     el.classList.add('profile-url');
     // The site adds a hostname to labelled links, but not bare URLs.
-    if (safeURL(propsData.text)) el.classList.add('url-bare');
+    if (safeURL(propsData.text ?? '')) el.classList.add('url-bare');
     const suffix = document.createElement('span');
     suffix.className = 'link-domain bbcode-pseudo';
     suffix.textContent = ' [' + new URL(url).host.replace(/^www\./i, '') + ']';
@@ -74,9 +80,11 @@ export class UrlTagView {
   $destroy() {}
 }
 
+/** Minimal lifecycle implemented by the DOM replacements for Vue components. */
 export interface ComponentView {
   $destroy(): void;
 }
+/** Pinned Horizon inline-image metadata consumed by its standard tag renderer. */
 export interface InlineImage {
   hash: string;
   extension: string;

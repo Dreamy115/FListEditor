@@ -1,4 +1,6 @@
+import { errorMessage } from './app/validation';
 import { $ } from './app/dom';
+/** Browser-local preview attachment; IDs remain unchanged in exported source. */
 interface ImageMapping {
   id: string;
   url: string;
@@ -11,7 +13,7 @@ interface ImageMapping {
   'use strict';
   const records = new Map<string, ImageMapping>();
   let revision = 0;
-  const status = (message) => {
+  const status = (message: string) => {
     $('localImageStatus').textContent = message;
   };
   $('manageImageMappings').addEventListener('click', () => $('localImagePanel').showModal());
@@ -20,8 +22,8 @@ interface ImageMapping {
   $('localImagePanel').addEventListener('close', () => {
     if ($('inlineImagePicker').open) renderMappedChoices();
   });
-  let pickerResolve = null;
-  function finishPick(id) {
+  let pickerResolve: ((id: string | null) => void) | null = null;
+  function finishPick(id: string | null) {
     const resolve = pickerResolve;
     pickerResolve = null;
     $('inlineImagePicker').close();
@@ -84,7 +86,7 @@ interface ImageMapping {
       list.append(empty);
     }
   }
-  function openMapping(id, macroAlias = '') {
+  function openMapping(id: string, macroAlias = '') {
     const record = records.get(id);
     $('localImageId').value = id;
     $('localImageUrl').value = record?.kind === 'url' ? record.url : '';
@@ -100,12 +102,16 @@ interface ImageMapping {
     $('localImagePanel').scrollTop = 0;
     $(record?.kind === 'url' ? 'localImageUrl' : 'attachLocalImage').focus();
   }
-  function previewShortcut(event) {
-    const image = event.target.closest('[data-local-inline-id]');
-    if (!image || (event.type === 'keydown' && !['Enter', ' '].includes(event.key))) return;
+  function previewShortcut(event: MouseEvent | KeyboardEvent) {
+    const image = (event.target as HTMLElement).closest<HTMLElement>('[data-local-inline-id]');
+    if (
+      !image ||
+      (event.type === 'keydown' && !['Enter', ' '].includes((event as KeyboardEvent).key))
+    )
+      return;
     event.preventDefault();
     event.stopPropagation();
-    openMapping(image.dataset.localInlineId, image.dataset.inlineAlias || '');
+    openMapping(image.dataset.localInlineId!, image.dataset.inlineAlias || '');
   }
   $('preview').addEventListener('click', previewShortcut);
   $('preview').addEventListener('keydown', previewShortcut);
@@ -191,7 +197,7 @@ interface ImageMapping {
       throw Error('Enter a positive numeric F-List image ID (up to 20 digits).');
     return id;
   }
-  async function save(record) {
+  async function save(record: ImageMapping) {
     await storage((store) => store.put(record));
     records.set(record.id, record);
     changed();
@@ -202,7 +208,7 @@ interface ImageMapping {
     );
   }
   let busy = false;
-  async function attach(action) {
+  async function attach(action: () => Promise<void>) {
     if (busy) return;
     busy = true;
     $('saveImageAlias').disabled =
@@ -213,7 +219,9 @@ interface ImageMapping {
       await ready;
       await action();
     } catch (error) {
-      status(error.message || 'Could not save attachment: browser storage unavailable or full.');
+      status(
+        errorMessage(error) || 'Could not save attachment: browser storage unavailable or full.',
+      );
     } finally {
       busy = false;
       $('saveImageAlias').disabled =
@@ -239,11 +247,11 @@ interface ImageMapping {
       imageId();
       $('localImageFile').click();
     } catch (error) {
-      status(error.message);
+      status(errorMessage(error));
     }
   });
   $('localImageFile').addEventListener('change', (event) => {
-    const file = (event.target as HTMLInputElement).files[0];
+    const file = (event.target as HTMLInputElement).files?.[0];
     (event.target as HTMLInputElement).value = '';
     if (!file) return;
     attach(async () => {
@@ -315,7 +323,7 @@ interface ImageMapping {
       status('Browser image storage is unavailable. Attachments cannot be saved here.');
     });
   globalThis.FolioLocalImages = {
-    get: (id) => records.get(id),
+    get: (id: string) => records.get(id),
     get revision() {
       return revision;
     },

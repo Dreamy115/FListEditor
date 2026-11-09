@@ -11,7 +11,7 @@ const context = createContext({
   URL,
   source,
   data,
-  replaceRange(text, start, end) {
+  replaceRange(text: string, start: number, end: number) {
     source.value = source.value.slice(0, start) + text + source.value.slice(end);
   },
 });
@@ -64,7 +64,7 @@ assert.equal(
   context.markdownToBB('`{font:bold|literal}`'),
   '[noparse]{font:bold|literal}[/noparse]',
 );
-const issues = [];
+const issues: string[] = [];
 context.markdownToBB('{font:unknown|text}', issues);
 assert.ok(issues.some((issue) => issue.includes('Invalid inline macro')));
 const html = fs.readFileSync('index.html', 'utf8');
@@ -255,7 +255,7 @@ for (const name of Object.keys(vm.runInContext('fontStyles', context))) {
   const input =
     ':::collapse Details {font:' + name + '|Section} end\n{font:' + name + '|Body}\n:::';
   const expected = '[collapse=' + title + ']' + context.applyFont('Body', name) + '[/collapse]';
-  const issues = [];
+  const issues: string[] = [];
   assert.equal(context.markdownToBB(input, issues), expected);
   assert.deepEqual(issues, []);
   const decoded = context.bbcodeToMarkdown(expected);
@@ -307,6 +307,9 @@ for (const [title, expected] of [
 ] as const) {
   const bb = context.markdownToBB(':::collapse {font:smallcaps|' + title + '}\nBody\n:::');
   const preview = previewContext.FolioHorizon.render(bb);
-  assert.equal(preview.querySelector<HTMLElement>('.bbcode-collapse-header').textContent, expected);
+  assert.equal(
+    preview.querySelector<HTMLElement>('.bbcode-collapse-header')!.textContent,
+    expected,
+  );
 }
 console.log('Smallcaps title preview preserves capitals and converts lowercase');

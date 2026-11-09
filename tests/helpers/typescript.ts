@@ -1,3 +1,4 @@
+import { isRecord, errorMessage } from '../../src/app/validation';
 import type { Diagnostic } from '../../src/app/types';
 import fs from 'node:fs';
 import vm from 'node:vm';
@@ -8,17 +9,22 @@ import esbuild from 'esbuild';
  * omit imports so the test controls collaborators rather than booting the app.
  */
 
-const cache = new Map();
+const cache = new Map<string, string>();
 
-function load(context, file, { names = [], effects = [] } = {}) {
+function load(
+  context: vm.Context,
+  file: string,
+  { names = [], effects = [] }: { names?: string[]; effects?: string[] } = {},
+) {
+  Object.assign(context, { isRecord, errorMessage });
   const source = fs.readFileSync(`src/${file}.ts`, 'utf8');
   const ast = ts.createSourceFile(file + '.ts', source, ts.ScriptTarget.Latest, true);
   const selected = [];
   for (const node of ast.statements) {
     if (ts.isFunctionDeclaration(node)) {
-      if (names.includes(node.name.text)) selected.push(node.getText(ast));
-      if (node.name.text.startsWith('initialize') || node.name.text.startsWith('bind')) {
-        for (const effect of node.body.statements) {
+      if (names.includes(node.name!.text)) selected.push(node.getText(ast));
+      if (node.name!.text.startsWith('initialize') || node.name!.text.startsWith('bind')) {
+        for (const effect of node.body!.statements) {
           if (
             effects.some((needle) =>
               effect.getText(ast).replace(/\s+/g, '').includes(needle.replace(/\s+/g, '')),
@@ -46,7 +52,7 @@ function load(context, file, { names = [], effects = [] } = {}) {
     context,
   );
 }
-function formatting(context) {
+function formatting(context: vm.Context) {
   if (!cache.has('formatting')) {
     cache.set(
       'formatting',
@@ -66,7 +72,7 @@ function formatting(context) {
               'bbcode',
               'warnings',
             ]
-              .map((name) => `export * from './src/formatting/${name}';`)
+              .map((name: string) => `export * from './src/formatting/${name}';`)
               .join('\n') +
             "\nexport {default as namedCharacterReferences} from './src/formatting/named-references.json';",
           resolveDir: process.cwd(),
@@ -80,15 +86,22 @@ function formatting(context) {
       }).outputFiles[0].text,
     );
   }
-  vm.runInContext(cache.get('formatting'), context);
+  vm.runInContext(cache.get('formatting')!, context);
   Object.assign(context, context.FolioFormatting);
 }
 export { load, formatting };
 
-/** Typed interfaces for data returned across the isolated VM boundary. */
+/** Typed interfaces for data returned across the isolated VM boundary.
+ * Node's vm.Context dictionary is dynamically keyed (and uses any in Node's
+ * declarations): evaluated scripts install functions at runtime. Keep that
+ * interop boundary here; known renderer/compiler results have explicit types.
+ */
 export function createContext(sandbox: vm.Context = {}) {
   return vm.createContext(sandbox) as vm.Context & {
     FolioHorizon: typeof FolioHorizon;
+    FolioSyntax: typeof FolioSyntax;
+    FolioDiagnostics: typeof FolioDiagnostics;
+    FolioTemplates: typeof FolioTemplates;
     countWarnings(input: string): string[];
     colorWarnings(text: string, mixed?: boolean): string[];
     macroWarnings(text: string): string[];

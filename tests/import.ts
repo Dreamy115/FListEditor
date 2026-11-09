@@ -1,14 +1,13 @@
+import type { TestControl, TestHandler } from './helpers/types';
 import { createContext } from './helpers/typescript';
 import * as units from './helpers/typescript.ts';
 import assert from './helpers/assert';
-import fs from 'node:fs';
-import vm from 'node:vm';
 
 function setup({ content = 'Original', mixed = true, template = false } = {}) {
-  const handlers = {},
-    elements = new Map(),
-    messages = [],
-    saved = [];
+  const handlers: Record<string, TestHandler> = {},
+    elements = new Map<string, TestControl>(),
+    messages: string[] = [],
+    saved: import('../src/app/types').ProfileRecord[] = [];
   const record: import('../src/app/types').ProfileRecord = {
     id: 'one',
     name: 'Original name',
@@ -16,11 +15,13 @@ function setup({ content = 'Original', mixed = true, template = false } = {}) {
   };
   const source = { value: content },
     data = { active: 'one', mixed };
-  let confirmation;
-  const $ = (id) => {
+  let confirmation!: () => void;
+  const $ = (id: string) => {
     if (!elements.has(id))
-      elements.set(id, { addEventListener: (type, fn) => (handlers[id + ':' + type] = fn) });
-    return elements.get(id);
+      elements.set(id, {
+        addEventListener: (type: string, fn: TestHandler) => (handlers[id + ':' + type] = fn),
+      });
+    return elements.get(id)!;
   };
   const context = createContext({
     $,
@@ -29,7 +30,7 @@ function setup({ content = 'Original', mixed = true, template = false } = {}) {
     templateSession: template ? record : null,
     active: () => record,
     rememberSelection() {},
-    uniqueCharacterName: (name) => name,
+    uniqueCharacterName: (name: string) => name,
     renderDrafts() {},
     updateMode() {
       record.mixed = data.mixed;
@@ -39,8 +40,8 @@ function setup({ content = 'Original', mixed = true, template = false } = {}) {
       record.content = source.value;
     },
     commitEdit() {},
-    toast: (message) => messages.push(message),
-    requestConfirmation: (message, fn) => {
+    toast: (message: string) => messages.push(message),
+    requestConfirmation: (_message: string, fn: () => void) => {
       confirmation = fn;
     },
   });
@@ -52,7 +53,7 @@ function setup({ content = 'Original', mixed = true, template = false } = {}) {
     messages,
     saved,
     confirm: () => confirmation(),
-    import: async (name, text) => {
+    import: async (name: string, text: string) => {
       const target = { files: [{ name, size: 100, text: async () => text }], value: name };
       await handlers['fileImport:change']({ target });
       assert.equal(target.value, '');
@@ -76,7 +77,7 @@ function setup({ content = 'Original', mixed = true, template = false } = {}) {
     assert.equal(test.source.value, 'Imported');
     assert.equal(test.record.content, 'Imported');
     assert.equal(test.record.mixed, false);
-    assert.equal(test.saved.at(-1).content, 'Imported');
+    assert.equal(test.saved.at(-1)!.content, 'Imported');
   }
   for (const [filename, initial, expected] of [
     ['source.MD', false, true],
@@ -97,7 +98,7 @@ function setup({ content = 'Original', mixed = true, template = false } = {}) {
   assert.equal(invalid.saved.length, 0);
   assert.equal(invalid.messages.at(-1), 'Not a valid Folio backup');
   console.log('Profile import replacement, confirmation, template and source mode checks passed');
-})().catch((error) => {
+})().catch((error: unknown) => {
   console.error(error);
   process.exitCode = 1;
 });

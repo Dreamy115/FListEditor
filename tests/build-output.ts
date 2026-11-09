@@ -35,8 +35,8 @@ assert.deepEqual(
 const tasks = JSON.parse(fs.readFileSync('.vscode/tasks.json', 'utf8')).tasks;
 assert.ok(
   tasks.some(
-    (task) =>
-      task.label === 'Folio: Test all' && task.script === 'test:all' && task.group.kind === 'test',
+    (task: { label: string; script?: string; group?: { kind?: string } }) =>
+      task.label === 'Folio: Test all' && task.script === 'test:all' && task.group?.kind === 'test',
   ),
   'VS Code exposes the complete TypeScript suite',
 );

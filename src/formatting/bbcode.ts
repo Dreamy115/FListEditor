@@ -1,10 +1,26 @@
 import { safeUrl } from './urls';
 import { escapePlainMarkdown } from './escaping';
 
-import { decodeCharacterReference } from './entities';
 import { restoreBBCodeWhitespace, markdownToBBSource, markdownToBB } from './markdown';
 import { normalizeColorTags, colorSafe } from './colors';
 import { decompileFonts } from './fonts';
+
+/** Lossless BBCode tree: text leaves are separate from root/tag containers. */
+interface TextNode {
+  text: string;
+  tag?: never;
+  children?: never;
+}
+interface TagNode {
+  text?: never;
+  tag: string | null;
+  param?: string;
+  children: BBNode[];
+  open?: string;
+  closed?: boolean;
+  unclosed?: boolean;
+}
+type BBNode = TextNode | TagNode;
 
 export const allowedTags = new Set([
   'b',
@@ -63,44 +79,45 @@ export const convertibleTags = new Set([
 ]);
 
 export function parseBBCode(input: string) {
-  const root = { tag: null, children: [] },
+  // The stack always retains this root; closing tags never pop its final entry.
+  const root: TagNode = { tag: null, children: [] },
     stack = [root],
     token = /\[(\/?)(([a-z]+))(?:=([^\]\n]*))?\]/gi;
   let last = 0,
     m;
-  const add = (text) => {
-    if (text) stack.at(-1).children.push({ text });
+  const add = (text: string) => {
+    if (text) stack.at(-1)!.children.push({ text });
   };
   while ((m = token.exec(input))) {
     const tag = m[2].toLowerCase(),
       param = m[4] || '',
       close = !!m[1];
     if (!convertibleTags.has(tag)) continue;
-    if (stack.at(-1).tag === 'noparse' && !(close && tag === 'noparse')) continue;
+    if (stack.at(-1)!.tag === 'noparse' && !(close && tag === 'noparse')) continue;
     if (
-      ['user', 'icon', 'eicon', 'img'].includes(stack.at(-1).tag) &&
-      !(close && tag === stack.at(-1).tag)
+      ['user', 'icon', 'eicon', 'img'].includes(stack.at(-1)!.tag ?? '') &&
+      !(close && tag === stack.at(-1)!.tag)
     )
       continue;
     add(input.slice(last, m.index));
     last = token.lastIndex;
     if (tag === 'hr' && !close) {
-      stack.at(-1).children.push({ tag: 'hr', children: [], open: '[hr]' });
+      stack.at(-1)!.children.push({ tag: 'hr', children: [], open: '[hr]' });
       continue;
     }
     if (close) {
-      if (stack.length > 1 && stack.at(-1).tag === tag) {
+      if (stack.length > 1 && stack.at(-1)!.tag === tag) {
         stack.pop();
       } else add(m[0]); // Crossing/unmatched tags must never be silently moved.
     } else {
-      const node = { tag, param, children: [], open: m[0], closed: false };
-      stack.at(-1).children.push(node);
+      const node: TagNode = { tag, param, children: [], open: m[0], closed: false };
+      stack.at(-1)!.children.push(node);
       stack.push(node);
     }
   }
   add(input.slice(last));
   // Incomplete BBCode stays literal (including any nested content).
-  function mark(node) {
+  function mark(node: BBNode): void {
     if (!node.children) return;
     node.children.forEach(mark);
     if (node.tag && stack.includes(node)) node.unclosed = true;
@@ -121,7 +138,7 @@ export function bbcodeToMarkdownSource(input: string, escapePlain: boolean = tru
   let preserveLayout = false,
     editableLayout = false;
   const blockTags = new Set(['center', 'left', 'right', 'justify', 'indent', 'quote', 'collapse']);
-  const raw = (node) =>
+  const raw = (node: BBNode): string =>
     node.text !== undefined
       ? node.text
       : node.tag === 'hr'
@@ -129,19 +146,19 @@ export function bbcodeToMarkdownSource(input: string, escapePlain: boolean = tru
         : node.open +
           node.children.map(raw).join('') +
           (node.unclosed ? '' : '[/' + node.tag + ']');
-  const children = (node) => node.children.map(convert).join('');
-  const hasBlocks = (node) =>
+  const children = (node: TagNode): string => node.children.map(convert).join('');
+  const hasBlocks = (node: TagNode): boolean =>
     node.children.some(
       (child) =>
         child.tag && (blockTags.has(child.tag) || child.tag === 'heading' || hasBlocks(child)),
     );
-  const boundaries = (value) => '\uE006' + value + '\uE007';
-  function block(tag, arg, body) {
+  const boundaries = (value: string) => '\uE006' + value + '\uE007';
+  function block(tag: string, arg: string | undefined, body: string): string {
     if (editableLayout)
       return boundaries(':::' + tag + (arg ? ' ' + arg : '') + '\uE007' + body + '\uE006:::');
     return boundaries(':::' + tag + (arg ? ' ' + arg : '') + '\n' + body + '\n:::');
   }
-  function convert(node) {
+  function convert(node: BBNode): string {
     if (node.text !== undefined) return decompileFonts(node.text, escapePlain);
     if (!node.tag) return children(node);
     if (node.unclosed) return raw(node);
@@ -166,7 +183,7 @@ export function bbcodeToMarkdownSource(input: string, escapePlain: boolean = tru
         return (
           '{' +
           tag +
-          (tag === 'collapse' ? ':' + decompileFonts(node.param, false) : '') +
+          (tag === 'collapse' ? ':' + decompileFonts(node.param ?? '', false) : '') +
           '|' +
           body +
           '}'
@@ -176,15 +193,15 @@ export function bbcodeToMarkdownSource(input: string, escapePlain: boolean = tru
     if (tag === 'heading') {
       if (editableLayout || !inline) return block('heading', '', content);
       const large = node.children.length === 1 && node.children[0].tag === 'big';
-      return boundaries(large ? '# ' + children(node.children[0]) : '## ' + content);
+      return boundaries(large ? '# ' + children(node.children[0] as TagNode) : '## ' + content);
     }
     if (tag === 'big' && inline && !editableLayout && !preserveLayout)
       return '{big|' + content + '}';
     if (['b', 'i', 'u', 's'].includes(tag)) {
-      const marks = { b: '**', i: '*', u: '++', s: '~~' };
+      const marks: Record<string, string> = { b: '**', i: '*', u: '++', s: '~~' };
       if (!inline) return block(tag, '', content);
       // Nested emphasis with surrounding prose is ambiguous to the compact parser.
-      const nestedEmphasis = node.children.some((c) => ['b', 'i'].includes(c.tag));
+      const nestedEmphasis = node.children.some((c) => ['b', 'i'].includes(c.tag ?? ''));
       const simpleBoldItalic =
         tag === 'b' &&
         node.children.length === 1 &&
@@ -210,7 +227,7 @@ export function bbcodeToMarkdownSource(input: string, escapePlain: boolean = tru
       );
     if (blockTags.has(tag)) {
       if (tag === 'collapse' && (!node.param || /[\[\]\n]/.test(node.param))) return raw(node);
-      return block(tag, tag === 'collapse' ? decompileFonts(node.param, false) : '', content);
+      return block(tag, tag === 'collapse' ? decompileFonts(node.param ?? '', false) : '', content);
     }
     if (tag === 'url') {
       if (!node.param)
@@ -242,7 +259,7 @@ export function bbcodeToMarkdownSource(input: string, escapePlain: boolean = tru
     return raw(node);
   }
   const result = children(tree);
-  const restoreHashBoundaryBreaks = (markdown, expected) => {
+  const restoreHashBoundaryBreaks = (markdown: string, expected: string) => {
     for (const match of [...markdown.matchAll(/^#{1,6} [^\n]*(?:\n|$)/gm)].reverse()) {
       const line = match[0],
         start = match.index,
@@ -274,7 +291,7 @@ export function bbcodeToMarkdownSource(input: string, escapePlain: boolean = tru
   // Boundary sentinels ensure the Markdown syntax lands on its own line,
   // while reusing line breaks that were already present in the BBCode.
   let markdown = result
-    .replace(/[\uE006\uE007\n]+/g, (part) =>
+    .replace(/[\uE006\uE007\n]+/g, (part: string) =>
       '\n'.repeat(Math.max(1, (part.match(/\n/g) || []).length)),
     )
     .trim();
@@ -283,7 +300,7 @@ export function bbcodeToMarkdownSource(input: string, escapePlain: boolean = tru
   if (markdownToBB(markdown) === expected) return preferStandardMarkdown(markdown);
   editableLayout = true;
   const structured = children(tree).replace(/^[\uE006\uE007]+|[\uE006\uE007]+$/g, '');
-  let editable = structured.replace(/[\uE006\uE007\n]+/g, (part, offset) =>
+  let editable = structured.replace(/[\uE006\uE007\n]+/g, (part: string, offset: number) =>
     '\n'.repeat(
       (part.match(/\n/g) || []).length +
         (/[\uE006\uE007]/.test(part) && offset + part.length < structured.length ? 1 : 0),
@@ -300,7 +317,7 @@ export function bbcodeToMarkdownSource(input: string, escapePlain: boolean = tru
 // force every other heading in the profile back to explicit macros.
 export function preferHashHeadings(markdown: string) {
   const expected = markdownToBB(markdown);
-  const unwrapBig = (text) => {
+  const unwrapBig = (text: string) => {
     if (!text.startsWith('{big|') || !text.endsWith('}')) return null;
     let depth = 0;
     for (let i = 0; i < text.length; i++) {
@@ -436,7 +453,7 @@ export function preferStandardMarkdown(markdown: string) {
       const content = preferStandardMarkdown(lines.slice(index + 1, end).join('\n'));
       const body = content
         .split('\n')
-        .map((text) => '> ' + text)
+        .map((text: string) => '> ' + text)
         .join('\n');
       const candidate = standardMarkdownRewrite(markdown, start, original.length, body, expected);
       if (candidate !== null) {

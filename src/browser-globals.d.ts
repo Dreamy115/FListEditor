@@ -1,5 +1,6 @@
 /** Contracts for the existing companion scripts loaded before the app bundle. */
 type FolioDiagnostic = import('./app/types').Diagnostic;
+/** Current syntax mode and accepted macro vocabularies used for fix suggestions. */
 interface FolioDiagnosticConfig {
   mixed: boolean;
   inlineNames: Set<string>;
@@ -7,6 +8,7 @@ interface FolioDiagnosticConfig {
   colors: string[];
   resolveColor(value: string): string | null;
 }
+/** A replacement range in UTF-16 source offsets, applied only to unchanged text. */
 interface FolioFix {
   text: string;
   start: number;
@@ -17,12 +19,7 @@ declare var FolioHorizon: {
   allowsChild(parent: string, child: string): boolean;
   validURL(value: string): boolean;
 };
-interface FolioToken {
-  text: string;
-  start: number;
-  end: number;
-  kind: string;
-}
+type FolioToken = import('./syntax').SyntaxToken;
 declare var FolioSyntax: {
   tokenize(text: string, mixed: boolean): FolioToken[];
   isEntityTextToken(token: FolioToken): boolean;
@@ -30,8 +27,8 @@ declare var FolioSyntax: {
     layer: HTMLElement,
     text: string,
     mixed: boolean,
-    issues: FolioDiagnostic[],
-    options: { preferLiterals: boolean },
+    issues?: FolioDiagnostic[],
+    options?: { preferLiterals?: boolean },
   ): void;
   markActive(layer: HTMLElement, offset: number): void;
   paintActive(layer: HTMLElement): void;
@@ -57,7 +54,11 @@ declare var FolioDiagnostics: {
     layer: HTMLElement;
     getConfig(): FolioDiagnosticConfig;
     applyFix(fix: FolioFix): void;
-  }): { hide(): void };
+  }): {
+    hide(): void;
+    show(problem: FolioDiagnostic, rect: Pick<DOMRect, 'left' | 'top' | 'bottom'>): void;
+    popup: HTMLDivElement;
+  };
 };
 declare var FolioScreenshot: {
   capture(element: HTMLElement): Promise<Blob>;
@@ -73,12 +74,15 @@ declare var FolioLocalImages: {
 declare var FolioPreviewThemes: {
   themes: Record<string, string>;
   compile(css: string): string;
-  apply(theme: string, custom: string): void;
+  apply(theme: string, custom?: string): void;
 };
 declare var FolioTemplates: Record<string, string>;
 declare var FolioShowcase: string;
 interface HTMLElement {
-  activeSyntaxRange?: { start: number; end: number };
+  activeSyntaxRange?: { start: number; end: number } | null;
+  /** Metadata attached by the syntax painter for diagnostic hit testing. */
+  syntaxProblems?: FolioDiagnostic[];
+  warningProblems?: FolioDiagnostic[];
 }
 
 interface ComponentElement extends HTMLElement {

@@ -1,4 +1,5 @@
-interface AppElements {
+/** Controls guaranteed by the static application HTML shell. */
+export interface AppElements {
   previewTitle: HTMLElement;
   newDraft: HTMLButtonElement;
   draftList: HTMLDivElement;

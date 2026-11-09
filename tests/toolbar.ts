@@ -1,7 +1,6 @@
 import { createContext } from './helpers/typescript';
 import * as units from './helpers/typescript.ts';
 import assert from './helpers/assert';
-import fs from 'node:fs';
 import vm from 'node:vm';
 import { parseHTML } from 'linkedom';
 
@@ -13,7 +12,7 @@ const context = createContext({
   data,
   URL,
   replaceRange(
-    text,
+    text: string,
     start = source.selectionStart,
     end = source.selectionEnd,
     from = start + text.length,
@@ -51,7 +50,7 @@ for (const [tag, expected] of Object.entries({
   reset('Text');
   context.wrapInline(tag);
   assert.equal(source.value, expected);
-  assert.equal(source.value.slice(...selection), 'Text');
+  assert.equal(source.value.slice(...selection!), 'Text');
   assert.equal(
     context.markdownToBB(source.value),
     tag === 'heading' ? '[heading][big]Text[/big][/heading]' : `[${tag}]Text[/${tag}]`,
@@ -114,18 +113,18 @@ for (const mixed of [true, false]) {
 console.log('Mode-aware toolbar checks passed');
 
 // The color shortcut is editor-only and leaves modified variants and the previous Space shortcut alone.
-let keyHandler,
-  colorCalls = 0;
+let keyHandler!: (event: import('./helpers/types').TestEvent) => void;
+let colorCalls = 0;
 const shortcutDocument = {
   activeElement: source as object,
-  addEventListener(type, handler) {
+  addEventListener(_type: string, handler: (event: import('./helpers/types').TestEvent) => void) {
     keyHandler = handler;
   },
 };
 const shortcutContext = createContext({
   source,
   document: shortcutDocument,
-  wrapInline: (tag) => {
+  wrapInline: (tag: string) => {
     assert.equal(tag, 'b');
   },
   openQuickColor: () => {
@@ -224,15 +223,15 @@ for (const mixed of [true, false]) {
 }
 
 const { document: pickerDocument, window: pickerWindow } = parseHTML('<html><body></body></html>');
-let pickerApplied = [],
-  restoredSelection;
+let pickerApplied: string[] = [];
+let restoredSelection: [number, number, string] | undefined;
 const pickerSource = {
   value: 'ordinary text',
   selectionStart: 3,
   selectionEnd: 8,
   selectionDirection: 'backward',
   focus() {},
-  setSelectionRange(...args) {
+  setSelectionRange(...args: [number, number, string]) {
     restoredSelection = args;
   },
   addEventListener() {},
@@ -243,7 +242,7 @@ const pickerContext = createContext({
   source: pickerSource,
   data: { mixed: true },
   diagnosticHover: null,
-  wrapColor: (name) => pickerApplied.push(name),
+  wrapColor: (name: string) => pickerApplied.push(name),
 });
 units.load(pickerContext, 'editor/toolbar', {
   names: [
@@ -268,38 +267,38 @@ units.load(pickerContext, 'editor/toolbar', {
 });
 vm.runInContext('positionQuickColor=()=>{}', pickerContext);
 const popup = pickerDocument.querySelector<HTMLElement>('.quick-color-picker');
-function pickerKey(key, extra = {}) {
+function pickerKey(key: string, extra = {}) {
   const event = new pickerWindow.Event('keydown', { bubbles: true, cancelable: true });
   Object.assign(event, { key, ...extra });
-  popup.dispatchEvent(event);
+  popup!.dispatchEvent(event);
   return event.defaultPrevented;
 }
 pickerContext.openQuickColor();
-assert.equal(popup.hidden, false);
+assert.equal(popup!.hidden, false);
 assert.equal(pickerApplied.length, 0);
 assert.equal(pickerKey('g'), true);
 assert.deepEqual(pickerApplied, ['green']);
 assert.deepEqual(restoredSelection, [3, 8, 'backward']);
-assert.equal(popup.hidden, true);
+assert.equal(popup!.hidden, true);
 pickerContext.openQuickColor();
 pickerKey('Escape');
 assert.equal(pickerApplied.length, 1);
-assert.equal(popup.hidden, true);
-for (const button of popup.querySelectorAll<HTMLElement>('button')) {
+assert.equal(popup!.hidden, true);
+for (const button of popup!.querySelectorAll<HTMLElement>('button')) {
   pickerContext.openQuickColor();
   const key = button.textContent[0].toLowerCase();
   pickerKey(key);
-  assert.equal(popup.hidden, true);
+  assert.equal(popup!.hidden, true);
 }
 assert.equal(new Set(pickerApplied.slice(1)).size, 12);
 pickerContext.openQuickColor();
 pickerKey('b', { repeat: true });
-assert.equal(popup.hidden, false);
+assert.equal(popup!.hidden, false);
 pickerContext.closeQuickColor(true);
 pickerContext.openQuickColor();
-popup.querySelector<HTMLElement>('button').click();
+popup!.querySelector<HTMLElement>('button')!.click();
 assert.equal(pickerApplied.at(-1), 'red');
-assert.equal(popup.hidden, true);
+assert.equal(popup!.hidden, true);
 console.log('Quick color picker immediate choices, cancellation and selection preservation passed');
 context.colorSafe = () => true;
 units.load(context, 'editor/toolbar', { names: ['wrapColor'], effects: [] });
@@ -308,10 +307,10 @@ for (const mixed of [true, false]) {
   reset('selected');
   context.wrapColor('green');
   assert.equal(source.value, mixed ? '{color:green|selected}' : '[color=green]selected[/color]');
-  assert.equal(source.value.slice(...selection), 'selected');
+  assert.equal(source.value.slice(...selection!), 'selected');
   reset();
   context.wrapColor('cyan');
-  assert.equal(source.value.slice(...selection), 'your text');
+  assert.equal(source.value.slice(...selection!), 'your text');
   reset('First\nSecond');
   context.wrapColor('red');
   assert.equal(
@@ -341,14 +340,14 @@ for (const [mixed, wrapped, body] of [
   reset(wrapped);
   assert.equal(context.unwrapSelectedColor(), true);
   assert.equal(source.value, body);
-  assert.equal(source.value.slice(...selection), body);
+  assert.equal(source.value.slice(...selection!), body);
   if (body && context.selectedColorBody(body) === null) {
     reset('before\n' + wrapped + '\nafter');
     source.selectionStart = 7 + wrapped.indexOf(body);
     source.selectionEnd = source.selectionStart + body.length;
     assert.equal(context.unwrapSelectedColor(), true);
     assert.equal(source.value, 'before\n' + body + '\nafter');
-    assert.equal(source.value.slice(...selection), body);
+    assert.equal(source.value.slice(...selection!), body);
   }
 }
 for (const [mixed, text] of [
@@ -377,10 +376,10 @@ for (const mixed of [true, false]) {
       reset(text);
       context.wrapInline(tag);
       const wrapped = source.value;
-      [source.selectionStart, source.selectionEnd] = selection;
+      [source.selectionStart, source.selectionEnd] = selection!;
       context.wrapInline(tag);
       assert.equal(source.value, text);
-      assert.equal(source.value.slice(...selection), text);
+      assert.equal(source.value.slice(...selection!), text);
       reset(wrapped);
       context.wrapInline(tag);
       assert.equal(source.value, text);
@@ -407,7 +406,7 @@ for (const mixed of [true, false]) {
   source.selectionStart = 7;
   source.selectionEnd = 11;
   context.wrapInline('b');
-  [source.selectionStart, source.selectionEnd] = selection;
+  [source.selectionStart, source.selectionEnd] = selection!;
   context.wrapInline('b');
   assert.equal(source.value, 'before Text after');
   assert.deepEqual(selection, [7, 11]);
@@ -427,7 +426,7 @@ for (const mark of ['**', '__']) {
     assert.ok(
       ['[b][i]Text[/i][/b]', '[i][b]Text[/b][/i]'].includes(context.markdownToBB(source.value)),
     );
-    [source.selectionStart, source.selectionEnd] = selection;
+    [source.selectionStart, source.selectionEnd] = selection!;
     context.wrapInline('i');
     assert.equal(source.value, mark + 'Text' + mark);
   }

@@ -27,11 +27,11 @@ export async function runBrowserFixture(options: {
         });
         await page.addScriptTag({ path: path.join(root, 'tests', options.script) });
         await page.waitForFunction(
-          (id) => document.getElementById(id)?.textContent,
+          (id: string) => document.getElementById(id)?.textContent,
           options.resultId,
           { timeout: 30_000 },
         );
-        const result = JSON.parse(await page.locator('#' + options.resultId).textContent());
+        const result = JSON.parse((await page.locator('#' + options.resultId).textContent())!);
         assert.ok(result.passed, JSON.stringify({ width, ...result }));
         console.log(`${options.script} passed at ${width}px`);
       } finally {

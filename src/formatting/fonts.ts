@@ -10,7 +10,7 @@ export function unicodeAlphabet(
   exceptions: Record<string, string> = {},
 ) {
   return [...fontAlphabet].map(
-    (char, index) =>
+    (char: string, index) =>
       exceptions[char] ||
       String.fromCodePoint(
         index < 26
@@ -18,13 +18,18 @@ export function unicodeAlphabet(
           : index < 52
             ? lower + index - 26
             : digits === null
-              ? char.codePointAt(0)
+              ? char.codePointAt(0)!
               : digits + index - 52,
       ),
   );
 }
 
-export const fontStyles = {
+/** An alphabet maps the 62 ASCII letters/digits to ordinary Unicode glyphs. */
+interface FontStyle {
+  label: string;
+  chars: string[];
+}
+export const fontStyles: Record<string, FontStyle> = {
   smallcaps: {
     label: 'Small caps',
     chars: [
@@ -95,7 +100,7 @@ export function applyFont(text: string, name: string) {
   const style = fontStyles[name];
   if (!style) return text;
   // Preserve syntax, URLs, image labels and literal text; collapse titles are visible text.
-  const transform = (value) =>
+  const transform = (value: string) =>
     [...value]
       .map((c) => {
         const index = fontAlphabet.indexOf(c);
@@ -106,11 +111,11 @@ export function applyFont(text: string, name: string) {
     .split(
       /(\[noparse\][\s\S]*?\[\/noparse\]|\[(?:url|img|user|icon|eicon)(?:=[^\]]*)?\][\s\S]*?\[\/(?:url|img|user|icon|eicon)\]|\[[^\]\n]*\])/gi,
     )
-    .map((part, i) =>
+    .map((part: string, i) =>
       i % 2
         ? part.replace(
             /^(\[collapse=)([^\]\n]*)(\])$/i,
-            (_, open, title, close) => open + transform(title) + close,
+            (_, open: boolean, title: string, close) => open + transform(title) + close,
           )
         : transform(part),
     )
@@ -119,21 +124,21 @@ export function applyFont(text: string, name: string) {
 
 export function compileCollapseTitle(title: string) {
   // Titles are BBCode parameters: convert Unicode fonts without emitting tags.
-  return title.replace(/\{font:([a-z]+)\|([^{}]*)\}/gi, (macro, name, body) =>
+  return title.replace(/\{font:([a-z]+)\|([^{}]*)\}/gi, (macro, name: string, body: string) =>
     Object.hasOwn(fontStyles, name.toLowerCase()) ? applyFont(body, name.toLowerCase()) : macro,
   );
 }
 
 export function decompileFonts(text: string, escapePlain: boolean) {
-  const plain = (value) => (escapePlain ? escapePlainMarkdown(value) : value);
-  const reverse = new Map();
+  const plain = (value: string) => (escapePlain ? escapePlainMarkdown(value) : value);
+  const reverse = new Map<string, { name: string; char: string }>();
   for (const [name, style] of Object.entries(fontStyles))
-    style.chars.forEach((char, i) => {
+    style.chars.forEach((char: string, i) => {
       if (char !== fontAlphabet[i]) reverse.set(char, { name, char: fontAlphabet[i] });
     });
   let result = '',
     buffer = '',
-    style = null;
+    style: string | null = null;
   const flush = () => {
     if (buffer) {
       // Spacing and symbols can bridge styled text, but are not trailing font text.
@@ -145,19 +150,19 @@ export function decompileFonts(text: string, escapePlain: boolean) {
     buffer = '';
   };
   const chars = [...text];
-  const unchanged = (char, name) => {
+  const unchanged = (char: string, name: string) => {
     if (char === '\n' || char === '\r' || reverse.has(char)) return false;
     const index = fontAlphabet.indexOf(char);
     return index < 0 || fontStyles[name].chars[index] === char;
   };
   if (text.includes('\n')) {
-    const names = new Set(chars.map((char) => reverse.get(char)?.name).filter(Boolean));
+    const names = new Set(chars.map((char: string) => reverse.get(char)?.name).filter(Boolean));
     const styledLines = text
       .split(/\r?\n/)
-      .every((line) => !line.trim() || [...line].some((char) => reverse.has(char)));
+      .every((line) => !line.trim() || [...line].some((char: string) => reverse.has(char)));
     if (names.size === 1 && styledLines) {
-      const name = [...names][0],
-        decoded = chars.map((char) => reverse.get(char)?.char || char).join('');
+      const name = [...names][0]!,
+        decoded = chars.map((char: string) => reverse.get(char)?.char || char).join('');
       if (applyFont(decoded, name) === text)
         return '\uE006:::font ' + name + '\n' + plain(decoded) + '\n:::\uE007';
     }

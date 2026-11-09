@@ -1,32 +1,32 @@
+import type { TestControl, TestHandler } from './helpers/types';
 import { createContext } from './helpers/typescript';
 import * as units from './helpers/typescript.ts';
 import assert from './helpers/assert';
-import fs from 'node:fs';
-import vm from 'node:vm';
 
-const handlers = {};
-const elements = new Map();
-const $ = (id) => {
+const handlers: Record<string, TestHandler> = {};
+const elements = new Map<string, TestControl>();
+const $ = (id: string) => {
   if (!elements.has(id))
     elements.set(id, {
       options: [{ value: 'flist-blue' }],
-      addEventListener: (type, fn) => {
+      addEventListener: (type: string, fn: TestHandler) => {
         handlers[id + ':' + type] = fn;
       },
     });
-  return elements.get(id);
+  return elements.get(id)!;
 };
-let stored = 'old',
-  confirmation,
-  applied;
+let stored: string | null = 'old';
+// The click below must register this callback before the test invokes it.
+let confirmation!: () => Promise<void>;
+let applied!: import('../src/app/types').AppData;
 const context = createContext({
   STORAGE: 'folio-f-list-studio-v1',
   $,
-  parsePreviewFontSize: (v) => (v === '16' ? '16' : null),
+  parsePreviewFontSize: (v: unknown) => (v === '16' ? '16' : null),
   clearTimeout: () => {},
   saveTimer: 1,
   makeId: () => 'fresh',
-  requestConfirmation: (message, fn) => {
+  requestConfirmation: (_message: string, fn: () => Promise<void>) => {
     confirmation = fn;
   },
   localStorage: {
@@ -35,7 +35,7 @@ const context = createContext({
     },
   },
   toast: () => {},
-  replaceAppData: (next) => {
+  replaceAppData: (next: import('../src/app/types').AppData) => {
     applied = next;
     stored = 'default';
   },
@@ -58,12 +58,60 @@ const backup = {
 };
 assert.equal(context.validateAppBackup(backup), backup.data);
 for (const modify of [
-  (b) => (b.version = 2),
-  (b) => b.data.drafts.push({ ...b.data.drafts[0] }),
-  (b) => (b.data.drafts = [null]),
-  (b) => (b.data.active = 'missing'),
-  (b) => (b.data.splitRatio = 9),
-  (b) => (b.data.customTemplates[0].content = 42),
+  (b: {
+    version: number;
+    data: {
+      drafts: ({ id: string; name: string; content: string } | null)[];
+      active: string;
+      splitRatio: number;
+      customTemplates: { content: string | number }[];
+    };
+  }) => (b.version = 2),
+  (b: {
+    version: number;
+    data: {
+      drafts: ({ id: string; name: string; content: string } | null)[];
+      active: string;
+      splitRatio: number;
+      customTemplates: { content: string | number }[];
+    };
+  }) => b.data.drafts.push(b.data.drafts[0]),
+  (b: {
+    version: number;
+    data: {
+      drafts: ({ id: string; name: string; content: string } | null)[];
+      active: string;
+      splitRatio: number;
+      customTemplates: { content: string | number }[];
+    };
+  }) => (b.data.drafts = [null]),
+  (b: {
+    version: number;
+    data: {
+      drafts: ({ id: string; name: string; content: string } | null)[];
+      active: string;
+      splitRatio: number;
+      customTemplates: { content: string | number }[];
+    };
+  }) => (b.data.active = 'missing'),
+  (b: {
+    version: number;
+    data: {
+      drafts: ({ id: string; name: string; content: string } | null)[];
+      active: string;
+      splitRatio: number;
+      customTemplates: { content: string | number }[];
+    };
+  }) => (b.data.splitRatio = 9),
+  (b: {
+    version: number;
+    data: {
+      drafts: ({ id: string; name: string; content: string } | null)[];
+      active: string;
+      splitRatio: number;
+      customTemplates: { content: string | number }[];
+    };
+  }) => (b.data.customTemplates[0].content = 42),
 ]) {
   const invalid = structuredClone(backup);
   modify(invalid);
@@ -73,11 +121,11 @@ units.load(context, 'app/backups', { names: [], effects: ["$('purgeData')"] });
 handlers['purgeData:click']();
 assert.equal(stored, 'old');
 assert.equal(applied, undefined);
-let finishClearing,
-  reloads = 0;
+let finishClearing!: () => void;
+let reloads = 0;
 context.FolioLocalImages = {
   clear: () =>
-    new Promise((resolve) => {
+    new Promise<void>((resolve) => {
       finishClearing = resolve;
     }),
 };
@@ -98,7 +146,7 @@ purged
     assert.equal(reloads, 1, 'Reload after confirmed purge finishes');
     console.log('Full-app backup validation and confirmed purge/reload checks passed');
   })
-  .catch((error) => {
+  .catch((error: unknown) => {
     console.error(error);
     process.exitCode = 1;
   });

@@ -17,7 +17,7 @@ const names = [
   'white',
   'gray',
 ];
-const defaults = {
+const defaults: Record<string, string> = {
   red: '#f00',
   orange: '#f60',
   yellow: '#ff0',

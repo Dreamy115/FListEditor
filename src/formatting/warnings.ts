@@ -6,16 +6,41 @@ import { macroBlockNames } from './tags';
 import { fontStyles } from './fonts';
 import { transformInlineLiterals } from './inline';
 
+/** Compiler summaries need no source range; content issues retain the BBCode tag. */
+type Summary = Pick<import('../app/types').Diagnostic, 'message' | 'severity'>;
+type Diagnostic = import('../app/types').Diagnostic;
+interface ContentIssue extends Summary {
+  start: number;
+  end: number;
+  tag: string;
+}
+interface OpenTag {
+  tag: string;
+  param?: string;
+  end: number;
+  match: RegExpMatchArray & { index: number };
+}
+interface OpenMacro {
+  name?: string;
+  literal: boolean;
+}
+interface OpenBlock {
+  name?: string;
+  start: number;
+  end: number;
+  invalid: boolean;
+}
+
 export function countWarnings(compiled: string) {
   return compilerWarnings(compiled).map((issue) => issue.message);
 }
 
 // Severity is compiler data: error = invalid source, warning = F-List compatibility.
 export function compilerWarnings(compiled: string) {
-  const issues = [],
-    stack = [];
+  const issues: Summary[] = [],
+    stack: string[] = [];
   let literal = false;
-  const add = (message, severity = 'error') => issues.push({ message, severity });
+  const add = (message: string, severity = 'error') => issues.push({ message, severity });
   for (const m of compiled.matchAll(/\[(\/?)([a-z][a-z0-9_-]*|\*)(?:=[^\]\n]*)?\]/gi)) {
     const tag = m[2].toLowerCase(),
       close = !!m[1];
@@ -68,10 +93,10 @@ export function compilerWarnings(compiled: string) {
 }
 
 export function tagContentWarnings(compiled: string) {
-  const issues = [],
-    stack = [],
+  const issues: ContentIssue[] = [],
+    stack: OpenTag[] = [],
     opaque = new Set(['noparse', 'url', 'user', 'icon', 'eicon', 'img']);
-  const add = (message, m, severity = 'error') =>
+  const add = (message: string, m: RegExpMatchArray & { index: number }, severity = 'error') =>
     issues.push({
       message,
       severity,
@@ -140,9 +165,9 @@ export function tagContentWarnings(compiled: string) {
 
 export function nestedFontWarnings(text: string) {
   const searchable = warningSource(text, true),
-    stack = [],
-    blocks = [],
-    issues = [];
+    stack: OpenMacro[] = [],
+    blocks: string[] = [],
+    issues: Diagnostic[] = [];
   const message = 'Nested font macros are not supported; use one font macro per text span';
   for (let index = 0; index < searchable.length; index++) {
     if (index === 0 || searchable[index - 1] === '\n') {
@@ -188,7 +213,7 @@ export function nestedFontWarnings(text: string) {
         message,
         severity: 'error',
         start: index,
-        end: index + header[0].length,
+        end: index + header![0].length,
         line: text.slice(0, index).split('\n').length,
       });
     stack.push({ name, literal });
@@ -197,11 +222,11 @@ export function nestedFontWarnings(text: string) {
 }
 
 export function macroWarnings(text: string) {
-  const issues = [];
+  const issues: string[] = [];
   markdownToBB(text, issues);
   return [
     ...new Set([
-      ...issues.filter((message) => !message.includes('block macro')),
+      ...issues.filter((message: string) => !message.includes('block macro')),
       ...blockMacroWarnings(text).map((issue) => issue.message),
       ...nestedFontWarnings(text).map((issue) => issue.message),
     ]),
@@ -210,9 +235,9 @@ export function macroWarnings(text: string) {
 
 export function blockMacroWarnings(text: string) {
   const searchable = warningSource(text, true),
-    stack = [],
-    issues = [];
-  const report = (message, start, end, priority = 0) =>
+    stack: OpenBlock[] = [],
+    issues: Diagnostic[] = [];
+  const report = (message: string, start: number, end: number, priority = 0) =>
     issues.push({
       message,
       severity: 'error',
@@ -250,7 +275,7 @@ export function blockMacroWarnings(text: string) {
       arg = (parsed?.[2] || '').trim();
     let error = '';
     if (!parsed) error = 'Malformed block macro: ' + marker + '; use :::name to open a block';
-    else if (!macroBlockNames.has(name))
+    else if (!macroBlockNames.has(name ?? ''))
       error = 'Unknown block macro: ' + marker + '; check the macro name';
     else if (name === 'collapse' && (!arg || /[\[\]]/.test(arg)))
       error =
@@ -258,9 +283,9 @@ export function blockMacroWarnings(text: string) {
     else if (name === 'font' && !Object.hasOwn(fontStyles, arg.toLowerCase()))
       error = 'Invalid block macro: ' + marker + '; choose a supported font';
     else if (
-      !['collapse', 'color', 'font'].includes(name) &&
+      !['collapse', 'color', 'font'].includes(name ?? '') &&
       arg &&
-      !(['left', 'right', 'center', 'justify'].includes(name) && arg === '!')
+      !(['left', 'right', 'center', 'justify'].includes(name ?? '') && arg === '!')
     )
       error = 'Invalid block macro: ' + marker + '; ' + name + ' does not accept an argument';
     if (error) report(error, start, end);
@@ -281,11 +306,11 @@ export function blockMacroWarnings(text: string) {
 
 // Preserve source offsets while excluding literal examples from diagnostic navigation.
 export function warningSource(text: string, mixed: boolean) {
-  const blank = (value) => value.replace(/[^\n]/g, ' ');
+  const blank = (value: string) => value.replace(/[^\n]/g, ' ');
   if (!mixed)
     text = text.replace(
       /(\[noparse\])([\s\S]*?)(\[\/noparse\]|$)/gi,
-      (_, open, body, close) => open + blank(body) + close,
+      (_, open: boolean, body: string, close) => open + blank(body) + close,
     );
   if (mixed) {
     let fence = 0;
@@ -312,8 +337,8 @@ export function warningSource(text: string, mixed: boolean) {
 
 export function locatedWarnings(text: string, mixed: boolean, compiled: string) {
   const searchable = warningSource(text, mixed),
-    records = [];
-  const add = (message, start, end, severity = 'error') => {
+    records: Diagnostic[] = [];
+  const add = (message: string, start: number, end: number, severity = 'error') => {
     const line = text.slice(0, start).split('\n').length;
     if (!records.some((item) => item.message === message && item.start === start))
       records.push({ message, severity, start, end, line });
@@ -325,9 +350,13 @@ export function locatedWarnings(text: string, mixed: boolean, compiled: string) 
       add(issue.message, issue.start, issue.end, issue.severity);
       continue;
     }
-    const aliases = { url: 'link', img: '(?:img|image)', u: '(?:u|underline)' },
+    const aliases: Record<string, string> = {
+        url: 'link',
+        img: '(?:img|image)',
+        u: '(?:u|underline)',
+      },
       name = aliases[issue.tag] || issue.tag;
-    const shorthand = {
+    const shorthand: Record<string, string> = {
       big: '|^[ \\t]*#[ \\t]+',
       heading: '|^[ \\t]*#{1,6}[ \\t]+',
       b: '|\\*\\*|__',
@@ -396,20 +425,20 @@ export function locatedWarnings(text: string, mixed: boolean, compiled: string) 
   }
   const messages = [
     ...compilerWarnings(compiled),
-    ...colorWarnings(text, mixed).map((message) => ({ message, severity: 'warning' })),
+    ...colorWarnings(text, mixed).map((message: string) => ({ message, severity: 'warning' })),
     ...(mixed
       ? macroWarnings(text)
           .filter(
-            (message) =>
+            (message: string) =>
               !message.includes('block macro') && !message.startsWith('Nested font macros'),
           )
-          .map((message) => ({ message, severity: 'error' }))
+          .map((message: string) => ({ message, severity: 'error' }))
       : []),
   ];
   if (mixed) records.push(...blockMacroWarnings(text), ...nestedFontWarnings(text));
   for (const { message, severity } of messages) {
     if (contentMessages.has(message)) continue;
-    let matches = [];
+    let matches: { index: number; 0: string }[] = [];
     if (message.startsWith('Color ')) {
       const color = message.slice(6, message.indexOf(' is not supported'));
       const tokens =
@@ -447,7 +476,7 @@ export function locatedWarnings(text: string, mixed: boolean, compiled: string) 
     }
     for (const match of matches) add(message, match.index, match.index + match[0].length, severity);
   }
-  const priority = (issue) =>
+  const priority = (issue: Diagnostic) =>
     issue.priority ??
     (/^(?:Invalid|Malformed|Unknown|Unclosed inline|Color )/.test(issue.message) ? 0 : 1);
   return records.sort((a, b) => priority(a) - priority(b) || a.start - b.start);

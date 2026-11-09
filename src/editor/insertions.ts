@@ -9,7 +9,15 @@ export const symbolOptions = $('symbolOptions');
 
 export const symbolSearch = $('symbolSearch');
 
-export const insertionSpecs = {
+/** A mode-specific insertion, including optional text to select after insertion. */
+interface InsertionSpec {
+  prefix: string;
+  suffix: string;
+  fallback: string;
+  select?: string;
+  block?: boolean;
+}
+export const insertionSpecs: Record<string, InsertionSpec> = {
   link: {
     prefix: '[url=https://example.com]',
     suffix: '[/url]',
@@ -30,7 +38,7 @@ export const insertionSpecs = {
   noparse: { prefix: '[noparse]', suffix: '[/noparse]', fallback: 'literal **text**' },
 };
 
-export const markdownInsertionSpecs = {
+export const markdownInsertionSpecs: Record<string, InsertionSpec> = {
   link: {
     prefix: '[',
     suffix: '](https://example.com)',
@@ -57,7 +65,7 @@ export function insertUnicodeSymbol(symbol: string) {
     state.data.mixed && state.data.preferLiterals === false
       ? Array.from(
           symbol,
-          (char) => '&#x' + char.codePointAt(0).toString(16).toUpperCase() + ';',
+          (char: string) => '&#x' + char.codePointAt(0)!.toString(16).toUpperCase() + ';',
         ).join('')
       : symbol;
   replaceRange(text);
@@ -71,7 +79,7 @@ export function insertTag(type: string, imageId = '12345', alias = '') {
       ...spec,
       prefix: spec.prefix.replace('12345', imageId),
       select: imageId,
-      fallback: alias.replace(/[&\[\]{}|\r\n]/g, (char) => '&#' + char.charCodeAt(0) + ';'),
+      fallback: alias.replace(/[&\[\]{}|\r\n]/g, (char: string) => '&#' + char.charCodeAt(0) + ';'),
     };
   const s = source.selectionStart,
     e = source.selectionEnd,
@@ -94,7 +102,7 @@ export function insertTag(type: string, imageId = '12345', alias = '') {
     s,
     e,
     at < 0 ? s + text.length : s + at,
-    at < 0 ? s + text.length : s + at + target.length,
+    at < 0 ? s + text.length : s + at + target!.length,
   );
 }
 
@@ -315,7 +323,7 @@ export function initializeInsertionTools() {
   document.querySelectorAll<HTMLElement>('[data-insert]').forEach((btn) =>
     btn.addEventListener('click', async () => {
       if (btn.dataset.insert !== 'inlineimg') {
-        insertTag(btn.dataset.insert);
+        insertTag(btn.dataset.insert!);
         return;
       }
       const start = source.selectionStart,

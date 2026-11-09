@@ -1,40 +1,69 @@
+import type { AppElements } from '../../src/app/dom';
 import fs from 'node:fs';
 import vm from 'node:vm';
 import { parseHTML } from 'linkedom';
 
 /** Small DOM host for integration tests. Layout is stubbed; rendering is real. */
-function boot(appCode, saved = null, standalone = false) {
-  const { window, document }: { window: any; document: any } = parseHTML(
+function boot(appCode: string | null, saved: unknown = null, standalone = false) {
+  const { window, document } = parseHTML(
     fs.readFileSync(standalone ? 'dist/Folio-Profile-Studio.html' : 'index.html', 'utf8'),
   );
   const store = new Map(saved ? [['folio-f-list-studio-v1', JSON.stringify(saved)]] : []);
-  const rect = { top: 0, left: 0, right: 800, bottom: 600, width: 800, height: 600 };
-  window.HTMLElement.prototype.getBoundingClientRect = () => rect;
-  window.HTMLElement.prototype.getClientRects = () => [rect];
-  window.HTMLElement.prototype.getAnimations = () => [];
-  window.HTMLElement.prototype.focus = function () {
-    document.activeElement = this;
+  const rect: DOMRect = {
+    x: 0,
+    y: 0,
+    top: 0,
+    left: 0,
+    right: 800,
+    bottom: 600,
+    width: 800,
+    height: 600,
+    toJSON() {
+      return {};
+    },
   };
-  window.HTMLElement.prototype.select = function () {
+  const rects: DOMRectList = Object.assign([rect], {
+    item: (index: number) => (index === 0 ? rect : null),
+  });
+  // LinkeDOM lacks textarea/layout behavior. This receiver describes only the
+  // extra methods installed on this isolated test host, not real DOM elements.
+  const prototype = window.HTMLElement.prototype as HTMLTextAreaElement;
+  prototype.getBoundingClientRect = () => rect;
+  prototype.getClientRects = () => rects;
+  prototype.getAnimations = () => [];
+  prototype.focus = function (this: HTMLTextAreaElement) {
+    Reflect.set(document, 'activeElement', this);
+  };
+  prototype.select = function (this: HTMLTextAreaElement) {
     this.setSelectionRange(0, this.value.length);
   };
-  window.HTMLElement.prototype.setSelectionRange = function (start, end, direction = 'none') {
+  prototype.setSelectionRange = function (
+    this: HTMLTextAreaElement,
+    start: number,
+    end: number,
+    direction: 'forward' | 'backward' | 'none' = 'none',
+  ) {
     this.selectionStart = start;
     this.selectionEnd = end;
     this.selectionDirection = direction;
   };
-  window.HTMLElement.prototype.setRangeText = function (text, start, end) {
+  prototype.setRangeText = function (
+    this: HTMLTextAreaElement,
+    text: string,
+    start: number = this.selectionStart,
+    end: number = this.selectionEnd,
+  ) {
     this.value = this.value.slice(0, start) + text + this.value.slice(end);
     this.setSelectionRange(start + text.length, start + text.length);
   };
   Object.defineProperty(window.HTMLSelectElement.prototype, 'value', {
     configurable: true,
-    get() {
+    get(this: HTMLSelectElement) {
       return (
         [...this.options].find((option) => option.selected)?.value || this.options[0]?.value || ''
       );
     },
-    set(value) {
+    set(this: HTMLSelectElement, value: string) {
       for (const option of this.options) option.selected = option.value === value;
     },
   });
@@ -48,9 +77,9 @@ function boot(appCode, saved = null, standalone = false) {
       setEnd() {},
       collapse() {},
       getBoundingClientRect: () => rect,
-      getClientRects: () => [rect],
+      getClientRects: () => rects,
     });
-  const source = document.getElementById('source');
+  const source = document.getElementById('source') as HTMLTextAreaElement;
   source.setSelectionRange(0, 0);
   let sequence = 0;
   class Clock extends Date {
@@ -70,9 +99,9 @@ function boot(appCode, saved = null, standalone = false) {
     navigator: {},
     location: { reload() {} },
     localStorage: {
-      getItem: (key) => store.get(key) ?? null,
-      setItem: (key, value) => store.set(key, value),
-      removeItem: (key) => store.delete(key),
+      getItem: (key: string) => store.get(key) ?? null,
+      setItem: (key: string, value: string) => store.set(key, value),
+      removeItem: (key: string) => store.delete(key),
     },
     setTimeout: () => 1,
     clearTimeout() {},
@@ -95,24 +124,25 @@ function boot(appCode, saved = null, standalone = false) {
         ? appCode
         : fs.readFileSync(file, 'utf8')
       : script.textContent;
-    vm.runInContext(code, context, { filename: file || 'standalone-inline-script' });
+    vm.runInContext(code!, context, { filename: file || 'standalone-inline-script' });
   }
-  const $ = (id) => document.getElementById(id);
+  const $ = <K extends keyof AppElements>(id: K): AppElements[K] =>
+    document.getElementById(id) as AppElements[K];
   return {
     context,
     document,
     source,
     store,
     $,
-    click(id) {
+    click(id: keyof AppElements) {
       $(id).click();
     },
-    input(value) {
+    input(value: string) {
       source.value = value;
       source.setSelectionRange(value.length, value.length);
       source.dispatchEvent(new window.Event('input'));
     },
-    change(id, value) {
+    change(id: 'profileName' | 'editorTheme' | 'theme', value: string) {
       $(id).value = value;
       $(id).dispatchEvent(new window.Event('change'));
     },

@@ -18,5 +18,7 @@ export function numericCharacterReference(reference: string) {
 export function decodeCharacterReference(reference: string) {
   if (reference.startsWith('&#')) return numericCharacterReference(reference);
   const name = reference.slice(1, -1);
-  return Object.hasOwn(namedCharacterReferences, name) ? namedCharacterReferences[name] : null;
+  return Object.hasOwn(namedCharacterReferences, name)
+    ? (namedCharacterReferences as Record<string, string>)[name]
+    : null;
 }

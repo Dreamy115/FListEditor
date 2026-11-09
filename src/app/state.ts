@@ -1,9 +1,17 @@
+import { isRecord } from './validation';
 import { $ } from './dom';
 import { parsePreviewFontSize } from '../preview/preferences';
 
-import type { ApplicationState, TemplateSession, EditorContext, EditHistory } from './types';
+import type {
+  ApplicationState,
+  TemplateSession,
+  EditorContext,
+  EditHistory,
+  ProfileRecord,
+} from './types';
 
 export const state: ApplicationState = {
+  // main.ts initializes persisted data before binding controls or rendering.
   data: undefined!,
   diagnosticHover: undefined,
   saveTimer: null,
@@ -20,13 +28,13 @@ export const templates = globalThis.FolioTemplates;
 
 export const intro = globalThis.FolioShowcase;
 
-export function validateCustomTemplates(records) {
+export function validateCustomTemplates(records: unknown): ProfileRecord[] {
   if (!Array.isArray(records)) return [];
   const seen = new Set();
   return records
-    .filter((record) => {
+    .filter((record: unknown): record is ProfileRecord => {
       if (
-        !record ||
+        !isRecord(record) ||
         typeof record.id !== 'string' ||
         !record.id ||
         seen.has(record.id) ||
@@ -61,7 +69,7 @@ export function initializeAppState() {
   state.data = {
     customTemplates: [],
     drafts: [{ id: makeId(), name: 'New Character', content: intro }],
-    active: null,
+    active: '',
     theme: 'flist-blue',
     customPreviewCss: '',
     customPreviewCssName: '',
@@ -76,13 +84,18 @@ export function initializeAppState() {
   state.data.active = state.data.drafts[0].id;
 
   try {
-    const loaded = JSON.parse(localStorage.getItem(STORAGE));
-    if (loaded && Array.isArray(loaded.drafts) && loaded.drafts.length) {
+    const loaded = JSON.parse(localStorage.getItem(STORAGE) ?? 'null') as unknown;
+    if (isRecord(loaded) && Array.isArray(loaded.drafts) && loaded.drafts.length) {
       const valid = loaded.drafts
-        .filter(
-          (d) =>
-            typeof d.id === 'string' && typeof d.name === 'string' && typeof d.content === 'string',
-        )
+        .filter((d: unknown): d is ProfileRecord => {
+          if (d == null) throw Error('Invalid saved draft');
+          return (
+            isRecord(d) &&
+            typeof d.id === 'string' &&
+            typeof d.name === 'string' &&
+            typeof d.content === 'string'
+          );
+        })
         .slice(0, 80);
       if (valid.length) {
         state.data = {
@@ -96,12 +109,12 @@ export function initializeAppState() {
               : '',
           customTemplates: validateCustomTemplates(loaded.customTemplates),
           drafts: valid,
-          active: valid.some((d) => d.id === loaded.active) ? loaded.active : valid[0].id,
-          editorTheme: ['folio', 'graphite', 'forest', 'paper'].includes(loaded.editorTheme)
-            ? loaded.editorTheme
+          active: valid.some((d) => d.id === loaded.active) ? String(loaded.active) : valid[0].id,
+          editorTheme: ['folio', 'graphite', 'forest', 'paper'].includes(String(loaded.editorTheme))
+            ? String(loaded.editorTheme)
             : 'folio',
           theme: Array.from($('theme').options).some((option) => option.value === loaded.theme)
-            ? loaded.theme
+            ? String(loaded.theme)
             : 'flist-blue',
           previewFontSize: parsePreviewFontSize(loaded.previewFontSize) || 'site',
           splitRatio:

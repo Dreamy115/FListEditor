@@ -1,3 +1,5 @@
+import type { AppData } from './types';
+import { isRecord } from './validation';
 import { $, source } from './dom';
 import { state, templateEditors, characterEditors, editHistories, STORAGE, makeId } from './state';
 import { parsePreviewFontSize } from '../preview/preferences';
@@ -17,10 +19,11 @@ import { active } from './active';
 import { syncFromEditor } from '../editor/sync';
 
 // Full-app backups contain the complete persisted state, separate from profile backups.
-export function validateAppBackup(record) {
-  if (!record || record.format !== 'folio-app' || record.version !== 1)
+export function validateAppBackup(record: unknown): AppData {
+  if (!isRecord(record) || record.format !== 'folio-app' || record.version !== 1)
     throw Error('Unsupported app backup');
   const value = record.data;
+  if (!isRecord(value)) throw Error('Invalid app data');
   if (
     value &&
     ((value.customPreviewCss !== undefined &&
@@ -45,7 +48,7 @@ export function validateAppBackup(record) {
     const ids = new Set();
     for (const item of records) {
       if (
-        !item ||
+        !isRecord(item) ||
         typeof item.id !== 'string' ||
         !item.id ||
         ids.has(item.id) ||
@@ -59,10 +62,10 @@ export function validateAppBackup(record) {
     }
   }
   if (
-    !value.drafts.some((draft) => draft.id === value.active) ||
+    !value.drafts.some((draft: { id: string }) => draft.id === value.active) ||
     typeof value.mixed !== 'boolean' ||
     typeof value.previewNoteDismissed !== 'boolean' ||
-    !['folio', 'graphite', 'forest', 'paper'].includes(value.editorTheme) ||
+    !['folio', 'graphite', 'forest', 'paper'].includes(String(value.editorTheme)) ||
     !Array.from($('theme').options).some((option) => option.value === value.theme) ||
     !parsePreviewFontSize(value.previewFontSize) ||
     typeof value.splitRatio !== 'number' ||
@@ -71,11 +74,12 @@ export function validateAppBackup(record) {
     value.splitRatio > 0.75
   )
     throw Error('Invalid app settings');
-  return value;
+  // Every required field and each saved record has been checked above.
+  return value as unknown as AppData;
 }
 
-export function replaceAppData(next) {
-  clearTimeout(state.saveTimer);
+export function replaceAppData(next: AppData) {
+  clearTimeout(state.saveTimer ?? undefined);
   state.editorLoaded = false;
   state.templateSession = null;
   templateEditors.clear();
@@ -114,7 +118,7 @@ export function bindImportAndBackupControls() {
   $('importAll').addEventListener('click', () => $('appDataImport').click());
 
   $('appDataImport').addEventListener('change', async (event) => {
-    const file = (event.target as HTMLInputElement).files[0];
+    const file = (event.target as HTMLInputElement).files?.[0];
     (event.target as HTMLInputElement).value = '';
     if (!file) return;
     let next;
@@ -165,7 +169,7 @@ export function bindImportAndBackupControls() {
           preferLiterals: true,
           mixed: true,
         });
-        clearTimeout(state.saveTimer);
+        clearTimeout(state.saveTimer ?? undefined);
         try {
           localStorage.removeItem(STORAGE);
           $('saveStatus').textContent = 'Local data purged';
@@ -187,7 +191,7 @@ export function bindImportAndBackupControls() {
   $('importBtn').addEventListener('click', () => $('fileImport').click());
 
   $('fileImport').addEventListener('change', async (e) => {
-    const file = (e.target as HTMLInputElement).files[0];
+    const file = (e.target as HTMLInputElement).files?.[0];
     (e.target as HTMLInputElement).value = '';
     if (!file) return;
     if (file.size > 1500000) {
@@ -202,14 +206,15 @@ export function bindImportAndBackupControls() {
       return;
     }
     let name = file.name.replace(/\.(folio\.json|bbcode|txt|md|json)$/i, ''),
-      mixed;
+      mixed: boolean | undefined;
     const filename = file.name.toLowerCase();
     if (filename.endsWith('.md')) mixed = true;
     else if (filename.endsWith('.bbcode')) mixed = false;
     else if (filename.endsWith('.json')) {
       try {
         const record = JSON.parse(str);
-        if (!record || typeof record.content !== 'string') throw Error('No profile content');
+        if (!isRecord(record) || typeof record.content !== 'string')
+          throw Error('No profile content');
         name = String(record.name || name);
         str = record.content;
         if (typeof record.mixed === 'boolean') mixed = record.mixed;

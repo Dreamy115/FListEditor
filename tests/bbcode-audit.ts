@@ -10,7 +10,7 @@ const context = createContext({ URL, document, window, setTimeout, clearTimeout 
 
 vm.runInContext(fs.readFileSync('build/horizon-renderer.js', 'utf8'), context);
 units.formatting(context);
-const warnings = (text) => Array.from(context.countWarnings(text));
+const warnings = (text: string) => Array.from(context.countWarnings(text));
 for (const tag of 'b i u s big small sup sub color url heading indent justify collapse quote hr left center right icon eicon user noparse'.split(
   ' ',
 )) {
@@ -30,7 +30,7 @@ for (const bb of [
   '[url=https://localhost]X[/url]',
 ]) {
   assert.ok(
-    warnings(bb).some((message) => message.startsWith('Invalid URL in ')),
+    warnings(bb).some((message: string) => message.startsWith('Invalid URL in ')),
     bb,
   );
 }
@@ -40,18 +40,20 @@ for (const bb of [
   '[sup][color=red]X[/color][/sup]',
 ]) {
   assert.ok(
-    warnings(bb).some((message) => message.startsWith('Unsupported nesting:')),
+    warnings(bb).some((message: string) => message.startsWith('Unsupported nesting:')),
     bb,
   );
 }
 for (const bb of ['[b=ignored]X[/b]', '[icon=ignored]Test Name[/icon]'])
   assert.ok(
-    warnings(bb).some((message) => message.startsWith('Unexpected parameter on ')),
+    warnings(bb).some((message: string) => message.startsWith('Unexpected parameter on ')),
     bb,
   );
 for (const tag of ['user', 'icon', 'eicon'])
   assert.ok(
-    warnings(`[${tag}]Bad!Name[/${tag}]`).some((message) => message.startsWith('Invalid name in ')),
+    warnings(`[${tag}]Bad!Name[/${tag}]`).some((message: string) =>
+      message.startsWith('Invalid name in '),
+    ),
   );
 for (const bb of [
   '[collapse]Body[/collapse]',
@@ -188,13 +190,13 @@ for (const markdown of [
   for (const issue of issues)
     assert.equal(issue.line, markdown.slice(0, issue.start).split('\n').length);
 }
-avatar.dispatchEvent(new window.Event('error'));
-assert.match(avatar.src, /^data:image\/svg\+xml,/);
-const fallback = avatar.src;
-avatar.dispatchEvent(new window.Event('error'));
-assert.equal(avatar.src, fallback, 'Fallback must not retry remote images');
-assert.equal(avatar.alt, 'Test Name');
-assert.match((avatar.parentElement as HTMLAnchorElement).href, /Test/);
+avatar!.dispatchEvent(new window.Event('error'));
+assert.match(avatar!.src, /^data:image\/svg\+xml,/);
+const fallback = avatar!.src;
+avatar!.dispatchEvent(new window.Event('error'));
+assert.equal(avatar!.src, fallback, 'Fallback must not retry remote images');
+assert.equal(avatar!.alt, 'Test Name');
+assert.match((avatar!.parentElement as HTMLAnchorElement).href, /Test/);
 console.log(
   'Official BBCode coverage, semantic diagnostics, source locations and avatar fallback passed',
 );

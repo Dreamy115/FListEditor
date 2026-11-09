@@ -6,7 +6,7 @@ import { download } from '../app/exports';
 
 export function setEditorTheme() {
   document.documentElement.dataset.appTheme = state.data.editorTheme;
-  source.parentElement.dataset.editorTheme = state.data.editorTheme;
+  source.parentElement!.dataset.editorTheme = state.data.editorTheme;
   $('editorTheme').value = state.data.editorTheme;
 }
 
@@ -58,7 +58,7 @@ export function bindAppearanceControls() {
   previewCssMenu.addEventListener('keydown', (event) => {
     if (event.key === 'Escape') {
       previewCssMenu.open = false;
-      previewCssMenu.querySelector<HTMLElement>('summary').focus();
+      previewCssMenu.querySelector<HTMLElement>('summary')!.focus();
       event.preventDefault();
     }
   });
@@ -66,7 +66,7 @@ export function bindAppearanceControls() {
   $('loadPreviewCss').addEventListener('click', () => $('previewCssFile').click());
 
   $('previewCssFile').addEventListener('change', async (event) => {
-    const file = (event.target as HTMLInputElement).files[0];
+    const file = (event.target as HTMLInputElement).files?.[0];
     (event.target as HTMLInputElement).value = '';
     if (!file) return;
     if (!file.name.toLowerCase().endsWith('.css') || file.size > 200000) {

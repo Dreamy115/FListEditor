@@ -23,11 +23,11 @@ export function persist() {
 
 export function scheduleSave() {
   $('saveStatus').textContent = '◌ Saving…';
-  clearTimeout(state.saveTimer);
+  clearTimeout(state.saveTimer ?? undefined);
   state.saveTimer = setTimeout(persist, 260);
 }
 
-export let pendingConfirm = null;
+export let pendingConfirm: (() => void) | null = null;
 
 export function requestConfirmation(message: string, callback: () => void) {
   pendingConfirm = callback;
@@ -44,7 +44,7 @@ export function toast(message: string) {
   const el = $('toast');
   el.textContent = message;
   el.classList.add('show');
-  clearTimeout(state.toastTimer);
+  clearTimeout(state.toastTimer ?? undefined);
   state.toastTimer = setTimeout(() => el.classList.remove('show'), 2200);
 }
 

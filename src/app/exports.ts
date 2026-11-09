@@ -28,7 +28,7 @@ export function showScreenshotPermission(png: Blob) {
   dialog.setAttribute('aria-labelledby', 'clipboardPermissionTitle');
   dialog.innerHTML = `<h2 id="clipboardPermissionTitle">Allow clipboard access</h2><p>Allow clipboard access in your browser's permission prompt. If access is blocked, open the site permissions beside the address bar and allow Clipboard, then retry.</p><p role="status"></p><div class="clipboard-actions"><button type="button">Retry copy</button><button type="button">Export screenshot (.png)</button><button type="button">Cancel</button></div>`;
   const [retry, exportButton, cancel] = dialog.querySelectorAll('button'),
-    status = dialog.querySelector('[role="status"]');
+    status = dialog.querySelector('[role="status"]')!;
   retry.addEventListener('click', async () => {
     retry.disabled = true;
     status.textContent = 'Requesting clipboard access?';
@@ -101,7 +101,7 @@ export function bindExportControls() {
     button.disabled = true;
     button.textContent = 'Copying screenshot…';
     button.setAttribute('aria-busy', 'true');
-    let png;
+    let png: Promise<Blob> | undefined;
     try {
       refresh();
       png = FolioScreenshot.capture($('previewPage'));
@@ -112,7 +112,7 @@ export function bindExportControls() {
     } catch (error) {
       console.error('Screenshot copy failed', error);
       try {
-        showScreenshotPermission(await png);
+        showScreenshotPermission(await png!);
       } catch (captureError) {
         toast('Screenshot capture failed. Please try again.');
       }

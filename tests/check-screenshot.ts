@@ -24,7 +24,7 @@ const testDirectory = fileURLToPath(new URL('.', import.meta.url));
       null,
       { timeout: 30000 },
     );
-    const result = JSON.parse(await page.locator('#screenshot-result').textContent());
+    const result = JSON.parse((await page.locator('#screenshot-result').textContent())!);
     if (!result.passed) throw Error(result.error);
     const download = page.waitForEvent('download');
     await page.locator('#exportScreenshot').click();
@@ -73,10 +73,10 @@ const testDirectory = fileURLToPath(new URL('.', import.meta.url));
     await page.waitForFunction(
       () => !(document.getElementById('copyScreenshot') as HTMLButtonElement).disabled,
     );
-    if (!(await page.locator('#toast').textContent()).includes('Allow clipboard access'))
+    if (!(await page.locator('#toast').textContent())!.includes('Allow clipboard access'))
       throw Error('Copy failure needs useful feedback');
     await page.evaluate(() => {
-      navigator.clipboard.write = window.originalClipboardWrite;
+      navigator.clipboard.write = window.originalClipboardWrite!;
     });
     for (const format of ['Html']) {
       const pending = page.waitForEvent('download');
@@ -101,7 +101,7 @@ const testDirectory = fileURLToPath(new URL('.', import.meta.url));
             [...card.querySelectorAll<HTMLElement>('.bbcode-collapse-header')].every(
               (header) => header.getAttribute('aria-expanded') === 'false',
             ) &&
-            getComputedStyle(card).backgroundColor !== 'rgba(0, 0, 0, 0)'
+            getComputedStyle(card!).backgroundColor !== 'rgba(0, 0, 0, 0)'
           );
         });
         if (!valid) throw Error('HTML must open independently with styled, collapsed sections');
@@ -133,8 +133,8 @@ const testDirectory = fileURLToPath(new URL('.', import.meta.url));
           await htmlPage.setViewportSize({ width, height: 1000 });
           const fillsPage = await htmlPage.evaluate(() => {
             const card = document.querySelector<HTMLElement>('.previewpage');
-            const bounds = card.getBoundingClientRect();
-            const padding = parseFloat(getComputedStyle(card).paddingLeft);
+            const bounds = card!.getBoundingClientRect();
+            const padding = parseFloat(getComputedStyle(card!).paddingLeft);
             const expectedPadding = Math.max(12, Math.min(160, (innerWidth - 1000) / 2));
             return (
               Math.abs(padding - expectedPadding) < 1 &&
@@ -143,7 +143,7 @@ const testDirectory = fileURLToPath(new URL('.', import.meta.url));
               Math.abs(bounds.width - document.documentElement.clientWidth) < 1 &&
               bounds.height >= innerHeight &&
               getComputedStyle(document.body).padding === '0px' &&
-              getComputedStyle(card).borderRadius === '0px'
+              getComputedStyle(card!).borderRadius === '0px'
             );
           });
           if (!fillsPage)
@@ -152,7 +152,7 @@ const testDirectory = fileURLToPath(new URL('.', import.meta.url));
         await htmlPage.close();
       }
       await page.waitForFunction(
-        (id) => !(document.getElementById(id) as HTMLButtonElement).disabled,
+        (id: string) => !(document.getElementById(id) as HTMLButtonElement).disabled,
         'export' + format,
       );
       if ((await page.locator('#previewPage').innerHTML()) !== original)
@@ -164,7 +164,7 @@ const testDirectory = fileURLToPath(new URL('.', import.meta.url));
   } finally {
     await browser.close();
   }
-})().catch((error) => {
+})().catch((error: unknown) => {
   console.error(error);
   process.exitCode = 1;
 });

@@ -6,7 +6,7 @@ const parser = new StandardBBCodeParser();
 // Standalone previews have no profile API response mapping IDs to image hashes.
 const imageTag = parser.getTag('img');
 parser.addTag(
-  new BBCodeTextTag('img', (p, parent, param, content) => {
+  new BBCodeTextTag('img', (p, parent, param: string, content) => {
     const local = /^\d+$/.test(param) && globalThis.FolioLocalImages?.get(param);
     if (local) {
       const image = document.createElement('img');
@@ -28,7 +28,7 @@ parser.addTag(
       parent.appendChild(block);
       return block;
     }
-    if (parser.inlines?.[param]) return imageTag.createElement(p, parent, param, content);
+    if (parser.inlines?.[param]) return imageTag!.createElement(p, parent, param, content);
     const url = safeURL(content);
     const el = document.createElement(!param && url ? 'img' : 'span');
     if (!param && url) {
@@ -53,7 +53,7 @@ parser.addTag(
   }),
 );
 globalThis.FolioHorizon = {
-  render: (input) => parser.parseEverything(input),
+  render: (input: string) => parser.parseEverything(input),
   allowsChild: (parent, child) => parser.getTag(parent)?.isAllowed(child) !== false,
-  validURL: (value) => analyzeUrlTag(parser, value, '').success && !!safeURL(value),
+  validURL: (value: string) => analyzeUrlTag(parser, value, '').success && !!safeURL(value),
 };

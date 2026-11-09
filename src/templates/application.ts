@@ -47,5 +47,5 @@ export function bindFormattingControls() {
 
   document
     .querySelectorAll<HTMLElement>('[data-wrap]')
-    .forEach((btn) => btn.addEventListener('click', () => wrapInline(btn.dataset.wrap)));
+    .forEach((btn) => btn.addEventListener('click', () => wrapInline(btn.dataset.wrap!)));
 }

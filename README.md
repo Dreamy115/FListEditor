@@ -154,7 +154,7 @@ The test commands discover the TypeScript test programs automatically:
 | `npm test` | 23 DOM, conversion, state, and build/parity programs; includes the build |
 | `npm run test:browser` | 11 Playwright browser programs; includes the build |
 | `npm run test:all` | All 34 TypeScript test programs; includes the build |
-| `npm run typecheck` | Application, test, and build-script type checks without JavaScript output |
+| `npm run typecheck` | Strict application, test, and build-script checks (including unused code) without JavaScript output |
 
 For browser checks, install Chromium once with `npx playwright install chromium` (on Linux, `npx playwright install --with-deps chromium` also installs system dependencies). Browser checks use Chromium by default; set `PLAYWRIGHT_CHANNEL=msedge` to use an installed Edge instead. The former visual fixture launchers also run through Playwright/TypeScript, including desktop, tablet, and mobile checks.
 

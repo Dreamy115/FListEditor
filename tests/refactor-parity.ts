@@ -1,19 +1,18 @@
 import { createContext } from './helpers/typescript';
 import assert from './helpers/assert';
 import fs from 'node:fs';
-import vm from 'node:vm';
 import { createHash } from 'node:crypto';
 import { boot } from './helpers/browser.ts';
 import { steps, corpus } from './helpers/scenarios.ts';
 import { formatting } from './helpers/typescript.ts';
 import baseline from './fixtures/refactor-baseline.json';
 
-const hash = (text) => createHash('sha256').update(text).digest('hex');
+const hash = (text: string) => createHash('sha256').update(text).digest('hex');
 
 // Expected results were captured from the unmodified application at baseline.commit.
 const context = createContext({ URL });
 formatting(context);
-const outputs = corpus().map((text) => {
+const outputs = corpus().map((text: string) => {
   const compiled = context.markdownToBB(text);
   return [
     compiled,
@@ -37,9 +36,12 @@ for (const [index, [label, action]] of steps.entries()) {
   assert.deepEqual(snapshot, baseline.snapshots[index].snapshot, label);
 }
 // Saved records and settings still hydrate through the complete module graph.
-const saved = JSON.parse(browser.store.get('folio-f-list-studio-v1'));
+const saved = JSON.parse(browser.store.get('folio-f-list-studio-v1')!);
 const reopened = boot(fs.readFileSync('build/app.js', 'utf8'), saved);
-assert.equal(reopened.$('profileName').value, saved.drafts.find((d) => d.id === saved.active).name);
+assert.equal(
+  reopened.$('profileName').value,
+  saved.drafts.find((d: { id: string; name: string }) => d.id === saved.active).name,
+);
 assert.equal(reopened.document.documentElement.dataset.appTheme, saved.editorTheme);
 assert.equal(reopened.$('theme').value, saved.theme);
 const standalone = boot(null, null, true);

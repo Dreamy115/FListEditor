@@ -8,7 +8,10 @@ import { decodeCharacterReference } from './entities';
 export function literalBBContent(text: string) {
   // Split both forms: closers terminate the wrapper, while openers can make
   // the renderer consume the wrapper's closer as part of a nested literal tag.
-  return text.replace(/\[\/?noparse\]/gi, (tag) => '[[/noparse]' + tag.slice(1) + '[noparse]');
+  return text.replace(
+    /\[\/?noparse\]/gi,
+    (tag: string) => '[[/noparse]' + tag.slice(1) + '[noparse]',
+  );
 }
 
 export function literalBBCode(text: string) {
@@ -41,7 +44,7 @@ export function transformInlineLiterals(
       }
     }
     if (text[i] === '`') {
-      const run = text.slice(i).match(/^`+/)[0];
+      const run = text.slice(i).match(/^`+/)![0];
       let j = i + run.length,
         matched = false;
       while (j < text.length && text[j] !== '\n') {
@@ -49,7 +52,7 @@ export function transformInlineLiterals(
           j++;
           continue;
         }
-        const closing = text.slice(j).match(/^`+/)[0];
+        const closing = text.slice(j).match(/^`+/)![0];
         if (closing.length === run.length && j > i + run.length) {
           const end = j + run.length;
           output += transform(text.slice(i, end), text.slice(i + run.length, j));
@@ -70,16 +73,16 @@ export function transformInlineLiterals(
 }
 
 export function inlineMarkdown(text: string, protectedParts: string[] = [], issues: string[] = []) {
-  const warn = (message) => issues.push(message);
-  const protect = (value) => {
+  const warn = (message: string) => issues.push(message);
+  const protect = (value: string) => {
     const id = protectedParts.length;
     protectedParts.push(value);
     return '\uE000' + id + '\uE001';
   };
   // Shield literal inline code before interpreting any BBCode or custom macros.
-  text = transformInlineLiterals(text, (_, literal) => protect(literalBBCode(literal)));
+  text = transformInlineLiterals(text, (_, literal: string) => protect(literalBBCode(literal)));
   // Explicitly escaped bracket expressions stay literal even for known tags.
-  text = text.replace(/(\\+)(\[[^\[\]\n]*\])/g, (_, slashes, literal) =>
+  text = text.replace(/(\\+)(\[[^\[\]\n]*\])/g, (_, slashes, literal: string) =>
     slashes.length % 2 ? slashes.slice(0, -1) + protect(literalBBCode(literal)) : slashes + literal,
   );
   // Support nested inline macros, e.g. {color:purple|**bright**}.
@@ -184,7 +187,7 @@ export function inlineMarkdown(text: string, protectedParts: string[] = [], issu
     safeUrl(url) ? protect('[url]' + url + '[/url]') : match,
   );
   // Protect links and images, and ensure only valid http(s) URLs are exported.
-  text = text.replace(/!?\[([^\]\n]*)\]\((https?:\/\/[^\s)]+)\)/gi, (match, label, url) => {
+  text = text.replace(/!?\[([^\]\n]*)\]\((https?:\/\/[^\s)]+)\)/gi, (match, label: string, url) => {
     if (!safeUrl(url)) return match;
     return protect(
       match.startsWith('!')
@@ -198,7 +201,7 @@ export function inlineMarkdown(text: string, protectedParts: string[] = [], issu
     return char === null ? reference : protect(/[\[\]]/.test(char) ? literalBBCode(char) : char);
   });
   // Remaining bracket expressions are prose, not supported BBCode or links.
-  text = text.replace(/\[[^\[\]\n]*\]/g, (literal) => protect(literalBBCode(literal)));
+  text = text.replace(/\[[^\[\]\n]*\]/g, (literal: string) => protect(literalBBCode(literal)));
   text = text
     .replace(/\*\*\*([^*\n]+)\*\*\*/g, '[b][i]$1[/i][/b]')
     .replace(/\*\*([^*\n]+)\*\*/g, '[b]$1[/b]')
@@ -209,7 +212,10 @@ export function inlineMarkdown(text: string, protectedParts: string[] = [], issu
     .replace(/(?<!\w)_([^_\n]+)_(?!\w)/g, '[i]$1[/i]');
   let revealed = text;
   for (let n = 0; n < 16 && revealed.includes('\uE000'); n++) {
-    const next = revealed.replace(/\uE000(\d+)\uE001/g, (_, id) => protectedParts[+id] ?? '');
+    const next = revealed.replace(
+      /\uE000(\d+)\uE001/g,
+      (_, id: string) => protectedParts[+id] ?? '',
+    );
     if (next === revealed) break;
     revealed = next;
   }

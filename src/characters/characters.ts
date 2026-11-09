@@ -67,7 +67,7 @@ export function cloneCharacter(id: string) {
   toast('Character cloned');
 }
 
-export let draggedDraftId = null;
+export let draggedDraftId: string | null = null;
 
 export function reorderDraft(id: string, targetId: string, after: boolean) {
   if (id === targetId) return;
@@ -101,13 +101,14 @@ export function renderDrafts() {
     btn.draggable = true;
     btn.title = d.name + ' — Drag to reorder; Alt+Up/Down to move';
     btn.addEventListener('dragstart', (event) => {
+      if (!event.dataTransfer) return;
       draggedDraftId = d.id;
       event.dataTransfer.effectAllowed = 'move';
       event.dataTransfer.setData('text/plain', d.id);
       btn.classList.add('dragging');
     });
     btn.addEventListener('dragover', (event) => {
-      if (!draggedDraftId || draggedDraftId === d.id) return;
+      if (!draggedDraftId || draggedDraftId === d.id || !event.dataTransfer) return;
       event.preventDefault();
       event.dataTransfer.dropEffect = 'move';
       for (const row of list.children) row.classList.remove('drop-before', 'drop-after');

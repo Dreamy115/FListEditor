@@ -1,12 +1,13 @@
 import { createContext } from './helpers/typescript';
 import * as units from './helpers/typescript.ts';
 import assert from './helpers/assert';
-import fs from 'node:fs';
-import vm from 'node:vm';
 
-const data = { active: 'b', drafts: ['a', 'b', 'c', 'd'].map((id) => ({ id, content: id })) };
-let saved,
-  rendered = 0;
+const data = {
+  active: 'b',
+  drafts: ['a', 'b', 'c', 'd'].map((id: string) => ({ id, content: id })),
+};
+let saved!: string;
+let rendered = 0;
 const context = createContext({
   data,
   persist: () => {
@@ -15,7 +16,7 @@ const context = createContext({
   renderDrafts: () => rendered++,
 });
 units.load(context, 'characters/characters', { names: ['reorderDraft'], effects: [] });
-const order = () => data.drafts.map((d) => d.id).join('');
+const order = () => data.drafts.map((d: { id: string }) => d.id).join('');
 context.reorderDraft('a', 'c', true);
 assert.equal(order(), 'bcad');
 context.reorderDraft('d', 'b', false);
@@ -26,10 +27,10 @@ context.reorderDraft('c', 'b', true);
 assert.equal(order(), 'dbca');
 assert.equal(data.active, 'b');
 assert.deepEqual(
-  JSON.parse(saved).drafts.map((d) => d.id),
+  JSON.parse(saved).drafts.map((d: { id: string }) => d.id),
   ['d', 'b', 'c', 'a'],
 );
-assert.equal(data.drafts.find((d) => d.id === 'b').content, 'b');
+assert.equal(data.drafts.find((d: { id: string }) => d.id === 'b')!.content, 'b');
 context.reorderDraft('a', 'a', true);
 context.reorderDraft('missing', 'b', false);
 context.reorderDraft('b', 'missing', false);

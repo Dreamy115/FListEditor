@@ -10,7 +10,7 @@ import path from 'node:path';
   });
   try {
     const page = await browser.newPage({ acceptDownloads: true });
-    const errors = [];
+    const errors: string[] = [];
     page.on('pageerror', (e) => errors.push(e.message));
     await page.goto(pathToFileURL(path.resolve('dist/Folio-Profile-Studio.html')).href);
     assert.deepEqual(
@@ -42,11 +42,11 @@ import path from 'node:path';
       ),
     });
     await page.waitForFunction(
-      () => document.querySelector<HTMLSelectElement>('#theme').value === 'custom-css',
+      () => document.querySelector<HTMLSelectElement>('#theme')!.value === 'custom-css',
     );
     await page.waitForFunction(
       () =>
-        getComputedStyle(document.querySelector<HTMLElement>('#previewPage')).backgroundColor ===
+        getComputedStyle(document.querySelector<HTMLElement>('#previewPage')!).backgroundColor ===
         'rgb(10, 20, 30)',
     );
     assert.equal(
@@ -62,14 +62,14 @@ import path from 'node:path';
     assert.equal(await page.locator('#previewCssStatus').textContent(), 'my-theme.css');
     const png = await page.evaluate(async () => {
       const blob = await FolioScreenshot.capture(
-        document.querySelector<HTMLElement>('#previewPage'),
+        document.querySelector<HTMLElement>('#previewPage')!,
       );
       return { size: blob.size, type: blob.type };
     });
     assert.equal(png.type, 'image/png');
     assert.ok(png.size > 1000);
     const html = await page.evaluate(() =>
-      FolioScreenshot.html(document.querySelector<HTMLElement>('#previewPage'), 'Test'),
+      FolioScreenshot.html(document.querySelector<HTMLElement>('#previewPage')!, 'Test'),
     );
     assert.ok(html.includes('rgb(10, 20, 30)'));
     await page.click('#previewCssMenu summary');
@@ -82,7 +82,7 @@ import path from 'node:path';
   } finally {
     await browser.close();
   }
-})().catch((error) => {
+})().catch((error: unknown) => {
   console.error(error);
   process.exitCode = 1;
 });

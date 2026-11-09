@@ -17,18 +17,18 @@ const names = [
   'white',
   'gray',
 ];
-function luminance(rgb) {
+function luminance(rgb: number[]) {
   return rgb
     .map((v) => v / 255)
     .map((v) => (v <= 0.04045 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4))
     .reduce((sum, v, i) => sum + v * [0.2126, 0.7152, 0.0722][i], 0);
 }
-function contrast(a, b) {
+function contrast(a: number[], b: number[]) {
   const x = luminance(a),
     y = luminance(b);
   return (Math.max(x, y) + 0.05) / (Math.min(x, y) + 0.05);
 }
-const rgb = (hex) => [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16));
+const rgb = (hex: string) => [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16));
 // Include gradient endpoints and the brightest/darkest decorative backgrounds.
 const surfaces = {
   'folio-midnight': {
@@ -61,7 +61,7 @@ const surfaces = {
       fixture.className = 'description';
       fixture.id = 'contrast-fixture';
       fixture.innerHTML = `<div data-context="body">${swatches}</div><blockquote>${swatches}</blockquote><div class="bbcode-collapse"><div class="bbcode-collapse-header" data-context="open">${swatches}</div><div class="bbcode-collapse-body">${swatches}</div></div><div class="bbcode-collapse collapsed"><div class="bbcode-collapse-header" data-context="closed">${swatches}</div></div>`;
-      document.querySelector<HTMLElement>('#previewPage').append(fixture);
+      document.querySelector<HTMLElement>('#previewPage')!.append(fixture);
     }, swatches);
     let minimum = Infinity,
       checks = 0;
@@ -73,7 +73,7 @@ const surfaces = {
           .evaluateAll((nodes) =>
             nodes.map((n) =>
               getComputedStyle(n)
-                .color.match(/[\d.]+/g)
+                .color.match(/[\d.]+/g)!
                 .slice(0, 3)
                 .map(Number),
             ),
@@ -96,7 +96,7 @@ const surfaces = {
   } finally {
     await browser.close();
   }
-})().catch((error) => {
+})().catch((error: unknown) => {
   console.error(error);
   process.exitCode = 1;
 });

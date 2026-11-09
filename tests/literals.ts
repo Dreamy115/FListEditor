@@ -1,13 +1,11 @@
 import { createContext } from './helpers/typescript';
 import * as units from './helpers/typescript.ts';
 import assert from './helpers/assert';
-import fs from 'node:fs';
-import vm from 'node:vm';
 
 const context = createContext({ URL });
 units.formatting(context);
-const compile = (text) => context.markdownToBB(text),
-  decode = (text) => context.bbcodeToMarkdown(text);
+const compile = (text: string) => context.markdownToBB(text),
+  decode = (text: string) => context.bbcodeToMarkdown(text);
 for (const [markdown, bbcode] of [
   ['and he was [there]', 'and he was [noparse][there][/noparse]'],
   ['[b]text[/b]', '[noparse][b][/noparse]text[noparse][/b][/noparse]'],

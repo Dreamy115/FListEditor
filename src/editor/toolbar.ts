@@ -36,7 +36,7 @@ export function wrapColor(name: string) {
 
 export const colorHint = document.createElement('span');
 
-export const quickColorKeys = {
+export const quickColorKeys: Record<string, string> = {
   r: 'red',
   o: 'orange',
   y: 'yellow',
@@ -80,8 +80,8 @@ export function positionQuickColor() {
     node,
     anchor;
   while ((node = walker.nextNode())) {
-    if (remaining > node.length) {
-      remaining -= node.length;
+    if (remaining > node.textContent!.length) {
+      remaining -= node.textContent!.length;
       continue;
     }
     const range = document.createRange();
@@ -181,7 +181,7 @@ export function openQuickColor() {
   quickColorSelection = [source.selectionStart, source.selectionEnd, source.selectionDirection];
   quickColorPicker.hidden = false;
   positionQuickColor();
-  quickColorPicker.querySelector('button').focus({ preventScroll: true });
+  quickColorPicker.querySelector('button')!.focus({ preventScroll: true });
 }
 
 export const fontPalette = $('fontPalette');
@@ -218,7 +218,7 @@ export function initializeToolbar() {
     }),
   );
 
-  colorNames.forEach((name) => {
+  colorNames.forEach((name: string) => {
     const btn = document.createElement('button');
     btn.type = 'button';
     btn.className = 'palette-option';

@@ -16,7 +16,7 @@ export function convertEntityPreference(text: string, preferLiterals: boolean) {
         ? decoded === null
           ? match[0]
           : escapePlainMarkdown(decoded)
-        : '&#x' + match[0].codePointAt(0).toString(16).toUpperCase() + ';';
+        : '&#x' + match[0].codePointAt(0)!.toString(16).toUpperCase() + ';';
       if (replacement !== match[0])
         edits.push({
           start: token.start + match.index,
@@ -25,7 +25,8 @@ export function convertEntityPreference(text: string, preferLiterals: boolean) {
         });
     }
   }
-  const apply = (value, edit) => value.slice(0, edit.start) + edit.text + value.slice(edit.end);
+  const apply = (value: string, edit: { start: number; end: number; text: string }) =>
+    value.slice(0, edit.start) + edit.text + value.slice(edit.end);
   edits.sort((a, b) => b.start - a.start);
   const expected = markdownToBB(text),
     candidate = edits.reduce(apply, text);

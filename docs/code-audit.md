@@ -37,7 +37,7 @@ The application controller was `src/app.js` (1,890 lines, approximately 173 KB),
 
 The renderer, syntax painter, diagnostic popup, image mapping, screenshot, catalogue and preview companions are now TypeScript. They retain their established browser APIs. The build emits their JavaScript under `build/`, and the HTML keeps their load order before the app bundle. Vendored code is unchanged.
 
-UI feature modules coordinate through imported functions and shared state. Some function-only import cycles remain because character/template switching, preview refresh and undo interact; cross-feature UI calls run after ordered initialization begins. DOM lookups and pure preference parsing are independent modules to avoid initialization cycles. TypeScript checks the public conversion functions, shared state and browser contracts; `strict` remains disabled for this incremental migration, so some parser internals and JSON validation paths retain inferred `any` types. Tightening these types is follow-up work, not a claim of runtime JSON safety.
+UI feature modules coordinate through imported functions and shared state. Some function-only import cycles remain because character/template switching, preview refresh and undo interact; cross-feature UI calls run after ordered initialization begins. DOM lookups and pure preference parsing are independent modules to avoid initialization cycles. Both application and tools/test projects inherit strict checking and unused-code checks. Parser trees, token pairing, preview caches, template lifecycle states, and VM test interfaces are explicitly modeled. Runtime JSON validation still happens at the persistence boundary; TypeScript does not validate external data by itself.
 
 ## Behavior retained and follow-up findings
 
@@ -80,3 +80,22 @@ All `.cjs` tests and their helpers are now `.ts` ES modules. TypeScript checks b
 `scripts/build.ts` replaces the former build entry point: it invokes the existing TypeScript bundle/type-check pipeline, embeds CSS and JavaScript, encodes the site PNG assets as data URLs, and writes the standalone HTML using Node filesystem APIs. The preview server and its VS Code task are removed; open the built HTML directly.
 
 The entity-table refresher now uses Node fetch against WHATWG’s HTML5 entity data (or a local JSON snapshot). The five remaining visual-test launchers use a shared Playwright helper with their original fixtures, viewport widths, optional reference CSS, and gallery outputs. There are no remaining Python scripts or Python prerequisites. The complete test task now includes 23 core and 11 browser programs.
+
+## Strict typing contracts
+
+Both TypeScript projects enable the complete strict family without per-project overrides. Unused imports, locals, and parameters are checked too. Intentional unused callback arguments use an underscore prefix. There are no explicit `any` type annotations or compiler-suppression comments in owned application, build-script, or test TypeScript.
+
+| Type/boundary | Contract |
+| --- | --- |
+| `ProfileRecord`, `AppData` | Saved characters/settings, including optional legacy preferences; JSON starts as `unknown` and is inspected before use |
+| `TemplateSession`, `ActiveTemplateSession` | Cached drafts may lack a return target; activation establishes one before editor operations |
+| `EditorSnapshot`, `EditHistory` | Undo state includes source, display preference, selection, and typing-group metadata |
+| `TextNode`, `TagNode`, `BBNode` | A lossless recursive BBCode tree distinguishes text leaves from tag/root containers |
+| `LexToken`, `SyntaxToken`, `OpenDelimiter` | Tokens gain UTF-16 source offsets and optional pairing metadata after lexing; unmatched markers legitimately lack a partner |
+| Compiler summary/content/source issues | Summary messages, compiled-tag offsets, and navigable source ranges are separate shapes |
+| Preview/image/view types | Session scroll/collapse caches and browser-local attachment records are independent of persisted profile text |
+| `TestEvent`, `TestHandler`, `TestControl` | Unit mocks expose only the event/control fields exercised by isolated VM code |
+
+Non-null assertions represent existing invariants: the static HTML shell owns its controls, the BBCode stack retains its root, regex captures follow successful matches, and paired syntax tokens point back to tokens in the same pass. Tests also assert nodes supplied by their fixed fixtures and callbacks registered by the action under test. Dynamic file lists, JSON values, drag payloads, and caught errors are narrowed or guarded instead. The LinkeDOM host models its added textarea/layout methods explicitly rather than casting its window and document to an untyped escape hatch.
+
+Node's external `vm.Context` declaration has a dynamically keyed property dictionary, which is necessary for JavaScript evaluated in a separate VM. That interop boundary is documented in `tests/helpers/typescript.ts`; known compiler and browser APIs returned from the VM have explicit interfaces. Third-party declaration files retain `skipLibCheck`; the adapted Horizon implementation itself is generated and checked under strict mode without modifying the vendored files.

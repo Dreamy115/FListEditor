@@ -27,17 +27,17 @@ import { chromium } from 'playwright';
         source.value = collapse ? ':::collapse Long section\n' + lines + '\n:::' : lines;
         source.dispatchEvent(new Event('input'));
         if (collapse) {
-          document.querySelector<HTMLElement>('.bbcode-collapse-header').click();
+          document.querySelector<HTMLElement>('.bbcode-collapse-header')!.click();
           await new Promise((resolve) => setTimeout(resolve, 250));
         }
-        frame.scrollTop = 1000;
-        const before = frame.scrollTop;
+        frame!.scrollTop = 1000;
+        const before = frame!.scrollTop;
         source.focus();
         source.setSelectionRange(10, 10);
         source.setRangeText('Edited ');
         source.dispatchEvent(new Event('input'));
         await new Promise((resolve) => setTimeout(resolve, 100));
-        return { before, after: frame.scrollTop };
+        return { before, after: frame!.scrollTop };
       }, collapse);
       assert.ok(result.before > 0);
       assert.equal(result.after, result.before, JSON.stringify({ collapse, ...result }));
@@ -57,12 +57,12 @@ import { chromium } from 'playwright';
     const imageScroll = await page.evaluate(async () => {
       const source = document.getElementById('source') as HTMLTextAreaElement,
         frame = document.querySelector<HTMLElement>('.frame');
-      frame.scrollTop = 1200;
-      const before = frame.scrollTop;
+      frame!.scrollTop = 1200;
+      const before = frame!.scrollTop;
       source.value += '!';
       source.dispatchEvent(new Event('input'));
       await new Promise((resolve) => setTimeout(resolve, 350));
-      return { before, after: frame.scrollTop };
+      return { before, after: frame!.scrollTop };
     });
     assert.equal(
       imageScroll.after,
@@ -86,7 +86,7 @@ import { chromium } from 'playwright';
   } finally {
     await browser.close();
   }
-})().catch((error) => {
+})().catch((error: unknown) => {
   console.error(error);
   process.exitCode = 1;
 });

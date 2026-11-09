@@ -11,7 +11,7 @@ import { refreshUndoButtons } from '../editor/history';
 export const paneDivider = $('paneDivider');
 
 export function applyPaneSplit() {
-  const app = document.querySelector<HTMLElement>('.app');
+  const app = document.querySelector<HTMLElement>('.app')!;
   app.style.setProperty('--editor-share', state.data.splitRatio + 'fr');
   app.style.setProperty('--preview-share', 1 - state.data.splitRatio + 'fr');
   paneDivider.setAttribute('aria-valuenow', String(Math.round(state.data.splitRatio * 100)));
@@ -66,7 +66,7 @@ export function initializeLayout() {
   });
 
   paneDivider.addEventListener('keydown', (e) => {
-    const steps = { ArrowLeft: -0.02, ArrowRight: 0.02 };
+    const steps: Record<string, number> = { ArrowLeft: -0.02, ArrowRight: 0.02 };
     if (e.key in steps)
       state.data.splitRatio = Math.max(
         0.25,

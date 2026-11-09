@@ -12,14 +12,16 @@ const globals: Record<string, unknown> = {
 if (process.argv.includes('--site-reference')) {
   globals.siteReferenceCSS = Object.fromEntries(
     await Promise.all(
-      ['common/default-0.0.10.css', 'default.css', 'dark.css', 'light.css'].map(async (name) => {
-        const response = await fetch('https://static.f-list.net/css/' + name, {
-          signal: AbortSignal.timeout(20_000),
-        });
-        if (!response.ok)
-          throw Error(`Reference CSS download failed: ${name} (${response.status})`);
-        return [name, await response.text()];
-      }),
+      ['common/default-0.0.10.css', 'default.css', 'dark.css', 'light.css'].map(
+        async (name: string) => {
+          const response = await fetch('https://static.f-list.net/css/' + name, {
+            signal: AbortSignal.timeout(20_000),
+          });
+          if (!response.ok)
+            throw Error(`Reference CSS download failed: ${name} (${response.status})`);
+          return [name, await response.text()];
+        },
+      ),
     ),
   );
 }
@@ -31,7 +33,7 @@ if (process.argv.includes('--horizon-reference')) {
       'Horizon/resources/app.asar.unpacked/themes',
     );
   globals.horizonReferenceCSS = Object.fromEntries(
-    ['default', 'light', 'dark', 'moon-prism'].map((name) => [
+    ['default', 'light', 'dark', 'moon-prism'].map((name: string) => [
       name,
       readFileSync(path.join(directory, name + '.css'), 'utf8'),
     ]),

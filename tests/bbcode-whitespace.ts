@@ -1,8 +1,6 @@
 import { createContext } from './helpers/typescript';
 import * as units from './helpers/typescript.ts';
 import assert from './helpers/assert';
-import fs from 'node:fs';
-import vm from 'node:vm';
 
 // Load the conversion functions without starting the browser UI.
 

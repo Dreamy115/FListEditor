@@ -1,8 +1,6 @@
 import { createContext } from './helpers/typescript';
 import * as units from './helpers/typescript.ts';
 import assert from './helpers/assert';
-import fs from 'node:fs';
-import vm from 'node:vm';
 
 // Load the conversion functions without starting the browser UI.
 
@@ -10,7 +8,7 @@ const context = createContext({ URL });
 units.formatting(context);
 // Exercise source conversion before the separate F-List NBSP edge encoding.
 // tests/bbcode-whitespace.ts covers that public output boundary.
-const compile = (input) => context.markdownToBBSource(input);
+const compile = (input: string) => context.markdownToBBSource(input);
 const cases = [
   [
     'nested macros',
@@ -213,7 +211,8 @@ for (const marker of ['-', '*', '+']) {
     .replace(/\*\*Parent\*\*/, '[b]Parent[/b]')
     .replace(
       /^([ \t]*)([-*+])([ \t]+)/gm,
-      (_, indent, marker, space) => indent + { '-': '-', '*': '•', '+': '▪' }[marker] + space,
+      (_, indent, marker, space) =>
+        indent + ({ '-': '-', '*': '•', '+': '▪' } as Record<string, string>)[marker] + space,
     );
   assert.equal(compile(markdown), bbcode, 'Compile ' + marker + ' bullet');
   assert.equal(context.bbcodeToMarkdown(bbcode), markdown, 'Decompile ' + marker + ' bullet');

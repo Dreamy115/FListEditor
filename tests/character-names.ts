@@ -1,8 +1,6 @@
 import { createContext } from './helpers/typescript';
 import * as units from './helpers/typescript.ts';
 import assert from './helpers/assert';
-import fs from 'node:fs';
-import vm from 'node:vm';
 
 const data = {
   active: 'one',
@@ -14,7 +12,10 @@ const data = {
 };
 const input: {
   value: string;
-  addEventListener?: (type: string, handler: (event?: any) => void) => void;
+  addEventListener?: (
+    type: string,
+    handler: (event?: import('./helpers/types').TestEvent) => void,
+  ) => void;
   blur?: () => void;
 } = { value: '' };
 let message = '',
@@ -24,7 +25,7 @@ const context = createContext({
   templateSession: null,
   $: () => input,
   active: () => data.drafts[0],
-  toast: (text) => (message = text),
+  toast: (text: string) => (message = text),
   renderDrafts: () => {},
   refresh: () => {},
   scheduleSave: () => saved++,
@@ -61,8 +62,8 @@ assert.equal(data.drafts[0].name, 'Bob');
 console.log('Unique character creation and rename checks passed');
 
 // Character names are committed after editing; existing prefixes remain typeable.
-const handlers: Record<string, (event?: any) => void> = {};
-input.addEventListener = (type, handler) => {
+const handlers: Record<string, (event?: import('./helpers/types').TestEvent) => void> = {};
+input.addEventListener = (type: string, handler) => {
   handlers[type] = handler;
 };
 input.blur = () => handlers.change();

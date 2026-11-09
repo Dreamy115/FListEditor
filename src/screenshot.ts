@@ -23,9 +23,9 @@
       .querySelectorAll<HTMLElement>('.bbcode-collapse')
       .forEach((section) => section.classList.remove('collapsed'));
     copy.querySelectorAll<HTMLElement>('.bbcode-collapse-header').forEach((header) => {
-      header.classList.remove('bbcode-collapse-header-down');
-      header.classList.add('bbcode-collapse-header-up');
-      header.querySelectorAll('.fa-chevron-down').forEach((icon) => {
+      header!.classList.remove('bbcode-collapse-header-down');
+      header!.classList.add('bbcode-collapse-header-up');
+      header!.querySelectorAll('.fa-chevron-down').forEach((icon) => {
         icon.classList.remove('fa-chevron-down');
         icon.classList.add('fa-chevron-up');
       });
@@ -72,7 +72,7 @@
       ),
     );
   }
-  async function html(card, title) {
+  async function html(card: HTMLElement, title: string) {
     const output = document.implementation.createHTMLDocument(title);
     output.documentElement.lang = 'en';
     output.documentElement.dataset.flistScheme = document.documentElement.dataset.flistScheme;
@@ -99,7 +99,7 @@
           const canvas = document.createElement('canvas');
           canvas.width = image.naturalWidth;
           canvas.height = image.naturalHeight;
-          canvas.getContext('2d').drawImage(image, 0, 0);
+          canvas.getContext('2d')!.drawImage(image, 0, 0);
           asset = canvas.toDataURL();
         } catch (_) {
           /* Keep remote URLs when embedding is unavailable. */
@@ -139,7 +139,7 @@
       for (const attr of [...node.attributes])
         if (/^on/i.test(attr.name)) node.removeAttribute(attr.name);
       if (node.hasAttribute('src'))
-        node.setAttribute('src', new URL(node.getAttribute('src'), document.baseURI).href);
+        node.setAttribute('src', new URL(node.getAttribute('src')!, document.baseURI).href);
     });
     output.body.append(output.importNode(copy, true));
     const layout = output.createElement('style');
@@ -159,16 +159,17 @@
           );
           if (!header || !body) return;
           body.id = 'section-body-' + index;
-          header.setAttribute('role', 'button');
+          header!.setAttribute('role', 'button');
           header.tabIndex = 0;
-          header.setAttribute('aria-controls', body.id);
-          function setOpen(open) {
-            body.hidden = !open;
+          header!.setAttribute('aria-controls', body.id);
+          // Both elements were checked before this closure is registered.
+          function setOpen(open: boolean) {
+            body!.hidden = !open;
             section.classList.toggle('collapsed', !open);
-            header.setAttribute('aria-expanded', String(open));
-            header.classList.toggle('bbcode-collapse-header-up', open);
-            header.classList.toggle('bbcode-collapse-header-down', !open);
-            const icon = header.querySelector('.fa-chevron-up, .fa-chevron-down');
+            header!.setAttribute('aria-expanded', String(open));
+            header!.classList.toggle('bbcode-collapse-header-up', open);
+            header!.classList.toggle('bbcode-collapse-header-down', !open);
+            const icon = header!.querySelector('.fa-chevron-up, .fa-chevron-down');
             if (icon) {
               icon.classList.toggle('fa-chevron-up', open);
               icon.classList.toggle('fa-chevron-down', !open);
@@ -177,7 +178,7 @@
           setOpen(false);
           header.addEventListener('click', (event) => {
             if ((event.target as HTMLElement).closest('a, button, input, select, textarea')) return;
-            setOpen(body.hidden);
+            setOpen(body!.hidden);
           });
           header.addEventListener('keydown', (event) => {
             if (
@@ -185,7 +186,7 @@
               ((event as KeyboardEvent).key === 'Enter' || (event as KeyboardEvent).key === ' ')
             ) {
               event.preventDefault();
-              setOpen(body.hidden);
+              setOpen(body!.hidden);
             }
           });
         });

@@ -1,10 +1,11 @@
+import { errorMessage } from '../app/validation';
 import { source, $ } from '../app/dom';
 import { state } from '../app/state';
 import { syncHighlightScroll, updateActiveSyntax, updateLineNumbers } from '../editor/view';
 import { getCompiled } from '../editor/editing';
 import { locatedWarnings } from '../formatting/warnings';
 
-export function jumpToWarning(problem) {
+export function jumpToWarning(problem: FolioDiagnostic) {
   source.focus();
   source.setSelectionRange(problem.start, problem.end);
   const line = $('sourceLineNumbers').children[problem.line - 1];
@@ -15,7 +16,8 @@ export function jumpToWarning(problem) {
   $('warningDetails').open = false;
 }
 
-export function updateWarnings(problems) {
+/** Legacy callers may provide messages; navigable diagnostics also carry ranges. */
+export function updateWarnings(problems: (FolioDiagnostic | string)[]) {
   const count = $('warningCount'),
     details = $('warningDetails'),
     list = $('warningList');
@@ -24,13 +26,16 @@ export function updateWarnings(problems) {
     : 'No obvious issues';
   count.title = problems.length ? 'Show compiler warnings' : '';
   details.classList.toggle('has-issues', problems.length > 0);
-  details.dataset.severity = problems.some((problem) => problem.severity === 'error')
+  details.dataset.severity = problems.some(
+    (problem) => typeof problem !== 'string' && problem.severity === 'error',
+  )
     ? 'error'
     : 'warning';
   list.replaceChildren(
     ...problems.map((problem) => {
       const item = document.createElement('li');
-      item.dataset.severity = problem.severity || 'warning';
+      item.dataset.severity =
+        typeof problem === 'string' ? 'warning' : problem.severity || 'warning';
       if (typeof problem === 'string') {
         item.textContent = problem;
         return item;
@@ -60,14 +65,14 @@ export function refresh() {
   try {
     FolioPreview.update(
       preview,
-      preview.closest('.frame'),
+      preview.closest('.frame')!,
       bb,
       renderBB,
       state.templateSession ? state.templateSession.historyId : 'character:' + state.data.active,
       globalThis.FolioLocalImages?.revision,
     );
   } catch (e) {
-    preview.textContent = 'Preview error: ' + e.message;
+    preview.textContent = 'Preview error: ' + errorMessage(e);
   }
   const text = source.value;
   $('stats').textContent =

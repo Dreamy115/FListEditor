@@ -18,8 +18,8 @@ const testDirectory = fileURLToPath(new URL('.', import.meta.url));
       viewport: { width: 1440, height: 1000 },
       acceptDownloads: true,
     });
-    const errors = [];
-    page.on('pageerror', (error) => errors.push(error.message));
+    const errors: string[] = [];
+    page.on('pageerror', (error: Error) => errors.push(error.message));
     await page.goto(pathToFileURL(path.join(root, 'dist/Folio-Profile-Studio.html')).href);
     await page.evaluate(() => FolioLocalImages.ready);
     await page.locator('#bbMode').click();
@@ -34,8 +34,8 @@ const testDirectory = fileURLToPath(new URL('.', import.meta.url));
       canvas.width = 40;
       canvas.height = 30;
       const context = canvas.getContext('2d');
-      context.fillStyle = 'red';
-      context.fillRect(0, 0, 40, 30);
+      context!.fillStyle = 'red';
+      context!.fillRect(0, 0, 40, 30);
       return canvas.toDataURL();
     });
     await page.route('https://preview.test/**', (route) =>
@@ -67,7 +67,7 @@ const testDirectory = fileURLToPath(new URL('.', import.meta.url));
       0,
       'Updating attachments preserves open sections',
     );
-    assert.equal(await page.evaluate(() => FolioLocalImages.get('12345').url), pixels);
+    assert.equal(await page.evaluate(() => FolioLocalImages.get('12345')!.url), pixels);
     await page.locator('#localImageAlias').fill('imagealias');
     await page.locator('#saveImageAlias').click();
     await page.waitForFunction(() => FolioLocalImages.get('12345')?.alias === 'imagealias');
@@ -127,7 +127,7 @@ const testDirectory = fileURLToPath(new URL('.', import.meta.url));
           .locator('#preview .local-inline-image')
           .evaluateAll((images, alignment) => {
             const [first, second] = images.map((image) => image.getBoundingClientRect());
-            const block = images[0].parentElement.getBoundingClientRect();
+            const block = images[0].parentElement!.getBoundingClientRect();
             const position =
               alignment === 'left'
                 ? first.left - block.left
@@ -160,7 +160,7 @@ const testDirectory = fileURLToPath(new URL('.', import.meta.url));
       );
       await page.locator('#source').fill('');
       await page.locator('[data-insert="inlineimg"]').click();
-      assert.ok((await page.locator('#mappedImageChoices').textContent()).includes('imagealias'));
+      assert.ok((await page.locator('#mappedImageChoices').textContent())!.includes('imagealias'));
       await page.getByRole('button', { name: 'Insert F-List image 12345', exact: true }).click();
       assert.equal(
         await page.locator('#source').inputValue(),
@@ -190,10 +190,11 @@ const testDirectory = fileURLToPath(new URL('.', import.meta.url));
     await page.locator('#bbMode').click();
     await page.locator('#source').fill(source);
     await page.waitForFunction((expected) => {
-      const saved = JSON.parse(localStorage.getItem('folio-f-list-studio-v1'));
+      const saved = JSON.parse(localStorage.getItem('folio-f-list-studio-v1') ?? 'null');
       return (
         saved?.mixed === false &&
-        saved.drafts.find((draft) => draft.id === saved.active)?.content === expected
+        saved.drafts.find((draft: { id: string; content: string }) => draft.id === saved.active)
+          ?.content === expected
       );
     }, source);
     await page.reload();
@@ -206,9 +207,9 @@ const testDirectory = fileURLToPath(new URL('.', import.meta.url));
       source,
       'Source survives reload unchanged',
     );
-    assert.equal(await page.evaluate(() => FolioLocalImages.get('12345').kind), 'file');
+    assert.equal(await page.evaluate(() => FolioLocalImages.get('12345')!.kind), 'file');
     assert.equal(
-      await page.evaluate(() => FolioLocalImages.get('12345').alias),
+      await page.evaluate(() => FolioLocalImages.get('12345')!.alias),
       'imagealias',
       'Alias persists across reload',
     );
@@ -251,9 +252,9 @@ const testDirectory = fileURLToPath(new URL('.', import.meta.url));
     await page.waitForFunction(
       () => !(document.getElementById('attachImageUrl') as HTMLButtonElement).disabled,
     );
-    assert.ok((await page.locator('#localImageStatus').textContent()).includes('HTTP or HTTPS'));
+    assert.ok((await page.locator('#localImageStatus').textContent())!.includes('HTTP or HTTPS'));
     assert.equal(
-      await page.evaluate(() => FolioLocalImages.get('12345').url),
+      await page.evaluate(() => FolioLocalImages.get('12345')!.url),
       'https://preview.test/portrait.png',
     );
     await page
@@ -290,7 +291,7 @@ const testDirectory = fileURLToPath(new URL('.', import.meta.url));
   } finally {
     await browser.close();
   }
-})().catch((error) => {
+})().catch((error: unknown) => {
   console.error(error);
   process.exitCode = 1;
 });

@@ -99,11 +99,11 @@ export function renderCustomTemplates() {
     ],
     [
       'Built-in templates',
-      Object.keys(templates).map((id) => ({
+      Object.keys(templates).map((id: string) => ({
         value: 'builtin:' + id,
         name: document
-          .querySelector<HTMLElement>('[data-template="' + id + '"]')
-          .querySelector('strong').textContent,
+          .querySelector<HTMLElement>('[data-template="' + id + '"]')!
+          .querySelector('strong')!.textContent,
       })),
     ],
   ] as [string, { value: string; name: string }[]][]) {
@@ -152,7 +152,7 @@ export function loadTemplateForm(value: string, sourceCharacterId: string | null
     : { id: state.data.active, mixed: state.data.mixed };
   stashEditor();
   clearConfirmation();
-  clearTimeout(state.saveTimer);
+  clearTimeout(state.saveTimer ?? undefined);
   const key = value || 'new:' + makeId();
   let session = templateEditors.get(key);
   if (!session) {
@@ -171,8 +171,8 @@ export function loadTemplateForm(value: string, sourceCharacterId: string | null
       content = templates[builtin] || '';
       name =
         document
-          .querySelector<HTMLElement>('[data-template="' + builtin + '"]')
-          .querySelector('strong').textContent + ' copy';
+          .querySelector<HTMLElement>('[data-template="' + builtin + '"]')!
+          .querySelector('strong')!.textContent + ' copy';
     }
     if (profile) {
       const mode =
@@ -198,8 +198,9 @@ export function loadTemplateForm(value: string, sourceCharacterId: string | null
     };
     templateEditors.set(key, session);
   }
-  state.templateSession = session;
   session.returnContext = returnContext;
+  // Loading a cached draft establishes the required return target before activation.
+  state.templateSession = session as import('../app/types').ActiveTemplateSession;
   templateChoiceValue = key;
   state.data.mixed = session.mixed;
   source.value = session.content;
@@ -250,8 +251,8 @@ export function cloneTemplate(key: string) {
     content = templates[id];
     if (content === undefined) return;
     name = document
-      .querySelector<HTMLElement>('[data-template="' + id + '"]')
-      .querySelector('strong').textContent;
+      .querySelector<HTMLElement>('[data-template="' + id + '"]')!
+      .querySelector('strong')!.textContent;
   } else return;
   name = cloneName(name, state.data.customTemplates);
   const record = { id: makeId(), name, content: mixed ? content : bbcodeToMarkdown(content, true) };
@@ -292,7 +293,7 @@ export function saveCustomTemplate() {
     $('templateStatus').textContent = 'Maximum 100 custom templates. Delete one first.';
     return null;
   }
-  let record = state.data.customTemplates.find((t) => t.id === state.templateSession.id);
+  let record = state.data.customTemplates.find((t) => t.id === state.templateSession!.id);
   if (record) {
     record.name = name;
     record.content = content;

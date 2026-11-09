@@ -12,10 +12,9 @@ export function wrapInline(tag: string, placeholder = 'your text') {
   if (['b', 'i', 'u', 's'].includes(tag) && s !== e) {
     const wrappers = state.data.mixed
       ? [
-          ...{ b: ['**', '__'], i: ['*', '_'], u: ['++'], s: ['~~'] }[tag].map((mark) => [
-            mark,
-            mark,
-          ]),
+          ...({ b: ['**', '__'], i: ['*', '_'], u: ['++'], s: ['~~'] } as Record<string, string[]>)[
+            tag
+          ].map((mark) => [mark, mark]),
           ['{' + tag + '|', '}'],
           ...(tag === 'u' ? [['{underline|', '}']] : []),
           [':::' + tag + '\n', '\n:::'],
@@ -27,7 +26,8 @@ export function wrapInline(tag: string, placeholder = 'your text') {
           to = included ? e : e + close.length;
         if (from < 0 || to > source.value.length) continue;
         const wrapped = source.value.slice(from, to);
-        const same = (a, b) => (state.data.mixed ? a === b : a.toLowerCase() === b.toLowerCase());
+        const same = (a: string, b: string) =>
+          state.data.mixed ? a === b : a.toLowerCase() === b.toLowerCase();
         if (
           !same(wrapped.slice(0, open.length), open) ||
           !same(wrapped.slice(-close.length), close) ||
@@ -89,7 +89,7 @@ export function wrapInline(tag: string, placeholder = 'your text') {
       );
       return;
     }
-    const marks = { b: '**', i: '*', u: '++', s: '~~' };
+    const marks: Record<string, string> = { b: '**', i: '*', u: '++', s: '~~' };
     if (marks[tag] && !selected.includes('\n')) {
       prefix = marks[tag];
       suffix = marks[tag];

@@ -1,13 +1,13 @@
 /* Original Folio preview themes and CSS import support. */
 (() => {
   const example = (
-    name,
-    panel,
-    text,
-    card,
-    accent,
-    border,
-    font,
+    name: string,
+    panel: string,
+    text: string,
+    card: string,
+    accent: string,
+    border: string,
+    font: string,
   ) => `/* Folio ${name} — editable preview stylesheet.
  * Download with Example CSS, edit this file, then choose Load CSS.
  * .previewpage is the card root; .description contains rendered profile text.
@@ -45,7 +45,7 @@
  * This affects preview and visual exports; BBCode still exports the color name.
  */
 `;
-  const themes = {
+  const themes: Record<string, string> = {
     'folio-midnight': example(
       'Midnight',
       '#101f2b',
@@ -219,7 +219,7 @@
     white: '#ffffff',
     gray: '#bbc6ce',
   };
-  const colorVars = (palette) =>
+  const colorVars = (palette: Record<string, string>) =>
     Object.entries(palette)
       .map(([name, value]) => `--folio-${name}: ${value};`)
       .join(' ');
@@ -247,7 +247,7 @@
 `;
     }
   }
-  function compile(css) {
+  function compile(css: string) {
     const sheet = new CSSStyleSheet();
     sheet.replaceSync(css);
     const scope = (rules: CSSRuleList): string =>

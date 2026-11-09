@@ -5,11 +5,15 @@ import { resolvedColor } from './colors';
 
 // Protect physical line-edge spaces without changing newlines or word spacing.
 export function preserveBBCodeWhitespace(text: string) {
-  return text.replace(/^[ \t\u00a0]+|[ \t\u00a0]+$/gm, (space) => space.replace(/ /g, '\u00a0'));
+  return text.replace(/^[ \t\u00a0]+|[ \t\u00a0]+$/gm, (space: string) =>
+    space.replace(/ /g, '\u00a0'),
+  );
 }
 
 export function restoreBBCodeWhitespace(text: string) {
-  return text.replace(/^[ \t\u00a0]+|[ \t\u00a0]+$/gm, (space) => space.replace(/\u00a0/g, ' '));
+  return text.replace(/^[ \t\u00a0]+|[ \t\u00a0]+$/gm, (space: string) =>
+    space.replace(/\u00a0/g, ' '),
+  );
 }
 
 export function markdownToBB(input: string, issues: string[] = []) {
@@ -19,7 +23,7 @@ export function markdownToBB(input: string, issues: string[] = []) {
 export function markdownToBBSource(input: string, issues: string[] = []) {
   const lines = input.replace(/\r\n?/g, '\n').split('\n'),
     parts = [],
-    stack = [];
+    stack: string[] = [];
   // Only content lines contribute breaks. Macro/fence delimiters attach to their
   // contents: pretty-printing BBCode tags would create visible F-List spacing.
   let pendingBreak = false,
@@ -30,7 +34,7 @@ export function markdownToBBSource(input: string, issues: string[] = []) {
     pendingBreak = false;
   };
   const out = {
-    push(value) {
+    push(value: string) {
       if (value === '' && afterClose) {
         parts.push('\n');
         return;
@@ -40,24 +44,24 @@ export function markdownToBBSource(input: string, issues: string[] = []) {
       pendingBreak = true;
       afterClose = false;
     },
-    open(value) {
+    open(value: string) {
       pendingBreak = false;
       afterClose = false;
       parts.push(value);
     },
-    close(value) {
+    close(value: string) {
       pendingBreak = false;
       afterClose = true;
       parts.push(value);
     },
-    heading(value) {
+    heading(value: string) {
       pendingBreak = false;
       afterClose = true;
       trailingHeading = true;
       parts.push(value);
     },
   };
-  let inFence = false;
+  let inFence: number | false = false;
   for (let index = 0; index < lines.length; index++) {
     let line = lines[index];
     if (index === lines.length - 1 && line === '' && trailingHeading) continue;
@@ -73,7 +77,7 @@ export function markdownToBBSource(input: string, issues: string[] = []) {
         inFence = false;
         continue;
       }
-      const fence = !inFence && trimmed.match(/^(`{3,})[^`]*$/);
+      const fence: RegExpMatchArray | null | false = !inFence && trimmed.match(/^(`{3,})[^`]*$/);
       if (fence) {
         out.open('[noparse]');
         inFence = fence[1].length;
@@ -101,11 +105,12 @@ export function markdownToBBSource(input: string, issues: string[] = []) {
         if (tag === 'font' && Object.hasOwn(fontStyles, arg.toLowerCase())) {
           const body = [];
           let depth = 1,
-            fenced = false;
+            fenced: number | false = false;
           while (++index < lines.length) {
             const next = lines[index],
               marker = next.trim();
-            const fenceOpen = !fenced && marker.match(/^(`{3,})[^`]*$/);
+            const fenceOpen: RegExpMatchArray | null | false =
+              !fenced && marker.match(/^(`{3,})[^`]*$/);
             if (fenceOpen) fenced = fenceOpen[1].length;
             else if (fenced && new RegExp('^`{' + fenced + ',}$').test(marker)) fenced = false;
             if (!fenced) {

@@ -1,6 +1,6 @@
 (() => {
   'use strict';
-  const examples = {
+  const examples: Record<string, string> = {
     font: '{font:smallcaps|text}',
     color: '{color:purple|text}',
     link: '{link:https://example.com|text}',
@@ -13,8 +13,8 @@
     hr: '{hr}',
     noparse: '{noparse|literal text}',
   };
-  function nearest(value, names) {
-    const distance = (other) => {
+  function nearest(value: string, names: Iterable<string>) {
+    const distance = (other: string) => {
       let row = Array.from({ length: other.length + 1 }, (_, i) => i);
       for (let i = 0; i < value.length; i++) {
         const next = [i + 1];
@@ -25,15 +25,19 @@
       return row[other.length];
     };
     const ranked = [...names]
-      .map((name) => ({ name, score: distance(name) }))
+      .map((name: string) => ({ name, score: distance(name) }))
       .sort((a, b) => a.score - b.score);
     return ranked[0]?.score <= 2 && ranked[0]?.score !== ranked[1]?.score ? ranked[0].name : null;
   }
-  function guidance(problem, text, config) {
+  function guidance(problem: FolioDiagnostic, text: string, config: FolioDiagnosticConfig) {
     const fragment = text.slice(problem.start, problem.end),
       message = problem.message;
-    const result = { help: '', example: '', fix: null };
-    const fix = (label, replacement) => {
+    const result: { help: string; example: string; fix: (FolioFix & { label: string }) | null } = {
+      help: '',
+      example: '',
+      fix: null,
+    };
+    const fix = (label: string, replacement: string) => {
       result.fix = { label, start: problem.start, end: problem.end, text: replacement };
     };
     if (message.startsWith('Invalid URL in ')) {
@@ -87,7 +91,7 @@
           'Add a line containing ::: after this block’s contents. Close inner blocks before outer blocks.';
         result.example = ':::' + name + '\ntext\n:::';
       } else {
-        const suggestion = config.blockNames.has(name)
+        const suggestion = config.blockNames.has(name ?? '')
           ? name
           : name && nearest(name, config.blockNames);
         result.help =
@@ -110,7 +114,7 @@
       }
     } else if (/inline macro/.test(message)) {
       const name = fragment.match(/^\{([a-z]+)/i)?.[1]?.toLowerCase();
-      const suggestion = config.inlineNames.has(name)
+      const suggestion = config.inlineNames.has(name ?? '')
         ? name
         : name && nearest(name, config.inlineNames);
       result.help = message.startsWith('Unclosed')
@@ -136,7 +140,12 @@
     }
     return result;
   }
-  function attach({ source, layer, getConfig, applyFix }) {
+  function attach({
+    source,
+    layer,
+    getConfig,
+    applyFix,
+  }: Parameters<typeof FolioDiagnostics.attach>[0]) {
     const popup = document.createElement('div');
     popup.id = 'sourceDiagnostic';
     popup.className = 'source-diagnostic';
@@ -144,9 +153,9 @@
     popup.setAttribute('role', 'dialog');
     popup.setAttribute('aria-label', 'Source warning and suggested fix');
     document.body.appendChild(popup);
-    let showTimer,
-      hideTimer,
-      current = null;
+    let showTimer: ReturnType<typeof setTimeout> | undefined,
+      hideTimer: ReturnType<typeof setTimeout> | undefined,
+      current: FolioDiagnostic | null = null;
     const hide = () => {
       clearTimeout(showTimer);
       clearTimeout(hideTimer);
@@ -159,14 +168,14 @@
       clearTimeout(hideTimer);
       hideTimer = setTimeout(hide, 180);
     };
-    function show(problem, rect) {
+    function show(problem: FolioDiagnostic, rect: Pick<DOMRect, 'left' | 'top' | 'bottom'>) {
       clearTimeout(showTimer);
       clearTimeout(hideTimer);
       current = problem;
       popup.dataset.severity = problem.severity;
       const snapshot = source.value,
         advice = guidance(problem, snapshot, getConfig());
-      const palette = getComputedStyle(source.closest('.editor-shell'));
+      const palette = getComputedStyle(source.closest('.editor-shell')!);
       for (const name of [
         '--editor-bg',
         '--editor-text',
@@ -197,7 +206,7 @@
             return;
           }
           hide();
-          applyFix(advice.fix);
+          applyFix(advice.fix!);
         });
         popup.appendChild(button);
       }
@@ -234,7 +243,7 @@
         laterHide();
         return;
       }
-      for (const span of layer.querySelectorAll('.syntax-warning'))
+      for (const span of layer.querySelectorAll<HTMLElement>('.syntax-warning'))
         for (const rect of span.getClientRects()) {
           if (
             event.clientX >= rect.left &&
@@ -242,7 +251,7 @@
             event.clientY >= rect.top &&
             event.clientY <= rect.bottom + 4
           ) {
-            const problem = span.warningProblems[0];
+            const problem = span.warningProblems![0];
             clearTimeout(hideTimer);
             if (current !== problem) {
               clearTimeout(showTimer);
@@ -271,8 +280,8 @@
         );
         if (!problem) return;
         event.preventDefault();
-        const span = [...layer.querySelectorAll('.syntax-warning')].find((item) =>
-          item.warningProblems.includes(problem),
+        const span = [...layer.querySelectorAll<HTMLElement>('.syntax-warning')].find((item) =>
+          item.warningProblems!.includes(problem),
         );
         show(problem, span?.getBoundingClientRect() || source.getBoundingClientRect());
         popup.tabIndex = -1;

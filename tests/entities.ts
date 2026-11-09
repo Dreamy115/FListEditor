@@ -1,3 +1,4 @@
+import type { TestHandler } from './helpers/types';
 import { createContext } from './helpers/typescript';
 import * as units from './helpers/typescript.ts';
 import assert from './helpers/assert';
@@ -6,8 +7,8 @@ import vm from 'node:vm';
 
 const context = createContext({ URL });
 units.formatting(context);
-const compile = (text) => context.markdownToBB(text),
-  decode = (text) => context.bbcodeToMarkdown(text);
+const compile = (text: string) => context.markdownToBB(text),
+  decode = (text: string) => context.bbcodeToMarkdown(text);
 for (const input of ['&#x25C6;', '&#X25c6;', '&#9670;']) assert.equal(compile(input), '\u25c6');
 assert.equal(decode('\u25c6'), '\u25c6');
 assert.equal(compile('&#x1F600;'), '\u{1f600}');
@@ -69,7 +70,8 @@ vm.runInContext(
 console.log('All HTML5 named references and readable decompilation checks passed');
 
 vm.runInContext(fs.readFileSync('build/syntax.js', 'utf8'), context);
-const convert = (text, literals) => context.convertEntityPreference(text, literals);
+const convert = (text: string, literals: boolean) =>
+  context.convertEntityPreference(text, literals);
 assert.equal(convert('&mdash; &#x25C6; &eacute;', true), '\u2014 \u25c6 \u00e9');
 assert.equal(convert('\u2014 \u25c6 \u00e9', false), '&#x2014; &#x25C6; &#xE9;');
 for (const text of [
@@ -89,8 +91,12 @@ for (const text of [
 assert.equal(convert('`&mdash;`', true), '`&mdash;`');
 assert.equal(convert('{font:bold|Text}', false), '{font:bold|Text}');
 const tokens = context.FolioSyntax.tokenize('**&mdash;** {color:purple|&#x25C6;} `&copy;`', true);
-assert.equal(tokens.filter((token) => token.kind === 'entity').length, 2);
-assert.ok(!context.FolioSyntax.tokenize('&mdash;', false).some((token) => token.kind === 'entity'));
+assert.equal(tokens.filter((token: FolioToken) => token.kind === 'entity').length, 2);
+assert.ok(
+  !context.FolioSyntax.tokenize('&mdash;', false).some(
+    (token: FolioToken) => token.kind === 'entity',
+  ),
+);
 console.log('Entity preference conversion and syntax token checks passed');
 
 // Simulate the browser scrolling to the caret after a source replacement.
@@ -108,12 +114,12 @@ const toggleContext = createContext({
   source: scrollSource,
   data: { mixed: true },
   $: () => ({
-    addEventListener: (type, fn) => {
+    addEventListener: (_type: string, fn: TestHandler) => {
       toggleHandler = fn;
     },
   }),
   convertEntityPreference: () => 'after',
-  replaceRange: (text) => {
+  replaceRange: (text: string) => {
     scrollSource.value = text;
     scrollSource.scrollTop = 0;
     scrollSource.scrollLeft = 0;
@@ -125,17 +131,17 @@ const toggleContext = createContext({
   syncHighlightScroll: () => {
     syncCount++;
   },
-  requestAnimationFrame: (fn) => {
+  requestAnimationFrame: (fn: TestHandler) => {
     animationFrame = fn;
   },
 });
 units.load(toggleContext, 'editor/toolbar', { names: [], effects: ["$('preferLiterals')"] });
-toggleHandler({ target: { checked: false } });
+toggleHandler!({ target: { checked: false } });
 assert.equal(scrollSource.scrollTop, 400);
 assert.equal(scrollSource.scrollLeft, 25);
 scrollSource.scrollTop = 0;
 scrollSource.scrollLeft = 0;
-animationFrame();
+animationFrame!();
 assert.equal(scrollSource.scrollTop, 400);
 assert.equal(scrollSource.scrollLeft, 25);
 assert.equal(syncCount, 2);
