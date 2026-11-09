@@ -65,7 +65,7 @@ npm run build
 npm test
 ```
 
-The build runs TypeScript checking, bundles all application TypeScript entries with esbuild into readable `build/*.js`, and then embeds the bundles and existing assets into `dist/Folio-Profile-Studio.html`. Generated build directories are ignored. Python and VS Code entry points continue to use `build.py`, which invokes the same TypeScript pipeline.
+The build runs TypeScript checking, bundles all application TypeScript entries with esbuild into readable `build/*.js`, and then embeds the bundles and existing assets into `dist/Folio-Profile-Studio.html`. Generated build directories are ignored. The standalone packager is `scripts/build.ts`, run directly by Node with the `tsx` loader through `npm run build` and the default VS Code build task.
 
 ## Follow-up: complete source and test migration
 
@@ -73,4 +73,10 @@ All owned `src/*.js` files are now TypeScript, including the Horizon bridge and 
 
 All `.cjs` tests and their helpers are now `.ts` ES modules. TypeScript checks both the application and a separate tools/test project. Build scripts and tests run with `node --import tsx`; only browser application entries are emitted for inclusion in HTML. Isolated VM tests still evaluate compiled application code because their DOM/state stubs live in separate VM contexts. The fixture hashes and expected behavior remain unchanged.
 
-`scripts/test.ts` runs each test in a separate process, discovers added TypeScript programs automatically, aggregates failures, and supports DOM-only, browser-only, or all-suite execution. `Folio: Test all` is the default VS Code test task. The six Playwright hosts now use cross-platform Chromium by default instead of requiring Windows Edge; the browser payload `.browser.js` files and Windows/Python visual fixture launchers are retained.
+`scripts/test.ts` runs each test in a separate process, discovers added TypeScript programs automatically, aggregates failures, and supports DOM-only, browser-only, or all-suite execution. `Folio: Test all` is the default VS Code test task. The six Playwright hosts now use cross-platform Chromium by default instead of requiring Windows Edge; the browser payload `.browser.js` files are retained. The visual fixture launchers were subsequently migrated to TypeScript too.
+
+## Node-only packaging and maintenance
+
+`scripts/build.ts` replaces the former build entry point: it invokes the existing TypeScript bundle/type-check pipeline, embeds CSS and JavaScript, encodes the site PNG assets as data URLs, and writes the standalone HTML using Node filesystem APIs. The preview server and its VS Code task are removed; open the built HTML directly.
+
+The entity-table refresher now uses Node fetch against WHATWG’s HTML5 entity data (or a local JSON snapshot). The five remaining visual-test launchers use a shared Playwright helper with their original fixtures, viewport widths, optional reference CSS, and gallery outputs. There are no remaining Python scripts or Python prerequisites. The complete test task now includes 23 core and 11 browser programs.

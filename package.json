@@ -4,13 +4,14 @@
   "scripts": {
     "build:renderer": "node --import tsx scripts/build-renderer.ts",
     "test": "npm run build && node --import tsx scripts/test.ts",
-    "build": "python build.py",
+    "build": "node --import tsx scripts/build.ts",
     "build:app": "node --import tsx scripts/build-app.ts",
     "typecheck": "node --import tsx scripts/build-renderer.ts && tsc --noEmit && tsc -p tsconfig.tools.json",
     "format": "prettier --write \"src/**/*.ts\" \"scripts/**/*.ts\" \"tests/**/*.ts\"",
     "format:check": "prettier --check \"src/**/*.ts\" \"scripts/**/*.ts\" \"tests/**/*.ts\"",
     "test:browser": "npm run build && node --import tsx scripts/test.ts --browser",
-    "test:all": "npm run build && node --import tsx scripts/test.ts --all"
+    "test:all": "npm run build && node --import tsx scripts/test.ts --all",
+    "build:entities": "node --import tsx scripts/build-entities.ts"
   },
   "devDependencies": {
     "@types/node": "22.20.5",

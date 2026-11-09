@@ -3,11 +3,7 @@
   "tasks": [
     {
       "label": "Folio: Build",
-      "type": "process",
-      "command": "python",
-      "args": [
-        "build.py"
-      ],
+      "type": "npm",
       "options": {
         "cwd": "${workspaceFolder}"
       },
@@ -15,39 +11,10 @@
         "kind": "build",
         "isDefault": true
       },
-      "problemMatcher": []
-    },
-    {
-      "label": "Folio: Build and open locally",
-      "type": "process",
-      "command": "python",
-      "args": [
-        "-u",
-        "serve.py",
-        "--open"
+      "problemMatcher": [
+        "$tsc"
       ],
-      "options": {
-        "cwd": "${workspaceFolder}"
-      },
-      "dependsOn": "Folio: Build",
-      "isBackground": true,
-      "problemMatcher": {
-        "pattern": {
-          "regexp": "^$"
-        },
-        "background": {
-          "activeOnStart": true,
-          "beginsPattern": "^Starting Folio preview",
-          "endsPattern": "^Folio preview ready:"
-        }
-      },
-      "presentation": {
-        "reveal": "always",
-        "panel": "dedicated"
-      },
-      "runOptions": {
-        "instanceLimit": 1
-      }
+      "script": "build"
     },
     {
       "label": "Folio: Test all",

@@ -145,8 +145,9 @@ syntax parsing: encoded braces, brackets or emphasis markers do not become activ
 formatting. Backticks, fenced code and `{noparse|...}` preserve references literally.
 Unknown names, invalid numeric code points, numeric control references and malformed
 references remain unchanged. The named-reference table is bundled for offline use;
-refresh it with `python scripts/build-entities.py` using Python's standard-library
-HTML5 entity data.
+refresh it with `npm run build:entities` using WHATWG’s HTML5 entity data.
+To use a downloaded snapshot instead, run `npm run build:entities -- path/to/entities.json`.
+Normal builds use the checked-in table and need no network access.
 
 ### Source display preference
 

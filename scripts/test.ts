@@ -5,6 +5,11 @@ import { fileURLToPath } from 'node:url';
 import path from 'node:path';
 const root = fileURLToPath(new URL('..', import.meta.url));
 const browserSuites = new Set([
+  'check-diagnostics.ts',
+  'check-editor-scroll.ts',
+  'check-selection-caret.ts',
+  'check-template-editor.ts',
+  'check-preview-parity.ts',
   'check-local-images.ts',
   'check-preview-scroll.ts',
   'check-screenshot.ts',
