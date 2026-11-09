@@ -1,15 +1,17 @@
-"""Build the standalone editor using only Python's standard library."""
+"""Type-check and bundle TypeScript, then embed assets in one standalone HTML."""
 from pathlib import Path
 import base64
 import json
+import subprocess
 root = Path(__file__).resolve().parent
+subprocess.run(["node", str(root / "scripts/build-app.mjs")], cwd=root, check=True)
 # Keep the browser-ready welcome profile in sync with its editable Markdown source.
 showcase = '/* Generated from docs/feature-showcase.md by build.py. */\nglobalThis.FolioShowcase = ' + json.dumps((root / 'docs/feature-showcase.md').read_text(encoding='utf-8-sig'), ensure_ascii=False) + ';\n'
 (root / 'src/feature-showcase.js').write_text(showcase, encoding='utf-8')
 page = (root / "index.html").read_text(encoding="utf-8")
 css = (root / "src/styles.css").read_text(encoding="utf-8")
 templates = (root / "src/templates.js").read_text(encoding="utf-8")
-js = (root / "src/app.js").read_text(encoding="utf-8")
+js = (root / "build/app.js").read_text(encoding="utf-8")
 renderer = (root / "src/horizon-renderer.js").read_text(encoding="utf-8")
 syntax = (root / "src/syntax.js").read_text(encoding="utf-8")
 diagnostics = (root / "src/diagnostics.js").read_text(encoding="utf-8")
@@ -18,7 +20,7 @@ renderer_css = (root / "src/horizon-preview.css").read_text(encoding="utf-8")
 page = page.replace('<link rel="stylesheet" href="src/styles.css">', '<style>' + css + '</style>', 1)
 page = page.replace('<script src="src/templates.js"></script>', '<script>' + templates + '</script>', 1)
 page = page.replace('<script src="src/feature-showcase.js"></script>', '<script>' + showcase + '</script>', 1)
-page = page.replace('<script src="src/app.js"></script>', '<script>' + js + '</script>', 1)
+page = page.replace('<script src="build/app.js"></script>', '<script>' + js + '</script>', 1)
 page = page.replace('<script src="src/horizon-renderer.js"></script>', '<script>' + renderer + '</script>', 1)
 page = page.replace('<script src="src/syntax.js"></script>', '<script>' + syntax + '</script>', 1)
 page = page.replace('<script src="src/diagnostics.js"></script>', '<script>' + diagnostics + '</script>', 1)

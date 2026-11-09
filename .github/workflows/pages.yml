@@ -1,48 +1,63 @@
-name: Deploy Folio to GitHub Pages
+name: Build, test, and deploy Folio
 
 on:
   push:
+    branches: [main]
+  pull_request:
     branches: [main]
   workflow_dispatch:
 
 permissions:
   contents: read
-  pages: write
-  id-token: write
-
-concurrency:
-  group: github-pages
-  cancel-in-progress: true
 
 jobs:
-  deploy:
-    name: Publish static app
+  build:
+    name: Validate standalone app
     runs-on: ubuntu-latest
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - name: Check out repository
         uses: actions/checkout@v4
-
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - name: Install locked dependencies
+        run: npm ci
+      - name: Check source formatting
+        run: npm run format:check
+      - name: Build standalone HTML
+        run: npm run build
+      - name: Run regression and behavior parity checks
+        run: npm test
       - name: Prepare public site
+        if: github.event_name != 'pull_request'
         run: |
           mkdir -p _site
-          cp index.html _site/index.html
-          cp -R src _site/src
-          cp -R vendor _site/vendor
-          test -f _site/index.html
-          test -f _site/src/app.js
-          test -s _site/vendor/html2canvas/html2canvas.min.js
-
-      - name: Configure GitHub Pages
-        uses: actions/configure-pages@v5
-
+          cp dist/Folio-Profile-Studio.html _site/index.html
       - name: Upload site
+        if: github.event_name != 'pull_request'
         uses: actions/upload-pages-artifact@v4
         with:
           path: _site
 
+  deploy:
+    name: Publish static app
+    if: github.event_name != 'pull_request'
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    concurrency:
+      group: github-pages
+      cancel-in-progress: true
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Configure GitHub Pages
+        uses: actions/configure-pages@v5
       - name: Deploy site
         id: deployment
         uses: actions/deploy-pages@v4

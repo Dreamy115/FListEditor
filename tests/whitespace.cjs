@@ -1,18 +1,37 @@
+const units = require('./helpers/typescript.cjs');
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const vm = require('node:vm');
 
 // Load the conversion functions without starting the browser UI.
-const source = fs.readFileSync('src/app.js', 'utf8');
-const context = vm.createContext({URL});
-vm.runInContext(source.slice(source.indexOf('const macroInlineNames='), source.indexOf('function renderBB(')), context);
-const compile = input => context.markdownToBB(input);
+
+const context = vm.createContext({ URL });
+units.formatting(context);
+// Exercise source conversion before the separate F-List NBSP edge encoding.
+// tests/bbcode-whitespace.cjs covers that public output boundary.
+const compile = (input) => context.markdownToBBSource(input);
 const cases = [
-  ['nested macros', ':::center\n:::color purple\n**Name**\nSubtitle\n:::\n:::', '[center][color=purple][b]Name[/b]\nSubtitle[/color][/center]'],
-  ['surrounding prose', 'Before\n:::center\nInside\n:::\nAfter', 'Before[center]Inside[/center]After'],
-  ['intentional blanks', '\n:::center\n\nInside\n\n:::\n\nAfter\n', '[center]\nInside\n[/center]\nAfter\n'],
+  [
+    'nested macros',
+    ':::center\n:::color purple\n**Name**\nSubtitle\n:::\n:::',
+    '[center][color=purple][b]Name[/b]\nSubtitle[/color][/center]',
+  ],
+  [
+    'surrounding prose',
+    'Before\n:::center\nInside\n:::\nAfter',
+    'Before[center]Inside[/center]After',
+  ],
+  [
+    'intentional blanks',
+    '\n:::center\n\nInside\n\n:::\n\nAfter\n',
+    '[center]\nInside\n[/center]\nAfter\n',
+  ],
   ['adjacent blocks', ':::big\nOne\n:::\n:::small\nTwo\n:::', '[big]One[/big][small]Two[/small]'],
-  ['fenced literal', '```\n**literal**\n\n  indented  \n```', '[noparse]**literal**\n\n  indented  [/noparse]'],
+  [
+    'fenced literal',
+    '```\n**literal**\n\n  indented  \n```',
+    '[noparse]**literal**\n\n  indented  [/noparse]',
+  ],
   ['raw brackets', '[b]text[/b]', '[noparse][b][/noparse]text[noparse][/b][/noparse]'],
   ['content whitespace', '  First  \r\n\r\nSecond\r\n', '  First  \n\nSecond\n'],
   ['unclosed block', ':::center\nText', '[center]Text[/center]'],
@@ -42,45 +61,66 @@ assert.match(context.bbcodeToMarkdown(roundTrips[0]), /:::heading/);
 assert.match(context.bbcodeToMarkdown(roundTrips[0]), /\{img:4645005\|meanstoanend\}/);
 assert.match(context.bbcodeToMarkdown(roundTrips[0]), /^---$/m);
 assert.equal(compile('{img:4645005|meanstoanend}'), '[img=4645005]meanstoanend[/img]');
-assert.equal(compile('{heading|{color:cyan|Title}}{hr}Text'), '[heading][color=cyan]Title[/color][/heading][hr]Text');
+assert.equal(
+  compile('{heading|{color:cyan|Title}}{hr}Text'),
+  '[heading][color=cyan]Title[/color][/heading][hr]Text',
+);
 assert.equal(compile(':::heading\nFirst\nSecond\n:::'), '[heading]First\nSecond[/heading]');
 assert.equal(compile('Hello \\\nworld\nNext'), 'Hello world\nNext');
 assert.equal(compile('Hello{br}\\\nworld'), 'Hello\n world');
 assert.equal(compile('# Title\\\nBody'), '[heading][big]Title[/big][/heading] Body');
 assert.equal(compile('One\\\r\nTwo'), 'One Two');
-assert.equal(compile('ab'+String.fromCharCode(92)+'\ncd'), 'ab cd');
+assert.equal(compile('ab' + String.fromCharCode(92) + '\ncd'), 'ab cd');
 assert.equal(compile('Literal\\\\\nNext'), 'Literal\\\nNext');
 assert.equal(compile('```\nLiteral\\\nNext\n```'), '[noparse]Literal\\\nNext[/noparse]');
 console.log(`${roundTrips.length} exact BBCode round trips passed`);
 
 assert.doesNotMatch(context.bbcodeToMarkdown(roundTrips[0]), /\{br\}|\\\n/);
-assert.equal(compile('Before\n\n:::center\nInside\n:::\n\nAfter'), 'Before\n[center]Inside[/center]\nAfter');
-assert.equal(compile(':::center\nOne\n:::\n\n:::center\nTwo\n:::'), '[center]One[/center]\n[center]Two[/center]');
+assert.equal(
+  compile('Before\n\n:::center\nInside\n:::\n\nAfter'),
+  'Before\n[center]Inside[/center]\nAfter',
+);
+assert.equal(
+  compile(':::center\nOne\n:::\n\n:::center\nTwo\n:::'),
+  '[center]One[/center]\n[center]Two[/center]',
+);
 
 assert.equal(compile('Before\n---\nAfter'), 'Before[hr]After');
 assert.equal(compile('Before\n\n---\n\nAfter'), 'Before\n[hr]\nAfter');
 
-for(const [markdown,bbcode] of [
- ['# Title','[heading][big]Title[/big][/heading]'],
- ['## Title','[heading]Title[/heading]'],
- ['### Title','[heading]Title[/heading]'],
- ['# **Bold**','[heading][big][b]Bold[/b][/big][/heading]'],
- ['### {color:cyan|Title} ###','[heading][color=cyan]Title[/color][/heading]'],
- ['#### Title','[heading]Title[/heading]']
-])assert.equal(compile(markdown),bbcode);
-assert.equal(context.bbcodeToMarkdown('[heading][big]Title[/big][/heading]'),'# Title');
-assert.equal(context.bbcodeToMarkdown('[heading]Title[/heading]'),'## Title');
-assert.equal(context.bbcodeToMarkdown('[big]Title[/big]'),'{big|Title}');
-for(const [tag,macro] of [['sup','{sup|2}'],['sub','{sub|2}']]){
- const bbcode='H['+tag+']2[/'+tag+']O';
- assert.equal(compile('H'+macro+'O'),bbcode,tag+' Markdown macro compiles');
- assert.equal(compile(context.bbcodeToMarkdown(bbcode)),bbcode,tag+' round trip');
- assert.equal(context.bbcodeToMarkdown('['+tag+']2[/'+tag+']'),macro,tag+' decompiles to inline macro');
+for (const [markdown, bbcode] of [
+  ['# Title', '[heading][big]Title[/big][/heading]'],
+  ['## Title', '[heading]Title[/heading]'],
+  ['### Title', '[heading]Title[/heading]'],
+  ['# **Bold**', '[heading][big][b]Bold[/b][/big][/heading]'],
+  ['### {color:cyan|Title} ###', '[heading][color=cyan]Title[/color][/heading]'],
+  ['#### Title', '[heading]Title[/heading]'],
+])
+  assert.equal(compile(markdown), bbcode);
+assert.equal(context.bbcodeToMarkdown('[heading][big]Title[/big][/heading]'), '# Title');
+assert.equal(context.bbcodeToMarkdown('[heading]Title[/heading]'), '## Title');
+assert.equal(context.bbcodeToMarkdown('[big]Title[/big]'), '{big|Title}');
+for (const [tag, macro] of [
+  ['sup', '{sup|2}'],
+  ['sub', '{sub|2}'],
+]) {
+  const bbcode = 'H[' + tag + ']2[/' + tag + ']O';
+  assert.equal(compile('H' + macro + 'O'), bbcode, tag + ' Markdown macro compiles');
+  assert.equal(compile(context.bbcodeToMarkdown(bbcode)), bbcode, tag + ' round trip');
+  assert.equal(
+    context.bbcodeToMarkdown('[' + tag + ']2[/' + tag + ']'),
+    macro,
+    tag + ' decompiles to inline macro',
+  );
 }
-assert.equal(compile(context.bbcodeToMarkdown('Before[big]Title[/big]After')),'Before[big]Title[/big]After');
+assert.equal(
+  compile(context.bbcodeToMarkdown('Before[big]Title[/big]After')),
+  'Before[big]Title[/big]After',
+);
 
 // A heading that needs macro spacing must not prevent hash headings elsewhere.
-const mixedHeadings = '[center][heading][big]Largest[/big][/heading][/center]Before[heading]Tight[/heading]After[center][heading]Standard[/heading][/center][center][big]Large[/big][/center]';
+const mixedHeadings =
+  '[center][heading][big]Largest[/big][/heading][/center]Before[heading]Tight[/heading]After[center][heading]Standard[/heading][/center][center][big]Large[/big][/center]';
 const readableHeadings = context.bbcodeToMarkdown(mixedHeadings);
 assert.match(readableHeadings, /^# Largest$/m);
 assert.match(readableHeadings, /^## Standard$/m);
@@ -89,8 +129,14 @@ assert.equal(compile(readableHeadings), mixedHeadings);
 const nestedHeading = '[center][heading][big][color=cyan]Name[/color][/big][/heading][/center]Text';
 assert.match(context.bbcodeToMarkdown(nestedHeading), /^# \{color:cyan\|Name\}$/m);
 assert.equal(compile(context.bbcodeToMarkdown(nestedHeading)), nestedHeading);
-assert.equal(compile(context.bbcodeToMarkdown('[heading]First\nSecond[/heading]')), '[heading]First\nSecond[/heading]');
-assert.equal(context.preferHashHeadings('```\n:::heading\nLiteral\n:::\n```'), '```\n:::heading\nLiteral\n:::\n```');
+assert.equal(
+  compile(context.bbcodeToMarkdown('[heading]First\nSecond[/heading]')),
+  '[heading]First\nSecond[/heading]',
+);
+assert.equal(
+  context.preferHashHeadings('```\n:::heading\nLiteral\n:::\n```'),
+  '```\n:::heading\nLiteral\n:::\n```',
+);
 
 for (const tag of ['i', 'b', 'u', 's']) {
   const bbcode = `[${tag}]a\nb[/${tag}]`;
@@ -104,96 +150,123 @@ for (const tag of ['i', 'b', 'u', 's']) {
 }
 
 const vanillaCases = [
- ['[quote]Text[/quote]', '> Text'],
- ['[quote]a\nb[/quote]', '> a\n> b'],
- ['[quote]a\n\nb[/quote]', '> a\n> \n> b'],
- ['[quote][b]Bold[/b][/quote]', '> **Bold**'],
- ['[img]https://example.com/portrait.png[/img]', '![](https://example.com/portrait.png)'],
- ['[url=https://example.com]Visit[/url]', '[Visit](https://example.com)'],
- ['[url]https://example.com[/url]', '<https://example.com>'],
- ['[noparse]literal {color:cyan|text}[/noparse]', '`literal {color:cyan|text}`'],
- ['[b]Bold[/b]', '**Bold**'], ['[i]Italic[/i]', '*Italic*'], ['[s]Strike[/s]', '~~Strike~~'],
- ['[hr]', '---']
+  ['[quote]Text[/quote]', '> Text'],
+  ['[quote]a\nb[/quote]', '> a\n> b'],
+  ['[quote]a\n\nb[/quote]', '> a\n> \n> b'],
+  ['[quote][b]Bold[/b][/quote]', '> **Bold**'],
+  ['[img]https://example.com/portrait.png[/img]', '![](https://example.com/portrait.png)'],
+  ['[url=https://example.com]Visit[/url]', '[Visit](https://example.com)'],
+  ['[url]https://example.com[/url]', '<https://example.com>'],
+  ['[noparse]literal {color:cyan|text}[/noparse]', '`literal {color:cyan|text}`'],
+  ['[b]Bold[/b]', '**Bold**'],
+  ['[i]Italic[/i]', '*Italic*'],
+  ['[s]Strike[/s]', '~~Strike~~'],
+  ['[hr]', '---'],
 ];
 for (const [bbcode, markdown] of vanillaCases) {
   assert.equal(context.bbcodeToMarkdown(bbcode), markdown);
   assert.equal(compile(markdown), bbcode);
 }
 const quoteCases = [
- '[quote]Outer\n[quote]Inner[/quote][/quote]',
- '[quote]\na\n[/quote]', '[quote]a[/quote]\n[quote]b[/quote]',
- 'Before[quote]Packed[/quote]After\n[quote]Standalone[/quote]',
- '[center][quote]a\nb[/quote][/center]',
- '[quote][heading]Title[/heading]Text[/quote]'
+  '[quote]Outer\n[quote]Inner[/quote][/quote]',
+  '[quote]\na\n[/quote]',
+  '[quote]a[/quote]\n[quote]b[/quote]',
+  'Before[quote]Packed[/quote]After\n[quote]Standalone[/quote]',
+  '[center][quote]a\nb[/quote][/center]',
+  '[quote][heading]Title[/heading]Text[/quote]',
 ];
 for (const bbcode of quoteCases) assert.equal(compile(context.bbcodeToMarkdown(bbcode)), bbcode);
 assert.match(context.bbcodeToMarkdown(quoteCases[3]), /^> Standalone$/m);
 assert.equal(compile('> Outer\n> > Inner'), '[quote]Outer\n[quote]Inner[/quote][/quote]');
-assert.equal(context.preferStandardMarkdown('```\n:::quote\nLiteral\n:::\n```'), '```\n:::quote\nLiteral\n:::\n```');
-for(const literal of ['# Literal heading', '> Literal quote', '- Literal bullet']) {
- const bbcode='[quote]'+literal+'[/quote]';
- assert.equal(compile(context.bbcodeToMarkdown(bbcode)),bbcode);
+assert.equal(
+  context.preferStandardMarkdown('```\n:::quote\nLiteral\n:::\n```'),
+  '```\n:::quote\nLiteral\n:::\n```',
+);
+for (const literal of ['# Literal heading', '> Literal quote', '- Literal bullet']) {
+  const bbcode = '[quote]' + literal + '[/quote]';
+  assert.equal(compile(context.bbcodeToMarkdown(bbcode)), bbcode);
 }
 
 const listCases = [
- ['• Parent\n  • Child\n    • Grandchild\n• Next', '* Parent\n  * Child\n    * Grandchild\n* Next'],
- ['1. Parent\n   1. Child\n      12. Grandchild\n2. Next', '1. Parent\n   1. Child\n      12. Grandchild\n2. Next'],
- ['• Parent\n\t• Child\n\t\t1. Numbered\n\t\t2. Next', '* Parent\n\t* Child\n\t\t1. Numbered\n\t\t2. Next'],
- ['  •  Spaced\n\t•\tTabbed\n    • ', '  *  Spaced\n\t*\tTabbed\n    * '],
- ['• [b]Bold[/b]\n  3. [i]Italic[/i]', '* **Bold**\n  3. *Italic*'],
- ['• Parent\n\n  continuation text\n  • Child\n', '* Parent\n\n  continuation text\n  * Child\n'],
- ['[quote]• Parent\n  • Child\n  1. Ordered[/quote]', '> * Parent\n>   * Child\n>   1. Ordered']
+  [
+    '• Parent\n  • Child\n    • Grandchild\n• Next',
+    '* Parent\n  * Child\n    * Grandchild\n* Next',
+  ],
+  [
+    '1. Parent\n   1. Child\n      12. Grandchild\n2. Next',
+    '1. Parent\n   1. Child\n      12. Grandchild\n2. Next',
+  ],
+  [
+    '• Parent\n\t• Child\n\t\t1. Numbered\n\t\t2. Next',
+    '* Parent\n\t* Child\n\t\t1. Numbered\n\t\t2. Next',
+  ],
+  ['  •  Spaced\n\t•\tTabbed\n    • ', '  *  Spaced\n\t*\tTabbed\n    * '],
+  ['• [b]Bold[/b]\n  3. [i]Italic[/i]', '* **Bold**\n  3. *Italic*'],
+  ['• Parent\n\n  continuation text\n  • Child\n', '* Parent\n\n  continuation text\n  * Child\n'],
+  ['[quote]• Parent\n  • Child\n  1. Ordered[/quote]', '> * Parent\n>   * Child\n>   1. Ordered'],
 ];
-for(const marker of ['-', '*', '+']){
- const markdown=marker+' **Parent**\n  '+marker+'\tChild\n\n  continuation\n'+marker+' Next';
- const bbcode=markdown.replace(/\*\*Parent\*\*/, '[b]Parent[/b]').replace(/^([ \t]*)([-*+])([ \t]+)/gm, (_,indent,marker,space)=>indent+({'-':'–','*':'•','+':'▪'}[marker])+space);
- assert.equal(compile(markdown),bbcode,'Compile '+marker+' bullet');
- assert.equal(context.bbcodeToMarkdown(bbcode),markdown,'Decompile '+marker+' bullet');
- assert.equal(compile(context.bbcodeToMarkdown('[quote]'+bbcode+'[/quote]')),'[quote]'+bbcode+'[/quote]','Quoted '+marker+' round trip');
+for (const marker of ['-', '*', '+']) {
+  const markdown =
+    marker + ' **Parent**\n  ' + marker + '\tChild\n\n  continuation\n' + marker + ' Next';
+  const bbcode = markdown
+    .replace(/\*\*Parent\*\*/, '[b]Parent[/b]')
+    .replace(
+      /^([ \t]*)([-*+])([ \t]+)/gm,
+      (_, indent, marker, space) => indent + { '-': '-', '*': '•', '+': '▪' }[marker] + space,
+    );
+  assert.equal(compile(markdown), bbcode, 'Compile ' + marker + ' bullet');
+  assert.equal(context.bbcodeToMarkdown(bbcode), markdown, 'Decompile ' + marker + ' bullet');
+  assert.equal(
+    compile(context.bbcodeToMarkdown('[quote]' + bbcode + '[/quote]')),
+    '[quote]' + bbcode + '[/quote]',
+    'Quoted ' + marker + ' round trip',
+  );
 }
-for(const [bbcode, markdown] of listCases){
- assert.equal(context.bbcodeToMarkdown(bbcode),markdown,'Editable indented list');
- assert.equal(compile(markdown),bbcode,'List whitespace preserved');
+for (const [bbcode, markdown] of listCases) {
+  assert.equal(context.bbcodeToMarkdown(bbcode), markdown, 'Editable indented list');
+  assert.equal(compile(markdown), bbcode, 'List whitespace preserved');
 }
-for(const bbcode of [
- '[indent]• Parent\n  • Child\n  1. Ordered[/indent]',
- '[center]• First\n  • [b]Child[/b][/center]',
- '[color=cyan]• First\n  • Second[/color]',
- '[noparse]• literal\n  1. literal[/noparse]',
- 'Mid-sentence • stays literal',
- '0. Zero\n  42. No renumbering'
-])assert.equal(compile(context.bbcodeToMarkdown(bbcode)),bbcode);
-assert.equal(context.preferStandardMarkdown('```\n• literal\n```'),'```\n• literal\n```');
+for (const bbcode of [
+  '[indent]• Parent\n  • Child\n  1. Ordered[/indent]',
+  '[center]• First\n  • [b]Child[/b][/center]',
+  '[color=cyan]• First\n  • Second[/color]',
+  '[noparse]• literal\n  1. literal[/noparse]',
+  'Mid-sentence • stays literal',
+  '0. Zero\n  42. No renumbering',
+])
+  assert.equal(compile(context.bbcodeToMarkdown(bbcode)), bbcode);
+assert.equal(context.preferStandardMarkdown('```\n• literal\n```'), '```\n• literal\n```');
 
-assert.equal(compile('## Title\nabcd'),'[heading]Title[/heading]abcd');
-assert.equal(context.bbcodeToMarkdown('[heading]Title[/heading]abcd'),'## Title\nabcd');
-assert.equal(compile('## Title\n'),'[heading]Title[/heading]');
-assert.equal(compile('## Title\n\n'),'[heading]Title[/heading]\n');
-assert.equal(compile('## Title\n\nabcd'),'[heading]Title[/heading]\nabcd');
-assert.equal(compile('Before\n## Title\nAfter'),'Before[heading]Title[/heading]After');
-assert.equal(compile('Before\n\n## Title\n\nAfter'),'Before\n[heading]Title[/heading]\nAfter');
-for(const [marker,open,close] of [
- ['#','[heading][big]','[/big][/heading]'], ['##','[heading]','[/heading]']
-]){
- for(const before of ['', 'Before', 'Before\n']){
-  for(const after of ['', 'abcd', '\nabcd', '\n\nabcd', '\n', '\n\n']){
-   const bbcode=before+open+'Title'+close+after;
-   const markdown=context.bbcodeToMarkdown(bbcode);
-   assert.match(markdown,new RegExp('^'+marker+' Title$','m'));
-   assert.doesNotMatch(markdown, /:::heading|\{big\||[\uE006\uE007]/);
-   assert.equal(compile(markdown),bbcode,'Heading boundaries retain exact BBCode');
+assert.equal(compile('## Title\nabcd'), '[heading]Title[/heading]abcd');
+assert.equal(context.bbcodeToMarkdown('[heading]Title[/heading]abcd'), '## Title\nabcd');
+assert.equal(compile('## Title\n'), '[heading]Title[/heading]');
+assert.equal(compile('## Title\n\n'), '[heading]Title[/heading]\n');
+assert.equal(compile('## Title\n\nabcd'), '[heading]Title[/heading]\nabcd');
+assert.equal(compile('Before\n## Title\nAfter'), 'Before[heading]Title[/heading]After');
+assert.equal(compile('Before\n\n## Title\n\nAfter'), 'Before\n[heading]Title[/heading]\nAfter');
+for (const [marker, open, close] of [
+  ['#', '[heading][big]', '[/big][/heading]'],
+  ['##', '[heading]', '[/heading]'],
+]) {
+  for (const before of ['', 'Before', 'Before\n']) {
+    for (const after of ['', 'abcd', '\nabcd', '\n\nabcd', '\n', '\n\n']) {
+      const bbcode = before + open + 'Title' + close + after;
+      const markdown = context.bbcodeToMarkdown(bbcode);
+      assert.match(markdown, new RegExp('^' + marker + ' Title$', 'm'));
+      assert.doesNotMatch(markdown, /:::heading|\{big\||[\uE006\uE007]/);
+      assert.equal(compile(markdown), bbcode, 'Heading boundaries retain exact BBCode');
+    }
   }
- }
 }
-for(const bbcode of [
- '[heading][color=cyan]Title[/color][/heading]abcd',
- '[center][heading]Title[/heading]abcd[/center]\n',
- '[heading]One[/heading][heading]Two[/heading]abcd',
- '[heading]One[/heading]\n[heading]Two[/heading]\n',
- '[heading][big]Large[/big][/heading]\n',
- '[heading]First\nSecond[/heading]abcd'
-]){
- const markdown=context.bbcodeToMarkdown(bbcode);
- assert.doesNotMatch(markdown,/[\uE006\uE007]/);
- assert.equal(compile(markdown),bbcode);
+for (const bbcode of [
+  '[heading][color=cyan]Title[/color][/heading]abcd',
+  '[center][heading]Title[/heading]abcd[/center]\n',
+  '[heading]One[/heading][heading]Two[/heading]abcd',
+  '[heading]One[/heading]\n[heading]Two[/heading]\n',
+  '[heading][big]Large[/big][/heading]\n',
+  '[heading]First\nSecond[/heading]abcd',
+]) {
+  const markdown = context.bbcodeToMarkdown(bbcode);
+  assert.doesNotMatch(markdown, /[\uE006\uE007]/);
+  assert.equal(compile(markdown), bbcode);
 }
