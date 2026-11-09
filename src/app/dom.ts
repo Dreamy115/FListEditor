@@ -3,6 +3,8 @@ export interface AppElements {
   previewTitle: HTMLElement;
   newDraft: HTMLButtonElement;
   draftList: HTMLDivElement;
+  characterSearch: HTMLInputElement;
+  characterSearchEmpty: HTMLParagraphElement;
   customTemplateList: HTMLDivElement;
   manageTemplates: HTMLButtonElement;
   exportAll: HTMLButtonElement;

@@ -33,7 +33,9 @@ console.log('Custom template storage validation checks passed');
 
 // Sidebar labels must render names exactly, without decorative prefixes or
 // stripping question marks that are part of the user's actual character name.
-const { document } = importedDOM.parseHTML('<div id="draftList"></div>');
+const { document } = importedDOM.parseHTML(
+  '<input id="characterSearch" value=""><p id="characterSearchEmpty" hidden></p><div id="draftList"></div>',
+);
 const drafts = [
   { id: 'one', name: 'Character' },
   { id: 'two', name: '?User-chosen name' },
@@ -50,7 +52,10 @@ const renderContext = createContext({
   renderTemplateTargets: () => {},
   clearDraftDrag: () => {},
 });
-units.load(renderContext, 'characters/characters', { names: ['renderDrafts'], effects: [] });
+units.load(renderContext, 'characters/characters', {
+  names: ['characterNameKey', 'renderDrafts'],
+  effects: [],
+});
 renderContext.renderDrafts();
 assert.deepEqual(
   [...document.querySelectorAll<HTMLElement>('.draft span')].map((el) => el.textContent),
