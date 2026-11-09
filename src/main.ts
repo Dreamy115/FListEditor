@@ -1,0 +1,36 @@
+import { initializeAppState } from './app/state';
+import { bindHistoryControls } from './editor/history';
+import { bindConfirmationControls } from './app/notifications';
+import { bindPreviewEvents } from './preview/preview';
+import { initializeEditorView } from './editor/view';
+import { bindCharacterControls } from './characters/events';
+import { bindFormattingControls } from './templates/application';
+import { initializeToolbar } from './editor/toolbar';
+import { bindModeControls } from './editor/mode';
+import { bindAppearanceControls } from './preview/appearance';
+import { initializeInsertionTools } from './editor/insertions';
+import { initializeGuide } from './editor/guide';
+import { bindExportControls } from './app/exports';
+import { bindImportAndBackupControls } from './app/backups';
+import { bindKeyboardShortcuts } from './editor/shortcuts';
+import { initializeTemplateEditors } from './templates/templates';
+import { initializeLayout } from './app/layout';
+
+// Preserve the original startup order: state, UI bindings, then first render.
+initializeAppState();
+bindHistoryControls();
+bindConfirmationControls();
+bindPreviewEvents();
+initializeEditorView();
+bindCharacterControls();
+bindFormattingControls();
+initializeToolbar();
+bindModeControls();
+bindAppearanceControls();
+initializeInsertionTools();
+initializeGuide();
+bindExportControls();
+bindImportAndBackupControls();
+bindKeyboardShortcuts();
+initializeTemplateEditors();
+initializeLayout();

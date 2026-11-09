@@ -8,4 +8,4 @@ The showcase is the body of the first character shown to new users. Keep it a co
 
 Fenced code examples need leading and trailing blank lines inside the fence boundaries when visible spacing is intended in the preview.
 
-After editing the showcase, run `python build.py` to regenerate `src/feature-showcase.js` and the standalone app. Do not edit the generated JavaScript directly. Run `node tests/bbcode-audit.cjs` to verify the showcase renders without warnings, matches the generated asset, and remains the initial character body while preserving existing saved characters.
+After editing the showcase, run `npm run build` to rebuild the standalone app. The TypeScript source `src/feature-showcase.ts` imports the Markdown directly; generated JavaScript belongs only in `build/`. Run `node --import tsx tests/bbcode-audit.ts` after building to verify the showcase renders without warnings, matches the bundled asset, and remains the initial character body while preserving existing saved characters.

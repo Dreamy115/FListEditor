@@ -4,7 +4,7 @@ Implementation follow-up: the findings below describe the pre-fix baseline.
 The site themes now correct their palettes, default size, quote/collapse metrics,
 icons, rules, inline typography, panel padding and decorative header. Site image
 assets are bundled offline. Saved explicit text sizes are preserved. See
-`preview-themes.md` and `tests/check_preview_parity.py` for current validation.
+`preview-themes.md` and `tests/check-preview-parity.ts` for current validation.
 
 Audited 2026-10-31 against freshly downloaded public F-List CSS:
 

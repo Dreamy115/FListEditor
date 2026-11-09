@@ -43,7 +43,7 @@ https://static.f-list.net/images/toplight.png. These are F-List site assets,
 retained for preview fidelity; Folio does not claim authorship or relicense them.
 The standalone builder embeds them as data URLs for offline use.
 
-Run `python tests/check_preview_parity.py` for headless Edge computed-style
+Run `node --import tsx tests/check-preview-parity.ts` for headless Chromium computed-style
 checks at desktop, tablet, and mobile widths. It checks all twelve colors and
 colored links in every site scheme, initial text size, quote metrics, collapse
 sizes and expanded state, icon dimensions, and Light link shadows. Exact profile
@@ -74,11 +74,11 @@ body padding, down/up chevrons, theme-specific BBCode palettes, and responsive
 indentation and columns. They do not use F-List panel images or expanded panel
 colors. Folio's independent **App appearance** choices are unchanged.
 
-`python tests/check_preview_parity.py --site-reference` additionally downloads
+`node --import tsx tests/check-preview-parity.ts --site-reference` additionally downloads
 current site CSS into memory and compares browser-computed styles against a
 legacy-site DOM fixture for each scheme, including open, nested and closed
-collapses and headings. `--gallery` saves all six rendered fixture screenshots
-under `dist/preview-*.png`. The regular command checks all six appearances at
+collapses and headings. `--gallery` saves all seven rendered fixture screenshots
+under `dist/preview-*.png`. The regular command checks all seven appearances at
 1440px, 800px and 600px without network access.
 
 Labelled URL links now include the site's chain icon and a non-clickable

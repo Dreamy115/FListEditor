@@ -7,4 +7,4 @@ Thumbs.db
 !.vscode/tasks.json
 .idea/
 dist/
-package-lock.json
+build/
