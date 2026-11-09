@@ -86,7 +86,12 @@ export function clearDraftDrag() {
 export function renderDrafts() {
   const list = $('draftList');
   list.replaceChildren();
-  for (const d of state.data.drafts) {
+  const query = characterNameKey($('characterSearch').value);
+  const visibleDrafts = state.data.drafts.filter((draft) =>
+    characterNameKey(draft.name).includes(query),
+  );
+  $('characterSearchEmpty').hidden = visibleDrafts.length > 0;
+  for (const d of visibleDrafts) {
     const btn = document.createElement('button');
     btn.className =
       'draft' + (!state.templateSession && d.id === state.data.active ? ' active' : '');
@@ -125,9 +130,9 @@ export function renderDrafts() {
     btn.addEventListener('keydown', (event) => {
       if (!event.altKey || !['ArrowUp', 'ArrowDown'].includes(event.key)) return;
       event.preventDefault();
-      const index = state.data.drafts.findIndex((record) => record.id === d.id),
+      const index = visibleDrafts.findIndex((record) => record.id === d.id),
         after = event.key === 'ArrowDown';
-      const target = state.data.drafts[index + (after ? 1 : -1)];
+      const target = visibleDrafts[index + (after ? 1 : -1)];
       if (!target) return;
       reorderDraft(d.id, target.id, after);
       ($('draftList').children[index + (after ? 1 : -1)] as HTMLElement).focus();
