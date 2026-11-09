@@ -57,6 +57,14 @@ const backup = {
   },
 };
 assert.equal(context.validateAppBackup(backup), backup.data);
+const largeBackup = structuredClone(backup);
+largeBackup.data.drafts = Array.from({ length: 90 }, (_, index) => ({
+  ...backup.data.drafts[0],
+  id: 'draft-' + index,
+}));
+largeBackup.data.active = largeBackup.data.drafts[0].id;
+assert.equal(context.validateAppBackup(largeBackup).drafts.length, 90);
+
 for (const modify of [
   (b: {
     version: number;

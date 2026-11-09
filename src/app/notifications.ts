@@ -1,22 +1,28 @@
+import type { ProfileRecord } from './types';
+import { writeStoredData } from './storage';
 import { $ } from './dom';
 import { STORAGE, state } from './state';
 import { templateDirty } from '../templates/templates';
 
 export function persist() {
   try {
-    localStorage.setItem(
-      STORAGE,
-      JSON.stringify(
-        state.templateSession
-          ? { ...state.data, mixed: state.templateSession.returnContext.mixed }
-          : state.data,
-      ),
-    );
+    if (
+      !writeStoredData(
+        STORAGE,
+        JSON.stringify(
+          state.templateSession
+            ? { ...state.data, mixed: state.templateSession.returnContext.mixed }
+            : state.data,
+        ),
+      )
+    )
+      throw Error('Storage write failed');
     $('saveStatus').textContent =
       state.templateSession && templateDirty() ? 'Template changes not saved' : '● Saved locally';
     return true;
   } catch (e) {
-    $('saveStatus').textContent = '⚠ Storage unavailable';
+    $('saveStatus').textContent =
+      '⚠ Not saved: local storage full or unavailable. Export your work.';
     return false;
   }
 }
@@ -56,4 +62,23 @@ export function bindConfirmationControls() {
   });
 
   $('confirmNo').addEventListener('click', clearConfirmation);
+}
+
+/** Save the complete prospective collection before changing the active editor. */
+export function storeNewCharacter(character: ProfileRecord): boolean {
+  const drafts = [character, ...state.data.drafts];
+  const mixed =
+    character.mixed ??
+    (state.templateSession ? state.templateSession.returnContext.mixed : state.data.mixed);
+  if (
+    writeStoredData(STORAGE, JSON.stringify({ ...state.data, drafts, active: character.id, mixed }))
+  ) {
+    state.data.drafts = drafts;
+    return true;
+  }
+  $('saveStatus').textContent = '⚠ Not saved: local storage full or unavailable. Export your work.';
+  toast(
+    'Cannot create character: local storage full or unavailable. Export data or delete unused drafts.',
+  );
+  return false;
 }

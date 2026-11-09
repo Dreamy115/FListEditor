@@ -1,3 +1,4 @@
+import { storeNewCharacter } from '../app/notifications';
 import { $ } from '../app/dom';
 import { makeId, state } from '../app/state';
 import { stashEditor, uniqueCharacterName, loadDraft } from './characters';
@@ -12,13 +13,14 @@ export function bindCharacterControls() {
   });
 
   $('newDraft').addEventListener('click', () => {
-    if (state.data.drafts.length >= 80) {
-      toast('Maximum 80 characters. Delete one before creating another.');
-      return;
-    }
     stashEditor();
-    const d = { id: makeId(), name: uniqueCharacterName('Untitled character'), content: '' };
-    state.data.drafts.unshift(d);
+    const d = {
+      id: makeId(),
+      name: uniqueCharacterName('Untitled character'),
+      content: '',
+      mixed: state.templateSession ? state.templateSession.returnContext.mixed : state.data.mixed,
+    };
+    if (!storeNewCharacter(d)) return;
     loadDraft(d.id);
     $('profileName').focus();
     $('profileName').select();

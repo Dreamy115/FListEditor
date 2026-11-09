@@ -11,7 +11,7 @@ const hash = (text: string) => createHash('sha256').update(text).digest('hex');
 
 // Expected results were captured from the unmodified application at baseline.commit.
 // The showcase corpus case and startup snapshot were refreshed when documenting
-// the character creation limit; all other baseline scenarios remain unchanged.
+// storage usage and removing the character creation limit; all other baseline scenarios remain unchanged.
 const context = createContext({ URL });
 formatting(context);
 const outputs = corpus().map((text: string) => {

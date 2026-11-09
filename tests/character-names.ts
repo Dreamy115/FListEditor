@@ -110,40 +110,54 @@ handlers.input();
 assert.equal(data.drafts[0].name, 'Template');
 console.log('Character name commit timing checks passed');
 
-// Exercise the bundled handlers at the storage boundary: a rejected creation
-// must preserve every existing character after a complete application reload.
+// More than 80 drafts must survive creation, cloning and reload.
 const { boot } = await import('./helpers/browser.ts');
 const { readFileSync } = await import('node:fs');
 const appCode = readFileSync('build/app.js', 'utf8');
 const initial = boot(appCode);
-const stored = initial.store.get('folio-f-list-studio-v1')!;
-const seed = JSON.parse(stored) as import('../src/app/types').AppData;
-seed.drafts = Array.from({ length: 79 }, (_, index) => ({
+const seed = JSON.parse(
+  initial.store.get('folio-f-list-studio-v1')!,
+) as import('../src/app/types').AppData;
+seed.drafts = Array.from({ length: 81 }, (_, index) => ({
   id: 'limit-' + index,
   name: 'Character ' + index,
   content: 'Saved body ' + index,
   mixed: true,
 }));
 seed.active = seed.drafts[0].id;
-for (const fromTemplate of [false, true]) {
+for (const control of ['newDraft', 'cloneEditor', 'newFromTemplate'] as const) {
   const browser = boot(appCode, seed);
-  if (fromTemplate) {
+  if (control === 'newFromTemplate') {
     browser.click('newTemplate');
     browser.input('Template body');
   }
-  browser.click(fromTemplate ? 'newFromTemplate' : 'newDraft');
-  assert.equal(browser.snapshot().names.length, 80, 'Creation at 79 reaches the limit');
-  if (fromTemplate) browser.click('newTemplate');
+  browser.click(control);
+  assert.equal(browser.snapshot().names.length, 82);
+  const reopened = boot(appCode, JSON.parse(browser.store.get('folio-f-list-studio-v1')!));
+  assert.equal(reopened.snapshot().names.length, 82);
+  assert.match(
+    browser.document.getElementById('storageValues')!.textContent!,
+    /[\d,.]+ KB used · [\d,.]+ KB free/,
+  );
+}
+// Actual byte quota rejects every creation route without replacing saved data or editor.
+const quota = 2 * ('folio-f-list-studio-v1'.length + JSON.stringify(seed).length);
+for (const control of ['newDraft', 'cloneEditor', 'newFromTemplate'] as const) {
+  const browser = boot(appCode, seed, false, quota);
+  if (control === 'newFromTemplate') {
+    browser.click('newTemplate');
+    browser.input('Template body');
+  }
   const before = browser.store.get('folio-f-list-studio-v1');
   const sourceBefore = browser.source.value;
-  browser.click(fromTemplate ? 'newFromTemplate' : 'newDraft');
-  assert.equal(browser.snapshot().names.length, 80, 'Creation at 80 is rejected');
-  assert.match(browser.$('toast').textContent, /Maximum 80 characters/);
-  assert.equal(browser.source.value, sourceBefore, 'Rejection preserves the editor');
+  browser.click(control);
+  assert.equal(browser.snapshot().names.length, 81);
   assert.equal(browser.store.get('folio-f-list-studio-v1'), before);
-  const reopened = boot(appCode, JSON.parse(before!));
-  assert.equal(reopened.snapshot().names.length, 80);
-  for (const draft of seed.drafts)
-    assert.ok(reopened.snapshot().names.includes(draft.name), 'All original characters survive');
+  assert.equal(browser.source.value, sourceBefore);
+  assert.match(browser.$('toast').textContent, /local storage full or unavailable/);
+  assert.equal(
+    [...browser.store.keys()].some((key) => key.startsWith('folio-storage-probe')),
+    false,
+  );
 }
-console.log('Character creation limit and reload preservation checks passed');
+console.log('Storage quota and unlimited character count checks passed');

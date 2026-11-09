@@ -1,3 +1,4 @@
+import { updateStorageUsage } from './app/storage';
 import { initializeAppState } from './app/state';
 import { bindHistoryControls } from './editor/history';
 import { bindConfirmationControls } from './app/notifications';
@@ -34,3 +35,8 @@ bindImportAndBackupControls();
 bindKeyboardShortcuts();
 initializeTemplateEditors();
 initializeLayout();
+
+// Ignore temporary quota probes so other tabs do not trigger each other's probes.
+window.addEventListener('storage', (event) => {
+  if (!event.key?.startsWith('folio-storage-probe')) updateStorageUsage();
+});

@@ -18,6 +18,11 @@
  <div class="side-inner">
   <div class="caps">My characters</div>
   <button class="newbtn" id="newDraft">＋ &nbsp;New character</button>
+  <button id="storageUsage" type="button" class="storage-usage" title="Click to remeasure local storage">
+   <span class="storage-label">Local storage</span>
+   <progress id="storageProgress" max="100" aria-label="Local storage usage"></progress>
+   <span id="storageValues" class="storage-values">Measuring…</span>
+  </button>
   <div id="draftList" class="draft-list"></div>
   <div class="side-divider"></div>
   <div class="caps">Built-in templates</div>

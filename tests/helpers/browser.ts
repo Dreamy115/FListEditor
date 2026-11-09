@@ -4,7 +4,12 @@ import vm from 'node:vm';
 import { parseHTML } from 'linkedom';
 
 /** Small DOM host for integration tests. Layout is stubbed; rendering is real. */
-function boot(appCode: string | null, saved: unknown = null, standalone = false) {
+function boot(
+  appCode: string | null,
+  saved: unknown = null,
+  standalone = false,
+  quotaBytes = 5 * 1024 * 1024,
+) {
   const { window, document } = parseHTML(
     fs.readFileSync(standalone ? 'dist/Folio-Profile-Studio.html' : 'index.html', 'utf8'),
   );
@@ -99,8 +104,18 @@ function boot(appCode: string | null, saved: unknown = null, standalone = false)
     navigator: {},
     location: { reload() {} },
     localStorage: {
+      get length() {
+        return store.size;
+      },
+      key: (index: number) => [...store.keys()][index] ?? null,
       getItem: (key: string) => store.get(key) ?? null,
-      setItem: (key: string, value: string) => store.set(key, value),
+      setItem: (key: string, value: string) => {
+        const next = new Map(store).set(key, value);
+        const bytes = [...next].reduce((sum, [k, v]) => sum + 2 * (k.length + v.length), 0);
+        if (bytes > quotaBytes)
+          throw Object.assign(new Error('Full'), { name: 'QuotaExceededError' });
+        store.set(key, value);
+      },
       removeItem: (key: string) => store.delete(key),
     },
     setTimeout: () => 1,

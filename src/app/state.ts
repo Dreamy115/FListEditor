@@ -86,17 +86,15 @@ export function initializeAppState() {
   try {
     const loaded = JSON.parse(localStorage.getItem(STORAGE) ?? 'null') as unknown;
     if (isRecord(loaded) && Array.isArray(loaded.drafts) && loaded.drafts.length) {
-      const valid = loaded.drafts
-        .filter((d: unknown): d is ProfileRecord => {
-          if (d == null) throw Error('Invalid saved draft');
-          return (
-            isRecord(d) &&
-            typeof d.id === 'string' &&
-            typeof d.name === 'string' &&
-            typeof d.content === 'string'
-          );
-        })
-        .slice(0, 80);
+      const valid = loaded.drafts.filter((d: unknown): d is ProfileRecord => {
+        if (d == null) throw Error('Invalid saved draft');
+        return (
+          isRecord(d) &&
+          typeof d.id === 'string' &&
+          typeof d.name === 'string' &&
+          typeof d.content === 'string'
+        );
+      });
       if (valid.length) {
         state.data = {
           customPreviewCss:
