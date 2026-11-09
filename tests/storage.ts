@@ -2,7 +2,9 @@ import assert from 'node:assert/strict';
 import { parseHTML } from 'linkedom';
 import { storageBytes, updateStorageUsage, writeStoredData } from '../src/app/storage';
 
-const { document } = parseHTML('<button id="storageUsage"></button>');
+const { document } = parseHTML(
+  '<button id="storageUsage"><span>Local storage</span><progress id="storageProgress"></progress><span id="storageValues"></span></button>',
+);
 const entries = new Map<string, string>([['unrelated', '😀']]);
 let quota = 8192;
 let blocked = false;
@@ -26,10 +28,7 @@ const storage = {
 Object.assign(globalThis, { document, localStorage: storage });
 assert.equal(storageBytes(), 22, 'Counts all keys and UTF-16 surrogate pairs');
 updateStorageUsage(true);
-assert.match(
-  document.getElementById('storageUsage')!.textContent!,
-  /22 B used · 8,170 B remaining/,
-);
+assert.match(document.getElementById('storageValues')!.textContent!, /0 KB used · 8 KB free/);
 assert.equal(entries.size, 1, 'Probe is removed');
 assert.equal(writeStoredData('draft', 'old'), true);
 const saved = new Map(entries);
@@ -37,12 +36,9 @@ assert.equal(writeStoredData('draft', 'x'.repeat(quota)), false);
 assert.deepEqual(entries, saved, 'Quota failure preserves all saved values');
 quota *= 2;
 updateStorageUsage(true);
-assert.match(document.getElementById('storageUsage')!.textContent!, /16,346 B remaining/);
+assert.match(document.getElementById('storageValues')!.textContent!, /16 KB free/);
 blocked = true;
 assert.equal(writeStoredData('draft', 'new'), false);
 assert.deepEqual(entries, saved);
-assert.equal(
-  document.getElementById('storageUsage')!.textContent,
-  'Local storage usage unavailable',
-);
+assert.equal(document.getElementById('storageValues')!.textContent, 'Unavailable');
 console.log('Storage accounting, quota refresh, atomic failures and unavailable storage passed');

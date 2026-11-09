@@ -60,20 +60,37 @@ function measureCapacity(): number {
 
 export function updateStorageUsage(remeasure = false): void {
   const element = document.getElementById('storageUsage');
-  if (!element) return;
+  const progress = document.getElementById('storageProgress');
+  const values = document.getElementById('storageValues');
+  if (!element || !progress || !values) return;
+  element.onclick = () => updateStorageUsage(true);
   try {
     if (remeasure || capacity === undefined) {
       lowerBound = false;
       capacity = measureCapacity();
     }
     const used = storageBytes();
-    const format = (bytes: number) => bytes.toLocaleString() + ' B';
-    element.textContent = `Local storage (estimate): ${format(used)} used · ${lowerBound ? 'at least ' : ''}${format(Math.max(0, capacity - used))} remaining`;
+    const format = (bytes: number) =>
+      (bytes / 1024).toLocaleString(undefined, { maximumFractionDigits: 1 }) + ' KB';
+    const remaining = Math.max(0, capacity - used);
+    values.textContent = `${format(used)} used · ${lowerBound ? '≥ ' : ''}${format(remaining)} free`;
+    progress.hidden = false;
+    progress.setAttribute(
+      'value',
+      String(capacity > 0 ? Math.min(100, (used / capacity) * 100) : 100),
+    );
+    progress.setAttribute(
+      'aria-valuetext',
+      `${format(used)} used; ${lowerBound ? 'at least ' : ''}${format(remaining)} remaining (estimate)`,
+    );
     element.title =
       'Measured UTF-16 storage estimate for this site, including other localStorage keys. Browser writes determine the actual limit. Image attachments use separate storage. Click to remeasure.';
-    element.onclick = () => updateStorageUsage(true);
   } catch {
-    element.textContent = 'Local storage usage unavailable';
+    values.textContent = 'Unavailable';
+    progress.hidden = true;
+    progress.removeAttribute('value');
+    progress.removeAttribute('aria-valuetext');
+    element.title = 'Local storage usage unavailable. Click to retry.';
   }
 }
 

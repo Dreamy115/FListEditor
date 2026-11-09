@@ -371,7 +371,7 @@ Text inside triple backticks.
 - Screenshot capture preserves the current preview scroll and expansion state. PNG export and copy include the capture library in both the hosted app and standalone build.
 
 **Local storage and backups**
-- The sidebar shows local storage bytes used and remaining for this site (a measured UTF-16 estimate). Click it to remeasure. Images use separate storage. Creating or cloning a character requires a successful browser save; failed saves preserve existing saved data. Export your work if storage becomes full or unavailable.
+- The sidebar’s **Local storage** progress bar shows used space and remaining space in KB (1 KB = 1,024 bytes; a measured UTF-16 estimate). The bar follows the app theme. Click it to remeasure. Images use separate storage. Creating or cloning a character requires a successful browser save; failed saves preserve existing saved data. Export your work if storage becomes full or unavailable.
 - Character drafts save automatically in this browser. Template edits are saved with **Save template**.
 - **Export all data:** downloads saved characters, custom templates, active character, and persisted settings as full-app JSON.
 - **Import all data:** validates a full-app backup and confirms replacement of local data.

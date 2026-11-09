@@ -136,8 +136,8 @@ for (const control of ['newDraft', 'cloneEditor', 'newFromTemplate'] as const) {
   const reopened = boot(appCode, JSON.parse(browser.store.get('folio-f-list-studio-v1')!));
   assert.equal(reopened.snapshot().names.length, 82);
   assert.match(
-    browser.document.getElementById('storageUsage')!.textContent!,
-    /[\d,]+ B used · [\d,]+ B remaining/,
+    browser.document.getElementById('storageValues')!.textContent!,
+    /[\d,.]+ KB used · [\d,.]+ KB free/,
   );
 }
 // Actual byte quota rejects every creation route without replacing saved data or editor.
