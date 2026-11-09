@@ -39,7 +39,6 @@ export function validateAppBackup(record: unknown): AppData {
     !value ||
     !Array.isArray(value.drafts) ||
     !value.drafts.length ||
-    value.drafts.length > 80 ||
     !Array.isArray(value.customTemplates) ||
     value.customTemplates.length > 100
   )

@@ -181,3 +181,5 @@
 .editor-shell[data-editor-theme="paper"]{--editor-compatibility-warning:#986900}
 html[data-app-theme="paper"] #warningList li[data-severity="error"]{color:#a32626}
 html[data-app-theme="paper"] #warningList li[data-severity="warning"]{color:#896000}
+
+.storage-usage{display:block;width:100%;margin-top:12px;padding:8px 10px;border:1px solid var(--line);border-radius:8px;background:transparent;color:inherit;text-align:left;font-size:11px;line-height:1.5;overflow-wrap:anywhere}.storage-usage:hover{border-color:currentColor}.storage-usage:focus-visible{outline:2px solid currentColor;outline-offset:2px}@media(max-width:940px){.storage-usage{width:210px;min-width:210px;margin-top:0}}

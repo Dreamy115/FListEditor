@@ -1,3 +1,4 @@
+import { storeNewCharacter } from '../app/notifications';
 import { $, source } from '../app/dom';
 import { state, characterEditors, makeId, editHistories } from '../app/state';
 import { toast, persist, clearConfirmation } from '../app/notifications';
@@ -43,10 +44,6 @@ export function cloneCharacter(id: string) {
   stashEditor();
   const original = state.data.drafts.find((record) => record.id === id);
   if (!original) return;
-  if (state.data.drafts.length >= 80) {
-    toast('Maximum 80 characters. Delete one before cloning.');
-    return;
-  }
   const mixed =
     characterEditors.get(id)?.mixed ??
     (typeof original.mixed === 'boolean'
@@ -60,7 +57,7 @@ export function cloneCharacter(id: string) {
     content: original.content,
     mixed,
   };
-  state.data.drafts.unshift(copy);
+  if (!storeNewCharacter(copy)) return;
   loadDraft(copy.id);
   $('profileName').focus();
   $('profileName').select();

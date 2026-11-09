@@ -1,3 +1,4 @@
+import { storeNewCharacter } from '../app/notifications';
 import { $, source } from '../app/dom';
 import {
   state,
@@ -364,10 +365,6 @@ export function initializeTemplateEditors() {
 
   $('newFromTemplate').addEventListener('click', () => {
     if (!state.templateSession) return;
-    if (state.data.drafts.length >= 80) {
-      toast('Maximum 80 characters. Delete one before creating another.');
-      return;
-    }
     const name = ('New from ' + ($('profileName').value.trim() || 'template')).slice(0, 100);
     const character = {
       id: makeId(),
@@ -375,7 +372,7 @@ export function initializeTemplateEditors() {
       content: source.value,
       mixed: state.data.mixed,
     };
-    state.data.drafts.unshift(character);
+    if (!storeNewCharacter(character)) return;
     loadDraft(character.id);
     $('profileName').focus();
     $('profileName').select();

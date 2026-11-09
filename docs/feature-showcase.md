@@ -346,7 +346,7 @@ Text inside triple backticks.
 
 **Characters**
 - Drag entries in **My characters** above or below another entry to rearrange them. The order saves locally and is included in full-app backups. With a character entry focused, **Alt+Up / Alt+Down** moves it one position.
-- **New character:** creates a blank document. Edit the header field to rename it. Keep up to 80 characters; delete one before creating or cloning another when at the limit.
+- **New character:** creates a blank document. Edit the header field to rename it. The number of saved characters is limited by available browser local storage.
 - Click a sidebar entry to switch documents. Each retains its source, mode, cursor, session undo history, preview scroll, and section states.
 - **Clone:** duplicates the current character or template, including current edits, and opens an independent copy with a unique name.
 - **Delete:** removes the current character after confirmation.
@@ -371,6 +371,7 @@ Text inside triple backticks.
 - Screenshot capture preserves the current preview scroll and expansion state. PNG export and copy include the capture library in both the hosted app and standalone build.
 
 **Local storage and backups**
+- The sidebar shows local storage bytes used and remaining for this site (a measured UTF-16 estimate). Click it to remeasure. Images use separate storage. Creating or cloning a character requires a successful browser save; failed saves preserve existing saved data. Export your work if storage becomes full or unavailable.
 - Character drafts save automatically in this browser. Template edits are saved with **Save template**.
 - **Export all data:** downloads saved characters, custom templates, active character, and persisted settings as full-app JSON.
 - **Import all data:** validates a full-app backup and confirms replacement of local data.
