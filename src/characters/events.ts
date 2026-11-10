@@ -1,10 +1,18 @@
 import { storeNewCharacter } from '../app/notifications';
 import { $ } from '../app/dom';
 import { makeId, state } from '../app/state';
-import { stashEditor, uniqueCharacterName, loadDraft } from './characters';
+import { stashEditor, uniqueCharacterName, loadDraft, renderDrafts } from './characters';
 import { toast, requestConfirmation } from '../app/notifications';
 
 export function bindCharacterControls() {
+  $('characterSearch').addEventListener('input', renderDrafts);
+  $('characterSearch').addEventListener('keydown', (event) => {
+    if (event.key !== 'Escape' || event.isComposing) return;
+    event.preventDefault();
+    $('characterSearch').value = '';
+    renderDrafts();
+  });
+
   $('profileName').addEventListener('keydown', (event) => {
     if (event.key === 'Enter' && !event.isComposing) {
       event.preventDefault();

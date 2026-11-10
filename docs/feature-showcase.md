@@ -349,6 +349,7 @@ Text inside triple backticks.
 - Appearance, size, pane split, and preview-note dismissal persist locally. Preview settings do not alter exported BBCode.
 
 **Characters**
+- Type in **Search characters** to filter names as you type (case-insensitive). Clear the search or press **Escape** to show all characters again. Searching preserves the open editor and saved order; **Alt+Up / Alt+Down** reorders among matching entries.
 - Drag entries in **My characters** above or below another entry to rearrange them. The order saves locally and is included in full-app backups. With a character entry focused, **Alt+Up / Alt+Down** moves it one position.
 - **New character:** creates a blank document. Edit the header field to rename it. The number of saved characters is limited by available browser local storage.
 - Click a sidebar entry to switch documents. Each retains its source, mode, cursor, session undo history, preview scroll, and section states.
