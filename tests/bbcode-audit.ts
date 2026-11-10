@@ -125,7 +125,7 @@ assert.equal(
 );
 const welcomeDOM = context.FolioHorizon.render(showcaseBB);
 assert.ok(welcomeDOM.textContent.includes('Folio / Editor reference'));
-assert.equal(welcomeDOM.querySelectorAll<HTMLElement>('.bbcode-collapse').length, 14);
+assert.equal(welcomeDOM.querySelectorAll<HTMLElement>('.bbcode-collapse').length, 15);
 assert.equal(
   welcomeDOM.querySelectorAll<HTMLElement>('.bbcode-collapse:not(.collapsed)').length,
   0,

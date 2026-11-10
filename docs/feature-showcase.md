@@ -195,12 +195,16 @@ Use inline font macros in section titles: `:::collapse {font:smallcaps|Section t
 In the source pane, only font macros in titles highlight their delimiters and font names separately. Other macros and Markdown syntax remain plain title text.
 Wrapping a section in `:::font bold` applies that font to its title and body, including nested sections.
 
-Wrap a section in `:::center` to center its title. Use `:::left` inside the section to explicitly left-align its body. In F-List preview themes, the body retains side margins inside the panel.
+Wrap a section in `:::center` to center its title. Use `:::left` inside the section to explicitly left-align its body. A nested section inside that left-aligned body also uses left alignment. In F-List preview themes, the centered section body retains side margins inside the panel.
 
 :::center
 :::collapse {font:smallcaps|Centered title}
 :::left
 This content is left-aligned inside the section margins.
+
+:::collapse Left-aligned nested title
+This nested section follows the left-aligned body.
+:::
 :::
 :::
 :::
