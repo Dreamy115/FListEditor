@@ -40,7 +40,9 @@ for (const bb of [
   '[sup][color=red]X[/color][/sup]',
 ]) {
   assert.ok(
-    warnings(bb).some((message: string) => message.startsWith('Unsupported nesting:')),
+    warnings(bb).some((message: string) =>
+      message.startsWith(bb.startsWith('[big]') ? 'F-List [big]' : 'Unsupported nesting:'),
+    ),
     bb,
   );
 }
@@ -178,7 +180,10 @@ for (const markdown of [
 ]) {
   const issues = Array.from(
     context.locatedWarnings(markdown, true, context.markdownToBB(markdown)),
-  ).filter((issue) => issue.message.startsWith('Unsupported nesting:'));
+  ).filter(
+    (issue) =>
+      issue.message.startsWith('Unsupported nesting:') || issue.message.startsWith('F-List [big]'),
+  );
   const expected = [...markdown.matchAll(/\{big\|(?:Inner|First|Second)|~~Strike/g)].map(
     (match) => match.index,
   );

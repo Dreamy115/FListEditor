@@ -20,7 +20,7 @@ export function markdownToBB(input: string, issues: string[] = []) {
   return preserveBBCodeWhitespace(markdownToBBSource(input, issues));
 }
 
-export function markdownToBBSource(input: string, issues: string[] = []) {
+export function markdownToBBSource(input: string, issues: string[] = [], insideBig = false) {
   const lines = input.replace(/\r\n?/g, '\n').split('\n'),
     parts = [],
     stack: string[] = [];
@@ -70,7 +70,8 @@ export function markdownToBBSource(input: string, issues: string[] = []) {
       !inFence && index < lines.length - 1 && (line.match(/\\+$/) || [''])[0].length % 2 === 1;
     if (soft) line = line.slice(0, -1).replace(/[ \t]*$/, ' ');
     try {
-      const trimmed = line.trim();
+      const trimmed = line.trim(),
+        inBig = insideBig || stack.includes('big');
       // A fenced code block is literal text. F-List supports noparse, not Markdown fences.
       if (inFence && new RegExp('^`{' + inFence + ',}$').test(trimmed)) {
         out.close('[/noparse]');
@@ -120,7 +121,9 @@ export function markdownToBBSource(input: string, issues: string[] = []) {
             body.push(next);
           }
           if (depth) issues.push('Unclosed block macro: :::font; closing marker added on export');
-          out.open(applyFont(markdownToBBSource(body.join('\n'), issues), arg.toLowerCase()));
+          out.open(
+            applyFont(markdownToBBSource(body.join('\n'), issues, inBig), arg.toLowerCase()),
+          );
           out.close('');
           continue;
         }
@@ -162,6 +165,7 @@ export function markdownToBBSource(input: string, issues: string[] = []) {
           soft ? rawHeading.replace(/[ \t]+$/, '') : rawHeading,
           [],
           issues,
+          inBig || level === 1,
         );
         // Heading lines are structural, like ::: boundaries and dividers.
         // Their editing newline must not become an extra F-List line break.
@@ -186,7 +190,7 @@ export function markdownToBBSource(input: string, issues: string[] = []) {
           body.push(next[1]);
           index++;
         }
-        out.push('[quote]' + markdownToBBSource(body.join('\n'), issues) + '[/quote]');
+        out.push('[quote]' + markdownToBBSource(body.join('\n'), issues, inBig) + '[/quote]');
         continue;
       }
       const bullet = line.match(/^([ \t]*)([-*+])([ \t]+)(.*)$/);
@@ -195,12 +199,12 @@ export function markdownToBBSource(input: string, issues: string[] = []) {
           bullet[1] +
             { '-': '-', '*': '•', '+': '▪' }[bullet[2]] +
             bullet[3] +
-            inlineMarkdown(bullet[4], [], issues),
+            inlineMarkdown(bullet[4], [], issues, inBig),
         );
         continue;
       }
       // Numbered lists are already readable as plain text on F-List.
-      out.push(inlineMarkdown(line, [], issues));
+      out.push(inlineMarkdown(line, [], issues, inBig));
     } finally {
       if (soft) pendingBreak = false;
     }

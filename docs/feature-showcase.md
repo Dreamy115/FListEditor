@@ -34,7 +34,7 @@ Open with three colons and a macro name; close with three colons. Blocks can con
 [collapse=Section title]Section body[/collapse]
 
 ```
-Enter these tags in **BBCode** mode. In Markdown+, square-bracket text is literal.
+Enter these tags in **BBCode** mode. In Markdown+, square-bracket text is literal. Inside large-text macros and H1 headings, square brackets are exported directly without automatic literal wrappers.
 
 **Examples & macros:** open the cookbook, search or filter by category, then insert an example at the cursor. Insertions can be undone.
 :::
@@ -327,7 +327,7 @@ Text inside triple backticks.
 - Preview updates as you type; the footer shows word/character counts and local save status.
 - Syntax highlighting distinguishes Markdown, inline macros, block macros, native BBCode, and literal content.
 - The typing cursor tracks the insertion position in the highlighted source, including at wrapped row boundaries. Wrapped line numbers track source scrolling. The caret highlights its enclosing section and matching boundaries; unmatched markers are marked.
-- Warnings identify source lines. Red warnings flag invalid markup or macros; yellow warnings flag F-List compatibility issues. Hover an underline or press **Alt+Enter / Ctrl+.** at the caret to open guidance and available fixes. **Escape** dismisses the popup. Fixes can be undone.
+- Warnings identify source lines. Both source modes check formatting and literal text nested inside large text for F-List compatibility. Red warnings flag invalid markup or macros; yellow warnings flag F-List compatibility issues. Hover an underline or press **Alt+Enter / Ctrl+.** at the caret to open guidance and available fixes. **Escape** dismisses the popup. Fixes can be undone.
 - **Undo / Redo** covers typing, toolbar actions, source-mode conversion, and Unicode-reference conversion.
 
 **Keyboard shortcuts**
