@@ -533,3 +533,29 @@ for (const [source, expected] of [
   );
 }
 console.log('Square brackets inside big compile without automatic noparse');
+
+for (const source of [
+  '[a]\n{big|[a]}',
+  '[a]\n{big|[a]}\n[a]',
+  '{big|[a]}\n[a]\n{big|[a]}',
+  '[a]\n:::big\n[a]\n:::\n[a]',
+  '[a]\n# [a]\n[a]',
+]) {
+  const issues = locate(source).filter(
+    (issue) => issue.message === '[a] is not supported by F-List profiles',
+  );
+  const expected = [...source.matchAll(/\[a\]/g)]
+    .filter((match) => {
+      const line = source.slice(0, match.index).split('\n').length;
+      return source.startsWith('{big|') ? line !== 2 : line === (source.includes(':::big') ? 3 : 2);
+    })
+    .map((match) => match.index);
+  assert.deepEqual(
+    issues.map((issue) => issue.start),
+    expected,
+    source,
+  );
+}
+assert.deepEqual(locate('[a]'), []);
+assert.equal(locate('[a]', false).length, 1);
+console.log('Raw tag warnings only mark exported tags, not matching protected literals');

@@ -492,7 +492,23 @@ export function locatedWarnings(text: string, mixed: boolean, compiled: string) 
       const tag = message.match(/\[(\/?[a-z0-9_*-]+)\]/i)?.[1];
       if (tag)
         matches = [...searchable.matchAll(/\[(\/?[a-z][a-z0-9_-]*|\*)(?:=[^\]\n]*)?\]/gi)].filter(
-          (m) => m[1].toLowerCase() === tag.toLowerCase(),
+          (m) => {
+            if (m[1].toLowerCase() !== tag.toLowerCase()) return false;
+            if (!mixed) return true;
+            // Only raw exported tags can cause these compiler messages. Replacing
+            // a protected bracket literal also removes its automatic noparse
+            // wrapper, so restoring its text cannot reproduce the compiled output.
+            let marker = 'FOLIORAWTAGPOSITION';
+            while (text.includes(marker)) marker += 'X';
+            const probe = markdownToBB(
+              text.slice(0, m.index) + marker + text.slice(m.index + m[0].length),
+            );
+            const position = probe.indexOf(marker);
+            return (
+              position >= 0 &&
+              probe.slice(0, position) + m[0] + probe.slice(position + marker.length) === compiled
+            );
+          },
         );
     }
     for (const match of matches) add(message, match.index, match.index + match[0].length, severity);
