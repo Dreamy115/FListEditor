@@ -494,7 +494,6 @@ for (const [text, mixed] of [
   ['**{big|text}**', true],
   ['{i|{big|text}}', true],
   ['`{big|**literal**}`', true],
-  ['{big|`**literal**`}', true],
   ['[big][color=red]text[/color][url=https://example.com]link[/url][/big]', false],
   ['[b][big]text[/big][/b]', false],
   ['[noparse][big][b]literal[/b][/big][/noparse]', false],
@@ -504,3 +503,21 @@ const bigLocated = bigIssues('Plain\n{big|**bold**}')[0];
 assert.equal(bigLocated.line, 2);
 assert.equal(bigLocated.start, 11);
 console.log('F-List big formatting compatibility checks passed in both source modes');
+
+for (const [text, mixed] of [
+  ['{big|[literal]}', true],
+  ['# [literal]', true],
+  [':::big\n[literal]\n:::', true],
+  ['{big|{color:red|[literal]}}', true],
+  ['{big|`**literal**`}', true],
+  ['{big|{noparse|literal}}', true],
+  ['[big][noparse][b]literal[/b][/noparse][/big]', false],
+] as const) {
+  const issues = bigIssues(text, mixed);
+  assert.equal(issues.length, 1, text);
+  assert.equal(issues[0].severity, 'warning');
+  assert.match(issues[0].message, /cannot contain \[noparse\]/);
+  assert.equal(issues[0].start, 0, text);
+}
+assert.equal(bigIssues('[literal]').length, 0);
+console.log('Generated and explicit noparse inside big warnings passed');
