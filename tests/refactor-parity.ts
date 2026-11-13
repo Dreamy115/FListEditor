@@ -12,7 +12,8 @@ const hash = (text: string) => createHash('sha256').update(text).digest('hex');
 // Expected results were captured from the unmodified application at baseline.commit.
 // The showcase corpus case and startup snapshot were refreshed when documenting
 // storage usage, unlimited character creation, character search, and nested alignment;
-// all other baseline scenarios remain unchanged.
+// F-List big compatibility diagnostics were added to existing corpus cases;
+// compiled/decompiled output and all other app scenarios remain unchanged.
 const context = createContext({ URL });
 formatting(context);
 const outputs = corpus().map((text: string) => {

@@ -469,3 +469,38 @@ context.FolioSyntax.highlight(layer, 'bad', true, [
   { line: 1, start: 0, end: 3, message: 'Invalid source', severity: 'error' },
 ]);
 assert.equal(layer.querySelector<HTMLElement>('.syntax-warning')!.dataset.severity, 'error');
+
+// F-List big accepts color and links, but text styling must wrap big instead.
+const bigIssues = (text: string, mixed = true) =>
+  locate(text, mixed).filter((issue) => issue.message.startsWith('F-List [big]'));
+for (const tag of ['b', 'i', 'u', 's', 'big', 'small', 'sup', 'sub', 'heading']) {
+  for (const [text, mixed] of [
+    [`[big][${tag}]text[/${tag}][/big]`, false],
+    [`{big|{${tag}|text}}`, true],
+    [`:::big\n{${tag}|text}\n:::`, true],
+    [`{big|{color:red|{${tag}|text}}}`, true],
+  ] as const) {
+    const issues = bigIssues(text, mixed);
+    assert.equal(issues.length, 1, text);
+    assert.equal(issues[0].severity, 'warning');
+    assert.match(issues[0].message, /outside.*big/);
+    assert.ok(text.slice(issues[0].start, issues[0].end).includes(tag), text);
+  }
+}
+for (const text of ['{big|**bold**}', '{big|*italic*}', '# **Heading**'])
+  assert.equal(bigIssues(text).length, 1, text);
+for (const [text, mixed] of [
+  ['{big|{color:red|text} [link](https://example.com)}', true],
+  ['**{big|text}**', true],
+  ['{i|{big|text}}', true],
+  ['`{big|**literal**}`', true],
+  ['{big|`**literal**`}', true],
+  ['[big][color=red]text[/color][url=https://example.com]link[/url][/big]', false],
+  ['[b][big]text[/big][/b]', false],
+  ['[noparse][big][b]literal[/b][/big][/noparse]', false],
+] as const)
+  assert.equal(bigIssues(text, mixed).length, 0, text);
+const bigLocated = bigIssues('Plain\n{big|**bold**}')[0];
+assert.equal(bigLocated.line, 2);
+assert.equal(bigLocated.start, 11);
+console.log('F-List big formatting compatibility checks passed in both source modes');

@@ -144,10 +144,23 @@ export function tagContentWarnings(compiled: string) {
     }
     if (m[3] !== undefined && !['color', 'url', 'img', 'collapse'].includes(tag))
       add('Unexpected parameter on [' + tag + ']: this tag does not accept an argument', m);
+    // F-List only accepts color and URL formatting within big, even through
+    // an intervening color wrapper. Formatting around big remains valid.
+    const incompatibleBigFormatting =
+      stack.some((item) => item.tag === 'big') &&
+      ['b', 'i', 'u', 's', 'big', 'small', 'sup', 'sub', 'heading'].includes(tag);
+    if (incompatibleBigFormatting)
+      add(
+        'F-List [big] only supports [color] or [url] formatting inside it; move [' +
+          tag +
+          '] formatting outside [big] (Markdown+: outside the {big|…} marker)',
+        m,
+        'warning',
+      );
     const restricted = stack.find(
       (item) => globalThis.FolioHorizon?.allowsChild(item.tag, tag) === false,
     );
-    if (restricted)
+    if (restricted && !incompatibleBigFormatting)
       add(
         'Unsupported nesting: [' +
           tag +
