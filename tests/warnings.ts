@@ -505,10 +505,6 @@ assert.equal(bigLocated.start, 11);
 console.log('F-List big formatting compatibility checks passed in both source modes');
 
 for (const [text, mixed] of [
-  ['{big|[literal]}', true],
-  ['# [literal]', true],
-  [':::big\n[literal]\n:::', true],
-  ['{big|{color:red|[literal]}}', true],
   ['{big|`**literal**`}', true],
   ['{big|{noparse|literal}}', true],
   ['[big][noparse][b]literal[/b][/noparse][/big]', false],
@@ -521,3 +517,19 @@ for (const [text, mixed] of [
 }
 assert.equal(bigIssues('[literal]').length, 0);
 console.log('Generated and explicit noparse inside big warnings passed');
+
+for (const [source, expected] of [
+  ['{big|[a]}', '[big][a][/big]'],
+  ['{big|{color:red|[a]}}', '[big][color=red][a][/color][/big]'],
+  [':::big\n[a]\n:::', '[big][a][/big]'],
+  ['# [a]', '[heading][big][a][/big][/heading]'],
+  ['{big|&#91;a&#93;}', '[big][a][/big]'],
+  ['[a] {big|[a]} [a]', '[noparse][a][/noparse] [big][a][/big] [noparse][a][/noparse]'],
+] as const) {
+  assert.equal(context.markdownToBB(source), expected, source);
+  assert.ok(
+    !bigIssues(source).some((issue) => issue.message.includes('cannot contain [noparse]')),
+    source,
+  );
+}
+console.log('Square brackets inside big compile without automatic noparse');

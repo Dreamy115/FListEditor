@@ -34,7 +34,7 @@ Open with three colons and a macro name; close with three colons. Blocks can con
 [collapse=Section title]Section body[/collapse]
 
 ```
-Enter these tags in **BBCode** mode. In Markdown+, square-bracket text is literal.
+Enter these tags in **BBCode** mode. In Markdown+, square-bracket text is literal. Inside large-text macros and H1 headings, square brackets are exported directly without automatic literal wrappers.
 
 **Examples & macros:** open the cookbook, search or filter by category, then insert an example at the cursor. Insertions can be undone.
 :::

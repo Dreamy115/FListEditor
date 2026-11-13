@@ -13,7 +13,8 @@ const hash = (text: string) => createHash('sha256').update(text).digest('hex');
 // The showcase corpus case and startup snapshot were refreshed when documenting
 // storage usage, unlimited character creation, character search, and nested alignment;
 // F-List big compatibility diagnostics were added to existing corpus cases;
-// compiled/decompiled output and all other app scenarios remain unchanged.
+// bracket literals inside big now compile without automatic noparse wrappers.
+// All other app scenarios remain unchanged.
 const context = createContext({ URL });
 formatting(context);
 const outputs = corpus().map((text: string) => {

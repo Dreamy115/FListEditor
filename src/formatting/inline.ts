@@ -72,7 +72,12 @@ export function transformInlineLiterals(
   return output;
 }
 
-export function inlineMarkdown(text: string, protectedParts: string[] = [], issues: string[] = []) {
+export function inlineMarkdown(
+  text: string,
+  protectedParts: string[] = [],
+  issues: string[] = [],
+  insideBig = false,
+) {
   const warn = (message: string) => issues.push(message);
   const protect = (value: string) => {
     const id = protectedParts.length;
@@ -124,10 +129,10 @@ export function inlineMarkdown(text: string, protectedParts: string[] = [], issu
     if (name === 'br' && body === undefined && !arg) compiled = '\n';
     else if (name === 'hr' && body === undefined && !arg) compiled = '[hr]';
     else if (name === 'font' && body !== undefined && Object.hasOwn(fontStyles, arg.toLowerCase()))
-      compiled = applyFont(inlineMarkdown(body, [], issues), arg.toLowerCase());
+      compiled = applyFont(inlineMarkdown(body, [], issues, insideBig), arg.toLowerCase());
     else if (name === 'color' && body !== undefined) {
       const color = resolvedColor(arg);
-      const content = inlineMarkdown(body, protectedParts, issues);
+      const content = inlineMarkdown(body, protectedParts, issues, insideBig);
       compiled = color ? '[color=' + color + ']' + content + '[/color]' : content;
     } else if (
       [
@@ -160,7 +165,7 @@ export function inlineMarkdown(text: string, protectedParts: string[] = [], issu
         ']' +
         (name === 'noparse'
           ? literalBBContent(body)
-          : inlineMarkdown(body, protectedParts, issues)) +
+          : inlineMarkdown(body, protectedParts, issues, insideBig || tag === 'big')) +
         '[/' +
         tag +
         ']';
@@ -176,7 +181,8 @@ export function inlineMarkdown(text: string, protectedParts: string[] = [], issu
         compiled = '[img=' + arg + ']' + (body === undefined ? '' : body) + '[/img]';
       else if (body === undefined && safeUrl(arg)) compiled = '[img]' + arg + '[/img]';
     } else if (name === 'link' && safeUrl(arg) && body !== undefined)
-      compiled = '[url=' + arg + ']' + inlineMarkdown(body, protectedParts, issues) + '[/url]';
+      compiled =
+        '[url=' + arg + ']' + inlineMarkdown(body, protectedParts, issues, insideBig) + '[/url]';
     if (compiled === null)
       warn('Invalid inline macro: ' + text.slice(i, j) + '; exported as literal text');
     output += compiled === null ? text.slice(i, j) : protect(compiled);
@@ -192,16 +198,20 @@ export function inlineMarkdown(text: string, protectedParts: string[] = [], issu
     return protect(
       match.startsWith('!')
         ? '[img]' + url + '[/img]'
-        : '[url=' + url + ']' + inlineMarkdown(label, protectedParts, issues) + '[/url]',
+        : '[url=' + url + ']' + inlineMarkdown(label, protectedParts, issues, insideBig) + '[/url]',
     );
   });
   // Decode once, after parsing syntax, so encoded delimiters remain literal.
   text = text.replace(/&(?:#(?:x[0-9a-f]+|[0-9]+)|[a-z][a-z0-9]+);/gi, (reference) => {
     const char = decodeCharacterReference(reference);
-    return char === null ? reference : protect(/[\[\]]/.test(char) ? literalBBCode(char) : char);
+    return char === null
+      ? reference
+      : protect(!insideBig && /[\[\]]/.test(char) ? literalBBCode(char) : char);
   });
   // Remaining bracket expressions are prose, not supported BBCode or links.
-  text = text.replace(/\[[^\[\]\n]*\]/g, (literal: string) => protect(literalBBCode(literal)));
+  text = text.replace(/\[[^\[\]\n]*\]/g, (literal: string) =>
+    protect(insideBig ? literal : literalBBCode(literal)),
+  );
   text = text
     .replace(/\*\*\*([^*\n]+)\*\*\*/g, '[b][i]$1[/i][/b]')
     .replace(/\*\*([^*\n]+)\*\*/g, '[b]$1[/b]')
